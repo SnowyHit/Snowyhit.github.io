@@ -1,0 +1,1802 @@
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
+<title>Gambler Wizard</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@600;800&family=Inter:wght@400;600;800&display=swap" rel="stylesheet" />
+<style>
+  :root {
+    --gold: #ffd35c;
+    --gold-2: #ffb02e;
+    --purple: #7b4bff;
+    --purple-2: #b28bff;
+    --neon: #4be1ff;
+    --pink: #ff5cc8;
+    --red: #ff4d5e;
+    --green: #4dffa1;
+    --bg-0: #0a0713;
+    --bg-1: #150e2b;
+    --panel: rgba(28, 18, 54, 0.82);
+    --panel-line: rgba(178, 139, 255, 0.28);
+    --ink: #efe8ff;
+    --ink-dim: #b6a9d9;
+    --display: "Cinzel", "Trajan Pro", Georgia, serif;
+    --sans: "Inter", system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
+  }
+
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  html, body { height: 100%; margin: 0; }
+  body {
+    font-family: var(--sans);
+    color: var(--ink);
+    background:
+      radial-gradient(1200px 700px at 50% -10%, #2a1a5a 0%, transparent 55%),
+      radial-gradient(900px 600px at 10% 110%, #3a1350 0%, transparent 55%),
+      radial-gradient(900px 600px at 95% 100%, #123a55 0%, transparent 55%),
+      linear-gradient(180deg, var(--bg-1), var(--bg-0));
+    background-attachment: fixed;
+    overflow: hidden;
+    user-select: none;
+    display: flex; align-items: center; justify-content: center;
+  }
+
+  #app {
+    position: relative;
+    width: 100%; height: 100%;
+    max-width: 560px;
+    display: flex; flex-direction: column;
+    overflow: hidden;
+  }
+  /* soft vignette for depth (never blocks clicks) */
+  #app::after {
+    content:''; position:absolute; inset:0; pointer-events:none; z-index:9;
+    box-shadow: inset 0 0 130px rgba(0,0,0,.5), inset 0 0 45px rgba(0,0,0,.3);
+    border-radius: inherit;
+  }
+
+  /* Desktop "cabinet" overrides live at the END of the stylesheet
+     (after the base rules) so equal-specificity overrides actually win. */
+
+  /* floating magical dust */
+  #dust { position: absolute; inset: 0; pointer-events: none; z-index: 0; }
+
+  /* ---------- Top HUD ---------- */
+  .hud {
+    position: relative; z-index: 3;
+    display: flex; gap: 8px; padding: 10px 12px 6px;
+    align-items: center;
+  }
+  .stat {
+    display: flex; align-items: center; gap: 6px;
+    background: var(--panel);
+    border: 1px solid var(--panel-line);
+    border-radius: 12px; padding: 7px 10px;
+    font-weight: 800; font-size: 14px;
+    box-shadow: inset 0 0 18px rgba(123,75,255,0.15);
+  }
+  .stat .ic { font-size: 16px; filter: drop-shadow(0 0 6px rgba(255,211,92,.5)); }
+  .stat.gold { color: var(--gold); }
+  .stat.shard { color: var(--neon); }
+  .floor-badge {
+    margin-left: auto;
+    font-family: var(--display); font-weight: 800; letter-spacing: 1px;
+    font-size: 15px; color: var(--ink);
+    background: linear-gradient(180deg, rgba(123,75,255,.35), rgba(123,75,255,.12));
+    border: 1px solid var(--panel-line);
+    padding: 7px 12px; border-radius: 12px; text-align: center; line-height: 1.05;
+  }
+  .floor-badge small { display:block; font-size: 9px; color: var(--ink-dim); letter-spacing: 2px; }
+
+  /* ---------- Arena ---------- */
+  .arena {
+    position: relative; z-index: 2;
+    flex: 1; min-height: 0;
+    display: flex; flex-direction: column; justify-content: center;
+    padding: 4px clamp(14px, 4vw, 48px);
+  }
+  /* grounding glow beneath each duelist */
+  .arena::before {
+    content:''; position:absolute; inset:0; pointer-events:none; z-index:-1;
+    background:
+      radial-gradient(46% 30% at 80% 24%, rgba(255,77,94,.12), transparent 62%),
+      radial-gradient(46% 30% at 20% 78%, rgba(77,255,161,.12), transparent 62%);
+  }
+
+  .combatant { position: relative; display: flex; flex-direction: column; gap: 6px; }
+  .combatant.enemy { align-items: flex-end; margin-top: 6px; }
+  .combatant.wizard { align-items: flex-start; margin-bottom: 4px; }
+
+  .namebar { display: flex; align-items: center; gap: 8px; font-weight: 800; font-size: 13px; }
+  .enemy .namebar { flex-direction: row-reverse; }
+  .tag {
+    font-size: 10px; font-weight: 800; letter-spacing: .5px;
+    padding: 2px 7px; border-radius: 999px;
+    border: 1px solid var(--panel-line); color: var(--ink-dim);
+  }
+  .tag.boss { color: #0a0713; background: linear-gradient(90deg,var(--gold),var(--gold-2)); border: none; }
+
+  .hpwrap { width: 210px; max-width: 60vw; }
+  .hpbar {
+    position: relative; height: 16px; border-radius: 999px;
+    background: rgba(0,0,0,.45);
+    border: 1px solid rgba(255,255,255,.12);
+    overflow: hidden;
+  }
+  .hpfill { position: absolute; inset: 0; width: 100%; transform-origin: left;
+    background: linear-gradient(90deg, #ff6b7a, #ff3040); transition: transform .45s cubic-bezier(.2,.8,.2,1); }
+  .hpfill::after { content:''; position:absolute; inset:0; border-radius:inherit;
+    background: linear-gradient(180deg, rgba(255,255,255,.4), rgba(255,255,255,0) 48%); }
+  .wizard .hpfill { background: linear-gradient(90deg, #63ffb0, #16d67e); }
+  .hpghost { position:absolute; inset:0; transform-origin:left; background: rgba(255,255,255,.5); transition: transform .9s ease .1s; z-index:-0; opacity:.35; }
+  .hptext { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center;
+    font-size: 10px; font-weight: 800; text-shadow: 0 1px 2px #000; letter-spacing:.3px; }
+
+  .avatar-row { display: flex; align-items: flex-end; gap: 10px; }
+  .enemy .avatar-row { flex-direction: row-reverse; }
+  .avatar {
+    position: relative;
+    width: clamp(96px, 14vmin, 156px); height: clamp(96px, 14vmin, 156px);
+    border-radius: 26px;
+    display: grid; place-items: center; font-size: clamp(54px, 8vmin, 92px);
+    background: radial-gradient(circle at 50% 35%, rgba(123,75,255,.35), rgba(10,7,19,.2) 70%);
+    border: 1px solid var(--panel-line);
+    box-shadow: 0 14px 40px rgba(0,0,0,.5), inset 0 0 30px rgba(123,75,255,.2);
+    animation: idle 3.4s ease-in-out infinite;
+  }
+  .enemy .avatar { background: radial-gradient(circle at 50% 35%, rgba(255,77,94,.28), rgba(10,7,19,.2) 70%); }
+  .avatar .aura { position:absolute; inset:-3px; border-radius:28px; pointer-events:none;
+    box-shadow: 0 0 0 0 rgba(255,211,92,0); transition: box-shadow .2s; }
+  @keyframes idle { 0%,100% { transform: translateY(0) } 50% { transform: translateY(-7px) } }
+
+  .status-strip { display:flex; gap:5px; min-height: 22px; flex-wrap: wrap; }
+  .enemy .status-strip { justify-content: flex-end; }
+  .chip {
+    font-size: 11px; font-weight: 800; padding: 3px 7px; border-radius: 8px;
+    display:flex; align-items:center; gap:3px;
+    background: rgba(0,0,0,.35); border:1px solid rgba(255,255,255,.1);
+    animation: pop .25s ease;
+  }
+  .chip.burn { color:#ff9a4d; } .chip.shock { color: var(--neon); }
+  .chip.curse { color: var(--pink); } .chip.shield { color: var(--green); }
+  @keyframes pop { from { transform: scale(.4); opacity:0 } to { transform: scale(1); opacity:1 } }
+
+  .vs {
+    align-self: center; margin: 2px 0;
+    font-family: var(--display); font-weight: 800; letter-spacing: 4px;
+    color: var(--ink-dim); font-size: 12px; opacity:.6;
+  }
+
+  /* ---------- Spell bar ---------- */
+  .spellbar {
+    position: relative; z-index: 3;
+    display: grid; grid-template-columns: repeat(6, 1fr); gap: 8px;
+    padding: 10px 12px calc(12px + env(safe-area-inset-bottom));
+    background: linear-gradient(180deg, transparent, rgba(10,7,19,.7) 30%);
+  }
+  .spell {
+    position: relative; cursor: pointer;
+    border-radius: 16px; padding: 10px 4px 8px;
+    background: var(--panel); border: 1px solid var(--panel-line);
+    text-align: center; transition: transform .12s, box-shadow .2s, border-color .2s;
+    box-shadow: inset 0 0 16px rgba(123,75,255,.12);
+  }
+  .spell:hover { transform: translateY(-3px); border-color: var(--purple-2); }
+  .spell:active { transform: translateY(0) scale(.96); }
+  .spell .key { display:none; position:absolute; top:5px; right:6px; width:15px; height:15px;
+    place-items:center; font-size:9px; font-weight:800; color:var(--ink-dim);
+    background:rgba(0,0,0,.35); border:1px solid var(--panel-line); border-radius:5px; }
+  .spell .glyph { font-size: 26px; filter: drop-shadow(0 0 8px rgba(255,211,92,.35)); }
+  .spell .nm { font-size: 9.5px; font-weight: 800; margin-top: 3px; color: var(--ink-dim); letter-spacing:.3px; }
+  .spell.locked { filter: grayscale(.8) brightness(.6); }
+  .spell.locked::after {
+    content: "🔒 " attr(data-cost); position:absolute; inset:0;
+    display:grid; place-items:center; font-size:11px; font-weight:800; color: var(--neon);
+    background: rgba(6,4,14,.55); border-radius:16px;
+  }
+  .spell.disabled { pointer-events:none; opacity:.5; }
+  .spell.tut { animation: tut 1.2s ease-in-out infinite; }
+  @keyframes tut { 0%,100%{ box-shadow: 0 0 0 0 rgba(255,211,92,.0), inset 0 0 16px rgba(123,75,255,.12);} 50%{ box-shadow: 0 0 0 4px rgba(255,211,92,.35), inset 0 0 16px rgba(123,75,255,.12);} }
+
+  /* ---------- Center overlay for minigames ---------- */
+  .overlay {
+    position: absolute; inset: 0; z-index: 20;
+    display: none; align-items: center; justify-content: center;
+    background: radial-gradient(circle at 50% 45%, rgba(20,10,45,.72), rgba(6,4,14,.92));
+    backdrop-filter: blur(3px);
+  }
+  .overlay.on { display: flex; animation: fade .18s ease; }
+  @keyframes fade { from{opacity:0} to{opacity:1} }
+  .mini {
+    width: min(440px, 92vw); background: linear-gradient(180deg, rgba(38,24,72,.96), rgba(20,12,40,.98));
+    border: 1px solid var(--panel-line); border-radius: 22px; padding: 18px 18px 20px;
+    box-shadow: 0 30px 80px rgba(0,0,0,.6), inset 0 0 40px rgba(123,75,255,.12);
+    animation: rise .22s cubic-bezier(.2,.9,.2,1);
+  }
+  @keyframes rise { from{transform: translateY(24px) scale(.96); opacity:0} to{transform:none;opacity:1} }
+  .mini h3 { font-family: var(--display); margin: 0 0 2px; font-size: 20px; letter-spacing:1px;
+    display:flex; align-items:center; gap:8px; }
+  .mini .sub { color: var(--ink-dim); font-size: 12px; margin-bottom: 14px; }
+  .mini-stage { position: relative; min-height: 150px; display:grid; place-items:center; }
+
+  .btn {
+    display:block; width:100%; margin-top: 14px; cursor:pointer;
+    font-family: var(--display); font-weight: 800; letter-spacing: 1px; font-size: 16px;
+    color: #201200; padding: 13px; border-radius: 14px; border: none;
+    background: linear-gradient(180deg, var(--gold), var(--gold-2));
+    box-shadow: 0 8px 22px rgba(255,176,46,.35), inset 0 1px 0 rgba(255,255,255,.5);
+    transition: transform .1s, filter .2s;
+  }
+  .btn:hover { filter: brightness(1.06); }
+  .btn:active { transform: scale(.97); }
+  .btn:disabled { filter: grayscale(.7) brightness(.7); cursor: default; }
+  .btn.danger { background: linear-gradient(180deg,#ff7a86,#ff3546); color:#2a0006; box-shadow: 0 8px 22px rgba(255,53,70,.4), inset 0 1px 0 rgba(255,255,255,.4); }
+  .btn.ghost { background: rgba(255,255,255,.08); color: var(--ink); box-shadow:none; border:1px solid var(--panel-line); }
+
+  .result-line { text-align:center; font-family:var(--display); font-size: 22px; min-height: 28px; margin-top: 10px; font-weight:800; }
+
+  /* Docked cast panel — replaces the spell bar while a gamble plays */
+  .castdock { display:none; position:relative; z-index:3; padding: 6px 12px calc(10px + env(safe-area-inset-bottom)); }
+  .castdock.on { display:block; }
+  .mini.docked { width:100%; margin:0; border-radius:20px;
+    background: linear-gradient(180deg, rgba(40,25,74,.97), rgba(20,12,40,.99));
+    border:1px solid var(--panel-line); padding:12px 14px 14px;
+    box-shadow: 0 -10px 34px rgba(0,0,0,.5), inset 0 0 34px rgba(123,75,255,.12);
+    animation: dockUp .22s cubic-bezier(.2,.9,.2,1); }
+  @keyframes dockUp { from{ transform: translateY(28px); opacity:0 } to{ transform:none; opacity:1 } }
+  .mini.docked h3 { font-size:16px; margin-bottom:0; }
+  .mini.docked .sub { margin-bottom:8px; font-size:11px; }
+  .mini.docked .mini-stage { min-height:108px; }
+  .mini.docked .btn { margin-top:10px; padding:12px; font-size:15px; }
+  .mini.docked .result-line { font-size:17px; min-height:20px; margin-top:6px; }
+
+  /* ---------- Roguelike rooms (rendered inside the docked panel) ---------- */
+  .doors { display:flex; gap:8px; }
+  .door { flex:1; cursor:pointer; border:1px solid var(--panel-line); border-radius:14px; padding:12px 6px;
+    text-align:center; color:var(--ink); background:rgba(255,255,255,.04);
+    transition:transform .1s, border-color .2s, background .2s; }
+  .door:hover { transform:translateY(-3px); border-color:var(--purple-2); background:rgba(123,75,255,.14); }
+  .door:active { transform:scale(.97); }
+  .d-ic { font-size:30px; filter:drop-shadow(0 0 8px rgba(255,211,92,.3)); }
+  .d-t { font-weight:800; font-size:13px; margin-top:4px; }
+  .d-d { font-size:10.5px; color:var(--ink-dim); margin-top:2px; line-height:1.2; }
+
+  .shop { display:flex; flex-direction:column; gap:8px; }
+  .shop-row { display:flex; align-items:center; gap:10px; padding:10px 12px; border-radius:12px;
+    background:rgba(255,255,255,.05); border:1px solid var(--panel-line); cursor:pointer; transition:border-color .2s, transform .1s; }
+  .shop-row:hover { border-color:var(--purple-2); }
+  .shop-row:active { transform:scale(.99); }
+  .shop-row.cant { opacity:.45; pointer-events:none; }
+  .shop-row.sold { opacity:.45; pointer-events:none; }
+  .shop-row .s-ic { font-size:24px; }
+  .shop-row .s-body { flex:1; }
+  .shop-row .s-t { font-weight:800; font-size:13.5px; }
+  .shop-row .s-d { font-size:11px; color:var(--purple-2); }
+  .shop-row .s-cost { font-weight:800; color:var(--gold); font-size:13px; white-space:nowrap; }
+
+  .relic-cards { display:flex; gap:8px; }
+  .relic-card { flex:1; cursor:pointer; border:1px solid var(--panel-line); border-radius:14px; padding:12px 8px; text-align:center;
+    color:var(--ink); background:linear-gradient(180deg, rgba(123,75,255,.16), rgba(255,255,255,.03));
+    transition:transform .1s, border-color .2s; }
+  .relic-card:hover { transform:translateY(-3px); border-color:var(--gold-2); }
+  .relic-card:active { transform:scale(.97); }
+  .rc-ic { font-size:30px; filter:drop-shadow(0 0 8px rgba(255,211,92,.4)); }
+  .rc-n { font-weight:800; font-size:12px; margin-top:4px; }
+  .rc-d { font-size:10.5px; color:var(--gold); margin-top:3px; line-height:1.25; }
+
+  .rest-opts { display:flex; gap:8px; }
+  .rest-opt { flex:1; cursor:pointer; border:1px solid var(--panel-line); border-radius:14px; padding:14px 8px; text-align:center;
+    background:rgba(255,255,255,.04); color:var(--ink); transition:transform .1s, border-color .2s; }
+  .rest-opt:hover { transform:translateY(-3px); border-color:var(--purple-2); }
+  .rest-opt .ro-t { font-weight:800; font-size:14px; }
+  .rest-opt small { display:block; color:var(--ink-dim); font-size:11px; margin-top:3px; }
+
+  /* ---------- Relic tray ---------- */
+  .relic-tray { position:relative; z-index:3; display:flex; gap:6px; padding:8px 14px 2px; flex-wrap:wrap; }
+  .relic-tray:empty { display:none; }
+  .relic-chip { position:relative; font-size:18px; width:clamp(30px,7vmin,38px); height:clamp(30px,7vmin,38px);
+    display:grid; place-items:center; border-radius:10px; cursor:pointer;
+    background:radial-gradient(circle at 50% 30%, rgba(123,75,255,.3), rgba(123,75,255,.1));
+    border:1px solid var(--panel-line); animation:pop .3s ease; transition:transform .1s; }
+  .relic-chip:hover { transform:translateY(-2px); border-color:var(--gold-2); }
+  .rc-x { position:absolute; bottom:-4px; right:-4px; font-size:9px; font-weight:800; line-height:1;
+    background:linear-gradient(180deg,var(--gold),var(--gold-2)); color:#201200; border-radius:6px; padding:1px 3px; }
+  .relic-tip { position:absolute; z-index:31; left:14px; top:44px; max-width:min(78%,320px);
+    background:rgba(18,11,36,.98); border:1px solid var(--panel-line); border-radius:12px; padding:9px 12px;
+    font-size:12px; font-weight:600; color:var(--ink); box-shadow:0 12px 34px rgba(0,0,0,.55); animation:fade .15s ease; }
+  .relic-tip b { color:var(--gold); }
+  .relic-tip .rt-d { color:var(--purple-2); font-weight:800; margin-top:2px; }
+
+  /* Non-combat room: hide the enemy health/tag, keep the room "host" avatar + name */
+  #sceneDungeon.room .combatant.enemy .hpwrap,
+  #sceneDungeon.room .combatant.enemy .tag,
+  #sceneDungeon.room #enemyStatus,
+  #sceneDungeon.room .vs { visibility:hidden; }
+  #sceneDungeon.room .combatant.enemy .avatar { background: radial-gradient(circle at 50% 35%, rgba(255,211,92,.28), rgba(10,7,19,.2) 70%); }
+
+  /* Coin */
+  .coin { width: 96px; height: 96px; border-radius: 50%; position: relative; transform-style: preserve-3d; }
+  .coin .face { position:absolute; inset:0; border-radius:50%; display:grid; place-items:center; font-size:44px;
+    backface-visibility: hidden; border: 4px solid #b47e10;
+    background: radial-gradient(circle at 35% 30%, #ffe9a8, var(--gold) 45%, var(--gold-2)); box-shadow: inset 0 0 18px rgba(180,120,0,.6); }
+  .coin .back { transform: rotateY(180deg); background: radial-gradient(circle at 35% 30%, #6a6a7a, #3a3a4a 60%, #22222e); border-color:#111; }
+  .coin.flipping { animation: flip 1.15s cubic-bezier(.25,.6,.3,1) forwards; }
+  @keyframes flip { 0%{transform: rotateY(0) translateY(0)} 45%{transform: rotateY(1440deg) translateY(-70px)} 100%{transform: rotateY(var(--end)) translateY(0)} }
+
+  /* Slots */
+  .reels { display:flex; gap:10px; padding: 10px; border-radius: 16px;
+    background: linear-gradient(180deg,#1a0f38,#0d0722); border:2px solid var(--gold-2);
+    box-shadow: inset 0 0 30px rgba(0,0,0,.7), 0 0 24px rgba(255,176,46,.25); }
+  .reel { width: 74px; height: 96px; overflow: hidden; border-radius: 10px; position: relative;
+    background: #06040f; border:1px solid rgba(255,255,255,.08); }
+  .reel .strip { position:absolute; left:0; top:0; width:100%; display:flex; flex-direction:column; }
+  .reel .sym { height: 96px; display:grid; place-items:center; font-size: 46px; }
+  .reel .mid-line { position:absolute; left:0; right:0; top:50%; height:2px; transform:translateY(-50%);
+    background: linear-gradient(90deg,transparent,var(--gold),transparent); opacity:.5; }
+  .reel.win { box-shadow: 0 0 0 2px var(--gold), 0 0 22px var(--gold); animation: winpulse .5s ease infinite alternate; }
+  @keyframes winpulse { from{filter:brightness(1)} to{filter:brightness(1.4)} }
+
+  /* Crash */
+  .crash-num { font-family: var(--display); font-weight:800; font-size: 56px; line-height:1;
+    text-shadow: 0 0 24px rgba(75,225,255,.6); transition: color .1s; }
+  .crash-graph { width:100%; height: 90px; margin-top:8px; }
+  .crash-msg { text-align:center; margin-top:6px; font-weight:800; min-height:18px; }
+
+  /* Dice */
+  .dice-tray { display:flex; gap:16px; }
+  .die { width: 72px; height:72px; border-radius:14px; background: linear-gradient(160deg,#fff,#d9d4ea);
+    position: relative; box-shadow: inset 0 -6px 10px rgba(0,0,0,.15), 0 8px 16px rgba(0,0,0,.4); }
+  .die.rolling { animation: roll .7s ease infinite; }
+  @keyframes roll { 0%{transform: rotate(-12deg) translateY(0)} 50%{transform: rotate(14deg) translateY(-16px)} 100%{transform: rotate(-12deg) translateY(0)} }
+  .pip { position:absolute; width:12px; height:12px; border-radius:50%; background:#2a1748; transform: translate(-50%,-50%);
+    box-shadow: inset 0 -2px 2px rgba(0,0,0,.35); }
+
+  /* Wheel */
+  .wheel-wrap { position: relative; width: 220px; height: 220px; }
+  .wheel { width:100%; height:100%; border-radius:50%; border:6px solid var(--gold-2);
+    box-shadow: 0 0 0 4px #1a0f38, 0 0 30px rgba(255,176,46,.4), inset 0 0 30px rgba(0,0,0,.5);
+    transition: transform 4.4s cubic-bezier(.12,.75,.15,1); }
+  .wheel .lbl { position:absolute; left:50%; top:50%; transform-origin:0 0; font-size:10px; font-weight:800;
+    color:#12081f; white-space:nowrap; }
+  .wheel-ptr { position:absolute; top:-6px; left:50%; transform: translateX(-50%);
+    width:0;height:0;border-left:12px solid transparent;border-right:12px solid transparent;border-top:22px solid var(--gold);
+    filter: drop-shadow(0 2px 4px rgba(0,0,0,.6)); z-index:2; }
+  .wheel-hub { position:absolute; left:50%; top:50%; width:34px;height:34px; transform:translate(-50%,-50%);
+    border-radius:50%; background: radial-gradient(circle at 35% 30%, #ffe9a8, var(--gold-2)); border:3px solid #1a0f38; z-index:2; }
+
+  /* Crate */
+  .crates { display:flex; gap:14px; }
+  .crate { width:90px; height:84px; border-radius:12px; cursor:pointer; position:relative; display:grid; place-items:center;
+    font-size:40px; background: linear-gradient(160deg,#5a3fa0,#2a1a5a); border:2px solid var(--gold-2);
+    box-shadow: 0 8px 20px rgba(0,0,0,.5), inset 0 0 20px rgba(255,176,46,.15); transition: transform .12s; }
+  .crate:hover { transform: translateY(-4px); }
+  .crate.shaking { animation: shake .5s ease; }
+  @keyframes shake { 0%,100%{transform:translate(0)} 20%{transform:translate(-4px,2px) rotate(-4deg)} 40%{transform:translate(4px,-2px) rotate(4deg)} 60%{transform:translate(-3px,1px) rotate(-2deg)} 80%{transform:translate(3px,-1px) rotate(2deg)} }
+  .crate.opened { animation: burst .4s ease forwards; }
+  @keyframes burst { to { transform: scale(1.1); filter: brightness(1.4); } }
+  .crate .rr { position:absolute; inset:0; display:grid; place-items:center; border-radius:12px; font-size:13px; font-weight:800;
+    font-family:var(--display); opacity:0; }
+  .crate.done .rr { opacity:1; animation: pop .3s ease; }
+  .crate.done .cover { opacity:0; }
+
+  /* Blackjack */
+  .bj-area { width:100%; }
+  .bj-row { margin-bottom:10px; }
+  .bj-row .who { font-size:11px; color:var(--ink-dim); font-weight:800; letter-spacing:1px; margin-bottom:4px; }
+  .cards { display:flex; gap:8px; min-height:78px; }
+  .card { width:52px; height:74px; border-radius:8px; background: linear-gradient(160deg,#fff,#e8e4f2); color:#1a0f38;
+    display:flex; flex-direction:column; justify-content:space-between; padding:5px 6px; font-weight:800; font-size:14px;
+    box-shadow: 0 6px 14px rgba(0,0,0,.4); animation: deal .3s ease; }
+  .card.red { color: #d3243b; }
+  .card.back { background: repeating-linear-gradient(45deg,#5a3fa0,#5a3fa0 6px,#3a2570 6px,#3a2570 12px); }
+  .card .b { align-self:flex-end; transform: rotate(180deg); }
+  @keyframes deal { from{transform: translateY(-20px) rotate(-8deg); opacity:0} to{transform:none;opacity:1} }
+  .bj-total { font-size:12px; color:var(--ink-dim); font-weight:800; margin-top:2px; }
+
+  /* Damage numbers + fx layer */
+  #fx { position:absolute; inset:0; z-index:15; pointer-events:none; overflow:hidden; }
+  .dmg { position:absolute; font-family:var(--display); font-weight:800; font-size: 30px;
+    text-shadow: 0 2px 0 #000, 0 0 14px currentColor; animation: dmgUp 1s ease forwards; white-space:nowrap; }
+  @keyframes dmgUp { 0%{transform: translate(-50%,0) scale(.6); opacity:0} 15%{transform:translate(-50%,-10px) scale(1.15); opacity:1} 100%{transform: translate(-50%,-70px) scale(1); opacity:0} }
+  .spark { position:absolute; width:8px; height:8px; border-radius:50%; pointer-events:none; }
+
+  .shake { animation: shk .38s ease; }
+  @keyframes shk { 0%,100%{transform:none} 20%{transform: translate(-7px,3px)} 40%{transform: translate(6px,-4px)} 60%{transform: translate(-5px,-2px)} 80%{transform: translate(4px,3px)} }
+
+  /* Toast / banners */
+  #banner { position:absolute; top:44%; left:50%; transform: translate(-50%,-50%); z-index:30;
+    font-family: var(--display); font-weight:800; font-size: 40px; letter-spacing:2px; text-align:center;
+    pointer-events:none; opacity:0; }
+  #banner.show { animation: bannerIn 1.4s ease forwards; }
+  @keyframes bannerIn { 0%{opacity:0; transform: translate(-50%,-50%) scale(.6)} 20%{opacity:1; transform:translate(-50%,-50%) scale(1.05)} 80%{opacity:1} 100%{opacity:0; transform: translate(-50%,-50%) scale(1)} }
+
+  /* Modal (death / shop / start) */
+  .modal { position:absolute; inset:0; z-index:40; display:none; align-items:center; justify-content:center;
+    background: radial-gradient(circle at 50% 40%, rgba(20,10,45,.8), rgba(4,2,10,.96)); backdrop-filter: blur(4px); padding:18px; }
+  .modal.on { display:flex; }
+  .sheet { width:min(430px,94vw); background: linear-gradient(180deg, rgba(38,24,72,.97), rgba(16,10,34,.99));
+    border:1px solid var(--panel-line); border-radius:24px; padding:24px 22px; text-align:center;
+    box-shadow: 0 30px 90px rgba(0,0,0,.7), inset 0 0 50px rgba(123,75,255,.12); animation: rise .3s ease; }
+  .sheet h1 { font-family:var(--display); font-size: 34px; margin:0 0 4px; letter-spacing:1px;
+    background: linear-gradient(90deg,var(--gold),var(--pink),var(--neon)); -webkit-background-clip:text; background-clip:text; color:transparent; }
+  .sheet h2 { font-family:var(--display); font-size: 26px; margin:0 0 6px; }
+  .sheet p { color: var(--ink-dim); font-size: 13px; margin: 4px 0 16px; line-height:1.5; }
+  .upgrades { display:flex; flex-direction:column; gap:10px; margin: 12px 0; text-align:left; }
+  .upg { display:flex; align-items:center; gap:10px; padding:11px 12px; border-radius:14px;
+    background: rgba(255,255,255,.05); border:1px solid var(--panel-line); cursor:pointer; transition: border-color .2s, transform .1s; }
+  .upg:hover { border-color: var(--purple-2); }
+  .upg:active { transform: scale(.98); }
+  .upg .u-ic { font-size:24px; }
+  .upg .u-body { flex:1; }
+  .upg .u-t { font-weight:800; font-size:14px; }
+  .upg .u-d { font-size:11px; color: var(--ink-dim); }
+  .upg .u-cost { font-weight:800; color: var(--gold); font-size:13px; white-space:nowrap; }
+  .upg.cant { opacity:.5; pointer-events:none; }
+  .legend { display:flex; flex-wrap:wrap; gap:6px 14px; justify-content:center; font-size:11px; color:var(--ink-dim); margin-top:6px; }
+
+  /* ---------- Scenes (tower / dungeon) ---------- */
+  .scene { display:none; flex:1; min-height:0; flex-direction:column; }
+  .scene.on { display:flex; }
+
+  .stat.idle { color: var(--green); display:none; }
+  #app.at-tower .stat.idle { display:flex; }
+  #app.at-tower .floor-badge { display:none; }
+  .floor-badge { margin-left:8px; }
+  .retreat-btn { display:none; margin-left:auto; cursor:pointer; font-weight:800; font-size:12px; color:var(--ink);
+    background:var(--panel); border:1px solid var(--panel-line); border-radius:12px; padding:8px 12px; transition: border-color .15s; }
+  .retreat-btn:hover { border-color: var(--purple-2); }
+  #app.at-dungeon .retreat-btn { display:block; }
+
+  /* ---------- Tower ---------- */
+  .tower-stage { position:relative; height:34%; min-height:168px; margin:4px 12px 0; border-radius:18px; overflow:hidden;
+    border:1px solid var(--panel-line);
+    background: radial-gradient(120% 120% at 50% 120%, rgba(123,75,255,.22), transparent 60%), linear-gradient(180deg, rgba(20,12,42,.7), rgba(8,5,18,.7)); }
+  #tdCanvas { position:absolute; inset:0; width:100%; height:100%; }
+  .tower-label { position:absolute; top:8px; left:12px; font-family:var(--display); font-size:13px; letter-spacing:1px; color:var(--ink-dim); }
+  .tower-idle-badge { position:absolute; top:8px; right:12px; font-weight:800; font-size:11px; color:var(--green);
+    background: rgba(0,0,0,.45); padding:4px 9px; border-radius:999px; border:1px solid var(--panel-line); }
+
+  .tower-tabs { display:flex; gap:6px; padding:10px 12px 4px; }
+  .ttab { flex:1; cursor:pointer; font-weight:800; font-size:11.5px; padding:9px 2px; border-radius:12px; color:var(--ink-dim);
+    background:var(--panel); border:1px solid var(--panel-line); transition:all .15s; text-align:center; }
+  .ttab:hover { color:var(--ink); }
+  .ttab.on { color:var(--ink); border-color:var(--purple-2); box-shadow: inset 0 0 16px rgba(123,75,255,.28); }
+
+  .tower-panel { flex:1; min-height:0; overflow-y:auto; padding:4px 12px 6px; display:flex; flex-direction:column; gap:8px; }
+  .tower-panel::-webkit-scrollbar { width:6px; }
+  .tower-panel::-webkit-scrollbar-thumb { background: rgba(178,139,255,.35); border-radius:99px; }
+  .panel-head { font-family:var(--display); font-size:12px; color:var(--ink-dim); letter-spacing:2px; margin:6px 2px 0; text-transform:uppercase; }
+  .tower-panel .upg { background:var(--panel); }
+  .u-lvl { font-size:10px; font-weight:800; color:var(--purple-2); background:rgba(123,75,255,.18);
+    border:1px solid var(--panel-line); border-radius:8px; padding:2px 6px; margin-left:6px; }
+  .u-cost.shard { color: var(--neon); }
+  .u-cost.max { color: var(--green); }
+
+  .enter-btn { width:auto; margin:6px 12px calc(12px + env(safe-area-inset-bottom)); font-size:17px; }
+
+  .foot { position:absolute; bottom:6px; left:0; right:0; text-align:center; font-size:10px; color: rgba(182,169,217,.4); z-index:1; }
+
+  /* ============ Desktop: centered "cabinet" window + roomier UI ============ */
+  @media (min-width: 760px) and (min-height: 620px) {
+    body { padding: 18px; }
+    #app {
+      width: min(94vw, 940px);
+      height: min(94vh, 980px);
+      max-width: none;
+      border: 1px solid var(--panel-line);
+      border-radius: 30px;
+      box-shadow: 0 50px 130px rgba(0,0,0,.65), 0 0 0 1px rgba(255,255,255,.04),
+                  inset 0 0 90px rgba(123,75,255,.1);
+      background: linear-gradient(180deg, rgba(21,14,43,.55), rgba(10,7,19,.55));
+    }
+    .hud { padding: 14px 16px 8px; }
+    .stat { font-size: 16px; padding: 9px 13px; }
+    .floor-badge { font-size: 17px; padding: 8px 14px; }
+    .retreat-btn { font-size: 13px; padding: 9px 14px; }
+    .namebar { font-size: 15px; }
+    .hpbar { height: 18px; }
+    .spell { padding: 12px 6px 10px; }
+    .spell .glyph { font-size: 30px; }
+    .spell .nm { font-size: 11px; }
+    .spell .key { display: grid; }
+    .mini.docked h3 { font-size: 19px; }
+    .mini.docked .sub { font-size: 12.5px; }
+    .ttab { font-size: 13px; padding: 11px 4px; }
+    .tower-panel .u-t { font-size: 15px; }
+    .tower-stage { min-height: 210px; }
+  }
+
+  /* Larger phones / small tablets: nudge things up a touch */
+  @media (min-width: 480px) and (max-width: 759px) {
+    .spell .nm { font-size: 10.5px; }
+    .stat { font-size: 15px; }
+  }
+</style>
+
+<div id="app">
+  <canvas id="dust"></canvas>
+
+  <div class="hud">
+    <div class="stat gold"><span class="ic">🪙</span><span id="gold">0</span></div>
+    <div class="stat shard"><span class="ic">🔷</span><span id="shard">0</span></div>
+    <div class="stat idle"><span class="ic">🔮</span><span id="idleRateTxt">+0/min</span></div>
+    <button class="retreat-btn" id="retreatBtn" title="Return to the tower">🏰 Retreat</button>
+    <div class="floor-badge"><small>FLOOR</small><span id="floorNum">1</span></div>
+  </div>
+
+  <div class="scene" id="sceneDungeon">
+  <div class="relic-tray" id="relicTray"></div>
+  <div class="arena" id="arena">
+    <!-- enemy -->
+    <div class="combatant enemy">
+      <div class="namebar"><span id="enemyName">Goblin Gambler</span><span class="tag" id="enemyTag">Lv 1</span></div>
+      <div class="hpwrap"><div class="hpbar">
+        <div class="hpghost" id="enemyGhost"></div>
+        <div class="hpfill" id="enemyHp"></div>
+        <div class="hptext" id="enemyHpText">100 / 100</div>
+      </div></div>
+      <div class="avatar-row">
+        <div class="status-strip" id="enemyStatus"></div>
+        <div class="avatar" id="enemyAvatar"><div class="aura"></div><span id="enemyGlyph">👺</span></div>
+      </div>
+    </div>
+
+    <div class="vs">— ✦ —</div>
+
+    <!-- wizard -->
+    <div class="combatant wizard">
+      <div class="avatar-row">
+        <div class="avatar" id="wizAvatar"><div class="aura"></div><span>🧙‍♂️</span></div>
+        <div class="status-strip" id="wizStatus"></div>
+      </div>
+      <div class="hpwrap"><div class="hpbar">
+        <div class="hpghost" id="wizGhost"></div>
+        <div class="hpfill" id="wizHp"></div>
+        <div class="hptext" id="wizHpText">100 / 100</div>
+      </div></div>
+      <div class="namebar"><span>Gambler Wizard</span><span class="tag" id="powerTag">⚡ PWR 10</span></div>
+    </div>
+  </div>
+
+  <div class="spellbar" id="spellbar"></div>
+  <div class="castdock" id="castDock"><div class="mini docked" id="mini"></div></div>
+  <div class="castdock" id="roomDock"><div class="mini docked" id="roomMini"></div></div>
+  </div><!-- /sceneDungeon -->
+
+  <div class="scene" id="sceneTower">
+    <div class="tower-stage" id="towerStage">
+      <canvas id="tdCanvas"></canvas>
+      <div class="tower-label">✦ WIZARD'S TOWER ✦</div>
+      <div class="tower-idle-badge" id="towerIdleBadge">+0/min</div>
+    </div>
+    <div class="tower-tabs" id="towerTabs">
+      <button class="ttab on" data-tab="tower">🏰 Tower</button>
+      <button class="ttab" data-tab="spells">✨ Spells</button>
+      <button class="ttab" data-tab="wizard">🧙 Wizard</button>
+      <button class="ttab" data-tab="mods">🗺️ Run Mods</button>
+    </div>
+    <div class="tower-panel" id="towerPanel"></div>
+    <button class="btn enter-btn" id="enterBtn">⚔️ ENTER THE DUNGEON</button>
+  </div>
+
+  <div id="fx"></div>
+  <div id="banner"></div>
+
+  <!-- Start / Death / Shop modal -->
+  <div class="modal" id="modal"><div class="sheet" id="sheet"></div></div>
+
+</div>
+
+<script>
+"use strict";
+/* =========================================================================
+   GAMBLER WIZARD — playable slice
+   Focus: juicy on-screen gambling minigames driving turn-based combat.
+   ========================================================================= */
+
+const $ = s => document.querySelector(s);
+const rand = (a,b)=> a + Math.random()*(b-a);
+const randi = (a,b)=> Math.floor(rand(a,b+1));
+const pick = arr => arr[Math.floor(Math.random()*arr.length)];
+const clamp = (v,a,b)=> Math.max(a,Math.min(b,v));
+const fmt = n => n>=1000 ? (n/1000).toFixed(n>=10000?0:1)+'k' : Math.round(n).toString();
+
+/* ---------- Audio (tiny WebAudio blips) ---------- */
+let AC=null;
+function ac(){ if(!AC){ try{AC=new (window.AudioContext||window.webkitAudioContext)();}catch(e){} } return AC; }
+function beep(freq=440, dur=0.08, type='sine', vol=0.12, slideTo=null){
+  const c=ac(); if(!c) return;
+  const o=c.createOscillator(), g=c.createGain();
+  o.type=type; o.frequency.value=freq;
+  if(slideTo) o.frequency.exponentialRampToValueAtTime(slideTo, c.currentTime+dur);
+  g.gain.value=vol; g.gain.exponentialRampToValueAtTime(0.0001, c.currentTime+dur);
+  o.connect(g); g.connect(c.destination); o.start(); o.stop(c.currentTime+dur);
+}
+const S = {
+  click:()=>beep(300,.05,'square',.08),
+  tick:()=>beep(900,.03,'square',.05),
+  win:()=>{ beep(523,.09,'triangle',.12); setTimeout(()=>beep(659,.09,'triangle',.12),90); setTimeout(()=>beep(784,.14,'triangle',.12),180); },
+  hit:()=>beep(160,.14,'sawtooth',.14,60),
+  crit:()=>{ beep(220,.1,'sawtooth',.16,80); setTimeout(()=>beep(120,.2,'sawtooth',.14,50),60); },
+  fail:()=>beep(140,.25,'sine',.12,70),
+  coin:()=>beep(1200,.06,'triangle',.08),
+  spin:()=>beep(600,.04,'square',.04),
+  jackpot:()=>{ [523,659,784,1046].forEach((f,i)=>setTimeout(()=>beep(f,.12,'triangle',.13),i*80)); },
+};
+
+/* ---------- Game state ---------- */
+const G = {
+  floor: 1,
+  gold: 0,
+  shards: 0,
+  power: 10,
+  critMult: 1.8,
+  maxHp: 120,
+  hp: 120,
+  busy: false,
+  extraTurn: false,
+  enemy: null,
+  bossesCleared: 0,
+  scene: 'tower',
+  towerTab: 'tower',
+  // permanent upgrade levels (bought in the tower)
+  upg: { power:0, maxhp:0, crit:0, towerRate:0, fireRate:0, towerShard:0, idleCap:0 },
+  // dungeon run modifiers (permanent, bought in tower)
+  mods: { goldRush:0, ward:0, lucky:0 },
+  _shardFrac: 0,
+  // roguelike progress
+  checkpoint: 1,              // floor a fresh run starts on (advances past cleared bosses)
+  roomType: 'combat',
+  // run-only state (relics + aggregated boosts), reset every dive
+  run: { relics:[], dmgMult:1, critChance:0, critMult:0, goldMult:1, lifesteal:0,
+         startShield:0, diceMin:0, fizzleFloor:0, bonusHp:0, shockChance:0, jackpotX:1 },
+};
+
+/* ---------- Spells ---------- */
+const SPELLS = {
+  spark:  { key:'spark',  name:'Spark',    glyph:'✨', base: 42, cost: 0,  unlocked:true },
+  slots:  { key:'slots',  name:'Fireball', glyph:'🎰', base: 34, cost: 0,  unlocked:true },
+  dice:   { key:'dice',   name:'Chaos',    glyph:'🎲', base: 30, cost: 0,  unlocked:true },
+  crash:  { key:'crash',  name:'Overload', glyph:'📈', base: 26, cost: 6,  unlocked:false },
+  wheel:  { key:'wheel',  name:'Roulette', glyph:'🎡', base: 30, cost: 8,  unlocked:false },
+  crate:  { key:'crate',  name:'Crate',    glyph:'🎁', base: 30, cost: 10, unlocked:false },
+  jack:   { key:'jack',   name:'Necrojack',glyph:'🃏', base: 30, cost: 14, unlocked:false },
+};
+Object.values(SPELLS).forEach(s=> s.lvl = 0);
+// effective base damage grows +12% per empower level
+function spellBase(k){ return SPELLS[k].base * (1 + (SPELLS[k].lvl||0)*0.12); }
+
+/* ---------- Enemies ---------- */
+const ENEMY_TYPES = [
+  { name:'Goblin Gambler', glyph:'👺', trait:'greedy' },
+  { name:'Arcane Mimic',   glyph:'🪞', trait:'mimic' },
+  { name:'Shock Elemental',glyph:'⚡', trait:'shock' },
+  { name:'Cursed Knight',  glyph:'🗡️', trait:'curse' },
+  { name:'Slime Croupier', glyph:'🟢', trait:'none' },
+  { name:'Bat Swarm',      glyph:'🦇', trait:'none' },
+];
+const BOSSES = [
+  { name:'The House',      glyph:'🎩', trait:'boss' },
+  { name:'Lady Luck',      glyph:'🍀', trait:'boss' },
+  { name:'Dealer of Doom', glyph:'💀', trait:'boss' },
+];
+
+/* ---------- Relics (run-only boosts) ---------- */
+const RELICS = {
+  ember:  { icon:'🔥', name:'Ember Sigil',   desc:'+25% all damage',            apply:r=>r.dmgMult*=1.25 },
+  focus:  { icon:'🔮', name:'Arcane Focus',  desc:'+18% all damage',            apply:r=>r.dmgMult*=1.18 },
+  midas:  { icon:'💰', name:'Midas Coin',    desc:'+60% dungeon gold',          apply:r=>r.goldMult*=1.6 },
+  fang:   { icon:'🩸', name:'Vampire Fang',  desc:'Heal 6% of damage dealt',    apply:r=>r.lifesteal+=0.06 },
+  aegis:  { icon:'🛡️', name:'Aegis Shard',   desc:'+40 shield each fight',      apply:r=>r.startShield+=40 },
+  clover: { icon:'🍀', name:'Four-Leaf',     desc:'+12% crit chance',           apply:r=>r.critChance+=0.12 },
+  core:   { icon:'💥', name:'Power Core',    desc:'Crits deal +0.6×',           apply:r=>r.critMult+=0.6 },
+  ldice:  { icon:'🎲', name:'Loaded Dice',   desc:'Dice never roll below 3',    apply:r=>r.diceMin=Math.max(r.diceMin,3) },
+  wild:   { icon:'🃏', name:'Wild Card',     desc:'Fizzles still deal 35%',     apply:r=>r.fizzleFloor=Math.max(r.fizzleFloor,0.35) },
+  storm:  { icon:'⚡', name:'Storm Rune',    desc:'+15% dmg · hits may shock',  apply:r=>{r.dmgMult*=1.15; r.shockChance+=0.2;} },
+  pact:   { icon:'❤️', name:'Blood Pact',    desc:'+40 max HP this run',        apply:r=>r.bonusHp+=40 },
+  jack:   { icon:'🌟', name:'Jackpot Charm', desc:'Mega & crit hits ×2',        apply:r=>r.jackpotX*=2 },
+  crown:  { icon:'👑', name:'Gilded Crown',  desc:'+25% dmg · +25% gold',       apply:r=>{r.dmgMult*=1.25; r.goldMult*=1.25;} },
+};
+const RELIC_IDS = Object.keys(RELICS);
+function randomRelicId(){ return pick(RELIC_IDS); }
+function pickRelics(n){ const pool=RELIC_IDS.slice(); const out=[]; for(let i=0;i<n && pool.length;i++){ out.push(pool.splice(randi(0,pool.length-1),1)[0]); } return out; }
+
+/* ---------- Room types (dungeon doors) ---------- */
+const ROOMS = {
+  combat:  { icon:'⚔️', label:'Combat',      desc:'Fight a monster' },
+  elite:   { icon:'💀', label:'Elite',       desc:'Tough foe · free relic' },
+  merchant:{ icon:'💰', label:'Merchant',    desc:'Spend gold on boons' },
+  relic:   { icon:'🎁', label:'Relic Shrine',desc:'Choose a free relic' },
+  rest:    { icon:'🏕️', label:'Rest Site',   desc:'Heal or scavenge' },
+};
+
+/* =========================================================================
+   RENDER / HUD
+   ========================================================================= */
+function renderHUD(){
+  $('#gold').textContent = fmt(G.gold);
+  $('#shard').textContent = G.shards;
+  $('#floorNum').textContent = G.floor;
+  const dm = G.run.dmgMult;
+  $('#powerTag').textContent = '⚡ PWR '+G.power + (dm>1.001 ? '  🔥×'+dm.toFixed(2) : '');
+  updateBar('wiz', G.hp, maxHP());
+  const e=G.enemy;
+  if(e){ updateBar('enemy', e.hp, e.maxHp);
+    $('#enemyName').textContent = e.name;
+    $('#enemyGlyph').textContent = e.glyph;
+    $('#enemyTag').textContent = e.isBoss? 'BOSS' : 'Lv '+G.floor;
+    $('#enemyTag').className = 'tag'+(e.isBoss?' boss':'');
+  }
+  renderStatus();
+}
+function updateBar(who, hp, max){
+  const pct = clamp(hp/max,0,1);
+  $('#'+who+'Hp').style.transform = `scaleX(${pct})`;
+  $('#'+who+'HpText').textContent = `${Math.max(0,Math.ceil(hp))} / ${max}`;
+  const ghost=$('#'+who+'Ghost'); ghost.style.transform=`scaleX(${pct})`;
+}
+function renderStatus(){
+  const build=(el,st)=>{ el.innerHTML='';
+    if(!st) return;
+    if(st.burn>0) el.innerHTML+=`<span class="chip burn">🔥${st.burn}</span>`;
+    if(st.shock>0) el.innerHTML+=`<span class="chip shock">⚡${st.shock}</span>`;
+    if(st.curse>0) el.innerHTML+=`<span class="chip curse">💀+${Math.round(st.curse*100)}%</span>`;
+    if(st.shield>0) el.innerHTML+=`<span class="chip shield">🛡️${st.shield}</span>`;
+  };
+  build($('#enemyStatus'), G.enemy? G.enemy.st : null);
+  build($('#wizStatus'), G.wiz_st);
+}
+G.wiz_st = { shield:0 };
+
+function renderSpellbar(){
+  const bar=$('#spellbar'); bar.innerHTML='';
+  const order=['spark','slots','dice','crash','wheel','crate'];
+  // jack replaces one slot when unlocked to keep 6-grid clean; show crate/jack toggle
+  const list = order.slice();
+  list.forEach((k,i)=>{
+    const sp=SPELLS[k];
+    const div=document.createElement('div');
+    div.className='spell'+(sp.unlocked?'':' locked')+(k==='slots' && G.floor===1 && !G._casted?' tut':'');
+    if(!sp.unlocked) div.dataset.cost = sp.cost;
+    div.innerHTML=`<span class="key">${i+1}</span><div class="glyph">${sp.glyph}</div><div class="nm">${sp.name}</div>`;
+    div.onclick=()=>onSpell(k, div);
+    bar.appendChild(div);
+  });
+}
+
+/* =========================================================================
+   FX: damage numbers, particles, shake, banner
+   ========================================================================= */
+function floatDmg(text, color, atEnemy=true, big=false){
+  const fx=$('#fx'); const el=document.createElement('div');
+  el.className='dmg'; el.style.color=color; el.textContent=text;
+  const av = atEnemy ? $('#enemyAvatar') : $('#wizAvatar');
+  const r=av.getBoundingClientRect(), pr=$('#app').getBoundingClientRect();
+  el.style.left=(r.left-pr.left+r.width/2)+'px';
+  el.style.top=(r.top-pr.top+10)+'px';
+  el.style.fontSize=(big?44:30)+'px';
+  fx.appendChild(el); setTimeout(()=>el.remove(),1000);
+}
+function burst(atEnemy=true, color='#ffd35c', n=18){
+  const fx=$('#fx');
+  const av=atEnemy?$('#enemyAvatar'):$('#wizAvatar');
+  const r=av.getBoundingClientRect(), pr=$('#app').getBoundingClientRect();
+  const cx=r.left-pr.left+r.width/2, cy=r.top-pr.top+r.height/2;
+  for(let i=0;i<n;i++){
+    const s=document.createElement('div'); s.className='spark';
+    s.style.background=color; s.style.boxShadow=`0 0 8px ${color}`;
+    s.style.left=cx+'px'; s.style.top=cy+'px';
+    fx.appendChild(s);
+    const ang=Math.random()*Math.PI*2, sp=rand(40,190), life=rand(400,760);
+    const vx=Math.cos(ang)*sp, vy=Math.sin(ang)*sp-40;
+    const t0=performance.now();
+    (function anim(t){ const k=(t-t0)/life; if(k>=1){s.remove();return;}
+      s.style.transform=`translate(${vx*k}px, ${vy*k + 260*k*k}px) scale(${1-k})`;
+      s.style.opacity=1-k; requestAnimationFrame(anim);
+    })(t0);
+  }
+}
+function shake(strong=false){ const a=$('#app'); a.classList.remove('shake'); void a.offsetWidth; a.classList.add('shake'); }
+function banner(text, grad){
+  const b=$('#banner'); b.textContent=text;
+  b.style.background=grad||'linear-gradient(90deg,var(--gold),var(--pink))';
+  b.style.webkitBackgroundClip='text'; b.style.backgroundClip='text'; b.style.color='transparent';
+  b.classList.remove('show'); void b.offsetWidth; b.classList.add('show');
+}
+
+/* =========================================================================
+   ENEMY SPAWN & COMBAT
+   ========================================================================= */
+function spawnEnemy(kind){
+  const isBoss = kind==='boss';
+  const isElite = kind==='elite';
+  const t = isBoss ? BOSSES[(Math.floor(G.floor/10)-1+BOSSES.length)%BOSSES.length] : pick(ENEMY_TYPES);
+  const f = G.floor;
+  const hp = Math.round((60 + f*22 + f*f*1.6) * (isBoss?4.2:1) * (isElite?2.1:1));
+  const atk = Math.round((6 + f*2.4) * (isBoss?1.7:1) * (isElite?1.4:1));
+  G.enemy = {
+    name:(isElite?'Elite '+t.name:t.name), glyph:t.glyph, trait:t.trait, isBoss, isElite,
+    maxHp:hp, hp:hp, atk,
+    st:{ burn:0, shock:0, curse:0, shield:0 },
+  };
+  // wizard enters every fight with base ward + relic shields
+  G.wiz_st.shield = (G.mods.ward||0)*20 + (G.run.startShield||0);
+  renderHUD();
+  const av=$('#enemyAvatar'); av.style.animation='none'; void av.offsetWidth; av.style.animation='';
+}
+
+async function dealDamage(mult, opts={}){
+  // opts: {status:{burn,shock,curse}, crit:false, label, self:false, freeTurn:false, shield:0}
+  const e=G.enemy;
+  let dmg = 0;
+  if(opts.self){ // backfire onto wizard
+    dmg = Math.round(spellBase(G.current) * G.power * mult * 0.35);
+    await hurtWizard(dmg, true);
+    return;
+  }
+  // Wild Card relic: fizzles still deal a fraction instead of whiffing
+  if(mult<=0){
+    if(G.run.fizzleFloor>0){ mult = G.run.fizzleFloor; }
+    else { floatDmg('MISS', '#b6a9d9', true); S.fail(); return; }
+  }
+  let base = spellBase(G.current) * G.power * mult * G.run.dmgMult;
+  // curse on enemy amplifies incoming
+  if(e.st.curse>0) base *= (1+e.st.curse);
+  const critChance = 0.10 + (G.mods.lucky||0)*0.05 + (G.run.critChance||0);
+  const isCrit = opts.crit || Math.random() < critChance;
+  if(isCrit) base *= (G.critMult + (G.run.critMult||0)) * (G.run.jackpotX||1);
+  dmg = Math.round(base);
+
+  e.hp -= dmg;
+  const color = isCrit ? '#ff5cc8' : (mult>=3?'#ffd35c':'#ffe9a8');
+  floatDmg((isCrit?'✦ ':'')+fmt(dmg), color, true, mult>=3||isCrit);
+  burst(true, color, mult>=3?26:16);
+  shake(); isCrit?S.crit():S.hit();
+
+  // Vampire Fang relic: lifesteal
+  if(G.run.lifesteal>0 && G.hp<maxHP()){
+    const heal=Math.max(1, Math.round(dmg*G.run.lifesteal));
+    G.hp=Math.min(maxHP(), G.hp+heal);
+    floatDmg('+'+fmt(heal), '#4dffa1', false);
+  }
+  // apply statuses
+  if(opts.status){
+    if(opts.status.burn) e.st.burn = Math.max(e.st.burn, opts.status.burn);
+    if(opts.status.shock) e.st.shock = Math.max(e.st.shock, opts.status.shock);
+    if(opts.status.curse) e.st.curse = Math.min(0.6, e.st.curse + opts.status.curse);
+  }
+  // Storm Rune relic: chance to shock on hit
+  if(G.run.shockChance>0 && Math.random()<G.run.shockChance){ e.st.shock=Math.max(e.st.shock,1); }
+  if(opts.shield){ G.wiz_st.shield += opts.shield; }
+  renderHUD();
+}
+
+async function hurtWizard(dmg, backfire=false){
+  // shield soak
+  if(G.wiz_st.shield>0){
+    const soak=Math.min(G.wiz_st.shield, dmg);
+    G.wiz_st.shield-=soak; dmg-=soak;
+    if(soak>0) floatDmg('🛡️'+fmt(soak),'#4dffa1', false);
+  }
+  if(dmg>0){
+    G.hp -= dmg;
+    floatDmg('-'+fmt(dmg), backfire?'#ff9a4d':'#ff6b7a', false);
+    burst(false,'#ff6b7a',14); shake(); S.hit();
+  }
+  renderHUD();
+  if(G.hp<=0){ await sleep(500); death(); }
+}
+
+async function enemyTurn(){
+  const e=G.enemy;
+  // burn tick
+  if(e.st.burn>0){
+    const bd=Math.round(e.maxHp*0.03 + G.power*1.4);
+    e.hp-=bd; floatDmg('🔥'+fmt(bd),'#ff9a4d',true); burst(true,'#ff7a2e',8);
+    e.st.burn--; renderHUD();
+    await sleep(320);
+    if(e.hp<=0){ await enemyDefeated(); return; }
+  }
+  // shock: skip
+  if(e.st.shock>0){
+    e.st.shock--; renderStatus();
+    floatDmg('⚡STUN','#4be1ff',true);
+    await sleep(400); endTurn(); return;
+  }
+  // attack
+  await sleep(220);
+  let dmg = e.atk + randi(-2,3);
+  if(e.trait==='curse'){ dmg=Math.round(dmg*1.15); }
+  const av=$('#enemyAvatar'); av.style.transition='transform .15s';
+  av.style.transform='scale(1.12) translateX(-14px)'; setTimeout(()=>av.style.transform='',160);
+  await hurtWizard(dmg);
+  if(G.hp>0) endTurn();
+}
+
+function endTurn(){
+  G.busy=false;
+  // re-enable spells
+  document.querySelectorAll('.spell').forEach(s=>s.classList.remove('disabled'));
+}
+
+async function enemyDefeated(){
+  const e=G.enemy; G.busy=true;
+  burst(true,'#ffd35c',40); S.win();
+  const goldMod = (1 + (G.mods.goldRush||0)*0.12) * (G.run.goldMult||1);
+  const goldGain = Math.round((10+G.floor*6)*(e.isBoss?5:(e.isElite?2:1))*rand(.9,1.2)*goldMod);
+  const shardGain = e.isBoss? randi(3,6) : (Math.random()<0.35?1:0);
+  G.gold += goldGain; G.shards += shardGain;
+  floatDmg('+'+goldGain+'🪙','#ffd35c',true);
+  if(shardGain) setTimeout(()=>floatDmg('+'+shardGain+'🔷','#4be1ff',true), 200);
+  if(e.isBoss){
+    G.bossesCleared++; G.checkpoint = G.floor+1;   // checkpoint: resume past the boss next dive
+    banner('BOSS DOWN','linear-gradient(90deg,var(--gold),var(--pink))');
+  } else banner(e.isElite?'ELITE DOWN':'ROOM CLEAR','linear-gradient(90deg,var(--neon),var(--purple-2))');
+  save();
+  await sleep(e.isBoss?1250:800);
+  // elites always drop a relic
+  if(e.isElite){ gainRelic(randomRelicId()); await sleep(750); }
+  // small heal between rooms
+  G.hp = clamp(G.hp + maxHP()*0.10, 0, maxHP());
+  renderHUD();
+  advanceRoom();
+  G.busy=false;
+}
+
+/* =========================================================================
+   SPELL DISPATCH → open minigame overlay
+   ========================================================================= */
+function onSpell(key, el){
+  if(G.busy) return;
+  const sp=SPELLS[key];
+  if(!sp.unlocked){
+    if(G.shards>=sp.cost){ sp.unlocked=true; G.shards-=sp.cost; S.win(); renderSpellbar(); renderHUD();
+      banner('UNLOCKED','linear-gradient(90deg,var(--neon),var(--gold))'); }
+    else { S.fail(); flashShort(el); }
+    return;
+  }
+  G._casted=true;
+  G.current=key; G.busy=true;
+  ac(); S.click();
+  document.querySelectorAll('.spell').forEach(s=>s.classList.add('disabled'));
+  openMini(key);
+}
+function flashShort(el){ el.animate([{transform:'translateX(0)'},{transform:'translateX(-6px)'},{transform:'translateX(6px)'},{transform:'translateX(0)'}],{duration:220}); }
+
+// each spell: render sets up the panel; auto (if present) fires the gamble on a single click
+const MINI = {
+  spark: { render: renderSpark, auto: playSpark },
+  slots: { render: renderSlots, auto: spinSlots },
+  dice:  { render: renderDice,  auto: rollDice },
+  crash: { render: renderCrash },   // self-starts + you time the CASH OUT
+  wheel: { render: renderWheel, auto: spinWheel },
+  crate: { render: renderCrate },   // you pick a crate
+};
+function openMini(key){
+  const dock=$('#castDock'), mini=$('#mini');
+  $('#spellbar').style.display='none';
+  mini.className='mini docked';
+  dock.classList.add('on');
+  MINI[key].render(mini);
+  if(MINI[key].auto) setTimeout(()=>{ if(G.scene==='dungeon') MINI[key].auto(); }, 420);
+}
+function closeMini(){
+  $('#castDock').classList.remove('on');
+  $('#spellbar').style.display='';
+}
+
+// resolve helper: close overlay, apply result, then enemy turn
+async function resolve(mult, opts={}){
+  await sleep(opts.hold||650);
+  closeMini();
+  await sleep(160);
+  await dealDamage(mult, opts);
+  await sleep(360);
+  if(G.enemy.hp<=0){ await enemyDefeated(); endTurn(); return; }
+  if(opts.freeTurn){ banner('FREE TURN','linear-gradient(90deg,var(--green),var(--neon))'); endTurn(); return; }
+  await enemyTurn();
+}
+
+const sleep = ms => new Promise(r=>setTimeout(r,ms));
+
+/* =========================================================================
+   MINIGAME 1 — SPARK (Coinflip)
+   ========================================================================= */
+function renderSpark(mini){
+  mini.innerHTML = `
+    <h3>✨ Spark</h3>
+    <div class="sub">Coinflip — Heads deals full damage, Tails fizzles.</div>
+    <div class="mini-stage">
+      <div class="coin" id="coin">
+        <div class="face front">👑</div>
+        <div class="face back">💨</div>
+      </div>
+    </div>
+    <div class="result-line" id="sparkRes">Flipping…</div>`;
+}
+function playSpark(){
+  const coin=$('#coin'); if(!coin) return;
+  const heads = Math.random()<0.55; // slight bias in wizard's favor
+  coin.style.setProperty('--end', heads? '3600deg':'3780deg');
+  S.coin(); let tk=setInterval(S.tick,120);
+  coin.classList.add('flipping');
+  setTimeout(()=>{
+    clearInterval(tk);
+    const res=$('#sparkRes');
+    if(heads){ res.textContent='HEADS — full power!'; res.style.color='var(--gold)'; S.win(); resolve(1.0); }
+    else { res.textContent='TAILS — fizzled…'; res.style.color='var(--ink-dim)'; S.fail(); resolve(0); }
+  }, 1200);
+}
+
+/* =========================================================================
+   MINIGAME 2 — FIREBALL SLOTS
+   ========================================================================= */
+const SLOT_SYMS = ['🔥','✨','⭐','💀','🔥','✨','🔥','⭐','✨','💀'];
+function renderSlots(mini){
+  mini.innerHTML=`
+    <h3>🎰 Fireball Slots</h3>
+    <div class="sub">3🔥 = Mega · ⭐wilds boost · 💀💀💀 = fizzle</div>
+    <div class="mini-stage">
+      <div class="reels">
+        ${[0,1,2].map(i=>`<div class="reel" id="reel${i}"><div class="strip" id="strip${i}"></div><div class="mid-line"></div></div>`).join('')}
+      </div>
+    </div>
+    <div class="result-line" id="slotRes">Spinning…</div>`;
+  // fill strips
+  for(let i=0;i<3;i++){
+    const strip=$('#strip'+i); let html='';
+    for(let k=0;k<24;k++) html+=`<div class="sym">${pick(SLOT_SYMS)}</div>`;
+    strip.innerHTML=html; strip.style.transform='translateY(0)';
+  }
+}
+function spinSlots(){
+  if(!$('#strip0')) return;
+  const finals = [0,1,2].map(()=>pick(SLOT_SYMS));
+  [0,1,2].forEach((i)=>{
+    const strip=$('#strip'+i);
+    // set final symbol at a known row
+    const rowH=96, landRow=20;
+    const syms=strip.children;
+    syms[landRow].textContent=finals[i];
+    strip.style.transition='none'; strip.style.transform='translateY(0)';
+    void strip.offsetWidth;
+    const dur=1100+i*450;
+    strip.style.transition=`transform ${dur}ms cubic-bezier(.15,.7,.2,1)`;
+    strip.style.transform=`translateY(${-(landRow-0.5+ (96/2/96) )*rowH + rowH/2}px)`;
+    // simpler: land so landRow is centered
+    strip.style.transform=`translateY(${-(landRow*rowH) + (96-96)/2}px)`;
+  });
+  // ticking sound
+  let tickCount=0; const ti=setInterval(()=>{S.spin(); if(++tickCount>18)clearInterval(ti);},90);
+  setTimeout(()=>{ clearInterval(ti); evalSlots(finals); }, 1100+2*450+120);
+}
+function evalSlots(f){
+  const res=$('#slotRes');
+  const count = s => f.filter(x=>x===s).length;
+  const fire=count('🔥'), spark=count('✨'), wild=count('⭐'), miss=count('💀');
+  let mult=0, msg='', status=null, jackpot=false;
+  const eff = { fire: fire+wild, spark: spark+wild };
+  if(miss===3){ mult=0; msg='ALL SKULLS — fizzle'; }
+  else if(fire+wild===3){ mult=4.2; msg='🔥 MEGA FIREBALL 🔥'; status={burn:3}; jackpot=true; }
+  else if(spark+wild===3){ mult=1.3; msg='Triple Spark'; }
+  else if(wild>0 && (fire>0||spark>0)){ mult=1.8+wild*0.6; msg='Wild Line! +Burn'; status={burn:2}; }
+  else if(fire>=2){ mult=1.1; msg='Two Fireballs'; status={burn:1}; }
+  else { mult=0.4; msg='Weak hit'; }
+  // highlight winning reels
+  if(mult>=1){ [0,1,2].forEach(i=>{ if(f[i]==='🔥'||f[i]==='⭐') $('#reel'+i).classList.add('win'); }); }
+  res.textContent=msg; res.style.color = mult>=3?'var(--gold)': mult>=1?'var(--ink)':'var(--ink-dim)';
+  if(jackpot){ S.jackpot(); banner('JACKPOT','linear-gradient(90deg,var(--gold),var(--red))'); }
+  else if(mult>=1) S.win(); else S.fail();
+  resolve(mult, {status, crit:jackpot, hold: jackpot?900:650});
+}
+
+/* =========================================================================
+   MINIGAME 3 — CHAOS DICE
+   ========================================================================= */
+const PIP_MAP={1:[[50,50]],2:[[28,28],[72,72]],3:[[26,26],[50,50],[74,74]],
+  4:[[28,28],[72,28],[28,72],[72,72]],5:[[28,28],[72,28],[50,50],[28,72],[72,72]],
+  6:[[28,26],[72,26],[28,50],[72,50],[28,74],[72,74]]};
+function drawDie(el,n){ el.innerHTML=''; PIP_MAP[n].forEach(([x,y])=>{const p=document.createElement('div');p.className='pip';p.style.left=x+'%';p.style.top=y+'%';el.appendChild(p);}); }
+function renderDice(mini){
+  mini.innerHTML=`
+    <h3>🎲 Chaos Dice</h3>
+    <div class="sub">Roll 2 dice — beat <b>7</b> for full damage. Doubles = ⚡. Snake eyes backfires!</div>
+    <div class="mini-stage"><div class="dice-tray"><div class="die" id="d0"></div><div class="die" id="d1"></div></div></div>
+    <div class="result-line" id="diceRes">Rolling…</div>`;
+  drawDie($('#d0'),randi(1,6)); drawDie($('#d1'),randi(1,6));
+}
+function rollDice(){
+  const d0=$('#d0'), d1=$('#d1'); if(!d0) return; d0.classList.add('rolling'); d1.classList.add('rolling');
+  let ti=setInterval(()=>{ drawDie(d0,randi(1,6)); drawDie(d1,randi(1,6)); S.tick(); },90);
+  const dm=G.run.diceMin||0;
+  const a=Math.max(randi(1,6), dm), b=Math.max(randi(1,6), dm);
+  setTimeout(()=>{
+    clearInterval(ti); d0.classList.remove('rolling'); d1.classList.remove('rolling');
+    drawDie(d0,a); drawDie(d1,b);
+    const sum=a+b, res=$('#diceRes');
+    let mult=0,msg='',status=null,self=false;
+    if(a===1&&b===1){ msg='SNAKE EYES — backfire!'; self=true; mult=1; S.fail(); }
+    else if(a===b){ mult=1.6 + sum*0.14; msg=`Doubles ${a}! ⚡ Shock`; status={shock:1}; S.win(); }
+    else if(sum>=7){ mult=0.8 + (sum-7)*0.32; msg=`Rolled ${sum} — strong!`; if(sum>=11){status={shock:1};} S.win(); }
+    else { mult=0.45; msg=`Rolled ${sum} — glancing`; S.fail(); }
+    res.textContent=msg; res.style.color= self?'var(--red)': mult>=1.8?'var(--gold)':'var(--ink)';
+    resolve(mult,{status,self});
+  }, 900);
+}
+
+/* =========================================================================
+   MINIGAME 4 — OVERLOAD SURGE (Crash)
+   ========================================================================= */
+function renderCrash(mini){
+  mini.innerHTML=`
+    <h3>📈 Overload Surge</h3>
+    <div class="sub">Charge climbs — cash out before it <b>crashes</b> to zero!</div>
+    <div class="mini-stage" style="flex-direction:column;">
+      <div class="crash-num" id="crashNum" style="color:var(--neon)">1.00×</div>
+      <canvas class="crash-graph" id="crashGraph" width="380" height="90"></canvas>
+      <div class="crash-msg" id="crashMsg"></div>
+    </div>
+    <button class="btn danger" id="cashBtn">CASH OUT</button>`;
+  startCrash();
+}
+function startCrash(){
+  const numEl=$('#crashNum'), msg=$('#crashMsg'), btn=$('#cashBtn');
+  const cv=$('#crashGraph'), ctx=cv.getContext('2d');
+  let mult=1.0, t0=performance.now(), crashed=false, done=false;
+  // crash point — exponential-ish distribution
+  const crashAt = 1.15 + Math.pow(Math.random(), 2.2)*5.5;
+  const pts=[];
+  function loop(t){
+    if(done) return;
+    const el=(t-t0)/1000;
+    mult = 1 + el*0.9 + el*el*0.25;
+    if(mult>=crashAt){ doCrash(); return; }
+    numEl.textContent = mult.toFixed(2)+'×';
+    const hot = clamp((mult-1)/5,0,1);
+    numEl.style.color = `rgb(${75+hot*180},${225-hot*180},${255-hot*200})`;
+    if(mult>2.2 && Math.random()<0.3) S.tick();
+    // graph
+    pts.push(mult);
+    ctx.clearRect(0,0,cv.width,cv.height);
+    ctx.strokeStyle='rgba(255,255,255,.08)'; ctx.lineWidth=1;
+    for(let y=0;y<90;y+=22){ctx.beginPath();ctx.moveTo(0,y);ctx.lineTo(380,y);ctx.stroke();}
+    ctx.beginPath(); ctx.lineWidth=3; ctx.strokeStyle=`rgb(${75+hot*180},${225-hot*140},255)`;
+    const maxM=Math.max(crashAt,mult);
+    pts.forEach((m,i)=>{ const x=i/Math.max(pts.length-1,1)*380; const y=90-((m-1)/(maxM-1))*84-3; i?ctx.lineTo(x,y):ctx.moveTo(x,y); });
+    ctx.stroke();
+    // glow dot
+    const lx=380, ly=90-((mult-1)/(maxM-1))*84-3;
+    ctx.fillStyle='#fff'; ctx.beginPath(); ctx.arc(lx-2,ly,4,0,7); ctx.fill();
+    requestAnimationFrame(loop);
+  }
+  function doCrash(){
+    done=true; crashed=true; btn.disabled=true;
+    numEl.textContent='💥 CRASH'; numEl.style.color='var(--red)';
+    msg.textContent='Overloaded — 0 damage'; msg.style.color='var(--red)';
+    S.fail(); resolve(0,{hold:700});
+  }
+  btn.onclick=()=>{
+    if(done) return; done=true; btn.disabled=true;
+    const m=mult; const capped=Math.min(m,6);
+    numEl.textContent=capped.toFixed(2)+'× ✓'; numEl.style.color='var(--green)';
+    msg.textContent='Cashed out at '+capped.toFixed(2)+'×'; msg.style.color='var(--green)';
+    const status = m>3? {shock:1}:null;
+    S.win(); if(m>=4){banner('OVERLOAD','linear-gradient(90deg,var(--neon),var(--gold))');}
+    resolve(capped, {status, crit:m>=4.5, hold:650});
+  };
+  requestAnimationFrame(loop);
+}
+
+/* =========================================================================
+   MINIGAME 5 — ARCANE ROULETTE (Wheel)
+   ========================================================================= */
+const WHEEL=[
+  {t:'2×',   mult:2.0, col:'#7b4bff'},
+  {t:'MISS', mult:0,   col:'#3a2a55'},
+  {t:'1×',   mult:1.0, col:'#4be1ff'},
+  {t:'CURSE',mult:1.3, col:'#ff5cc8', status:{curse:0.2}},
+  {t:'3×',   mult:3.0, col:'#ffb02e'},
+  {t:'FREE', mult:1.2, col:'#4dffa1', free:true},
+  {t:'1×',   mult:1.0, col:'#4be1ff'},
+  {t:'JACKPOT',mult:6.0, col:'#ffd35c', jackpot:true},
+];
+function renderWheel(mini){
+  const n=WHEEL.length, seg=360/n;
+  const grad = WHEEL.map((s,i)=>`${s.col} ${i*seg}deg ${(i+1)*seg}deg`).join(',');
+  mini.innerHTML=`
+    <h3>🎡 Arcane Roulette</h3>
+    <div class="sub">Spin for fortune — land JACKPOT for a 6× burst.</div>
+    <div class="mini-stage">
+      <div class="wheel-wrap">
+        <div class="wheel-ptr"></div>
+        <div class="wheel" id="wheel" style="background:conic-gradient(${grad})"></div>
+        <div class="wheel-hub"></div>
+      </div>
+    </div>
+    <div class="result-line" id="wheelRes">Spinning…</div>`;
+  // labels
+  const w=$('#wheel');
+  WHEEL.forEach((s,i)=>{
+    const ang=(i+0.5)*seg;
+    const l=document.createElement('div'); l.className='lbl'; l.textContent=s.t;
+    l.style.transform=`rotate(${ang}deg) translate(0,-92px) rotate(${-ang}deg) translate(-50%,-50%)`;
+    w.appendChild(l);
+  });
+}
+function spinWheel(){
+  if(!$('#wheel')) return;
+  const n=WHEEL.length, seg=360/n;
+  const idx=randi(0,n-1);
+  const target = 360*6 + (360 - (idx*seg + seg/2)); // pointer at top
+  const w=$('#wheel'); w.style.transform=`rotate(${target}deg)`;
+  let tk=0; const ti=setInterval(()=>{S.spin(); if(++tk>26)clearInterval(ti);},130);
+  setTimeout(()=>{
+    clearInterval(ti);
+    const s=WHEEL[idx]; const res=$('#wheelRes');
+    res.textContent = s.t==='MISS'?'Empty slice…': s.t==='JACKPOT'?'✦ JACKPOT ✦':'Landed '+s.t;
+    res.style.color = s.mult>=3?'var(--gold)': s.mult>0?'var(--ink)':'var(--ink-dim)';
+    if(s.jackpot){ S.jackpot(); banner('JACKPOT','linear-gradient(90deg,var(--gold),var(--pink))'); }
+    else if(s.mult>0) S.win(); else S.fail();
+    resolve(s.mult, {status:s.status, freeTurn:s.free, crit:s.jackpot, hold: s.jackpot?900:650});
+  }, 4500);
+}
+
+/* =========================================================================
+   MINIGAME 6 — MYSTIC CRATE (Loot box)
+   ========================================================================= */
+const RARITY=[
+  {t:'COMMON',   mult:0.5, col:'#b6a9d9', w:34},
+  {t:'RARE',     mult:1.5, col:'#4be1ff', w:30},
+  {t:'EPIC',     mult:2.5, col:'#b28bff', w:20},
+  {t:'LEGENDARY',mult:4.0, col:'#ffb02e', w:12},
+  {t:'MYTHIC',   mult:6.0, col:'#ff5cc8', w:4, status:{burn:2,curse:0.15}},
+];
+function rollRarity(){ const tot=RARITY.reduce((a,r)=>a+r.w,0); let r=Math.random()*tot; for(const x of RARITY){ if((r-=x.w)<0) return x; } return RARITY[0]; }
+function renderCrate(mini){
+  mini.innerHTML=`
+    <h3>🎁 Mystic Crate</h3>
+    <div class="sub">Pick a crate to smash — rarer loot hits harder.</div>
+    <div class="mini-stage"><div class="crates" id="crates">
+      ${[0,1,2].map(i=>`<div class="crate" data-i="${i}"><span class="cover">🎁</span><span class="rr"></span></div>`).join('')}
+    </div></div>
+    <div class="result-line" id="crateRes">Tap a crate to smash it!</div>`;
+  document.querySelectorAll('.crate').forEach(c=>{
+    c.onclick=()=>openCrate(c);
+  });
+}
+function openCrate(c){
+  if(c.classList.contains('opened')) return;
+  document.querySelectorAll('.crate').forEach(x=>x.onclick=null);
+  c.classList.add('shaking'); S.spin();
+  let tk=0; const ti=setInterval(S.tick,110);
+  setTimeout(()=>{
+    clearInterval(ti);
+    const r=rollRarity();
+    c.classList.remove('shaking'); c.classList.add('opened','done');
+    const rr=c.querySelector('.rr'); rr.textContent=r.t; rr.style.color=r.col;
+    c.style.boxShadow=`0 0 0 3px ${r.col}, 0 0 34px ${r.col}`;
+    c.querySelector('.cover').textContent = r.mult>=4?'💥':'✨';
+    const res=$('#crateRes'); res.textContent=r.t+' — '+r.mult+'× damage'; res.style.color=r.col;
+    burstAt(c, r.col, r.mult>=4?30:16);
+    if(r.mult>=4){ S.jackpot(); banner(r.t,'linear-gradient(90deg,'+r.col+',var(--gold))'); }
+    else if(r.mult>=1.5) S.win(); else S.fail();
+    resolve(r.mult, {status:r.status, crit:r.mult>=4, hold: r.mult>=4?900:650});
+  }, 620);
+}
+function burstAt(el, color, n){
+  const fx=$('#fx'); const r=el.getBoundingClientRect(), pr=$('#app').getBoundingClientRect();
+  const cx=r.left-pr.left+r.width/2, cy=r.top-pr.top+r.height/2;
+  for(let i=0;i<n;i++){ const s=document.createElement('div'); s.className='spark';
+    s.style.background=color; s.style.boxShadow=`0 0 8px ${color}`; s.style.left=cx+'px'; s.style.top=cy+'px'; fx.appendChild(s);
+    const ang=Math.random()*Math.PI*2, sp=rand(50,200), life=rand(400,760);
+    const vx=Math.cos(ang)*sp, vy=Math.sin(ang)*sp-30, t0=performance.now();
+    (function a(t){const k=(t-t0)/life; if(k>=1){s.remove();return;} s.style.transform=`translate(${vx*k}px,${vy*k+260*k*k}px) scale(${1-k})`; s.style.opacity=1-k; requestAnimationFrame(a);})(t0);
+  }
+}
+
+/* =========================================================================
+   DEATH → SHOP → RESTART
+   ========================================================================= */
+function death(){
+  G.busy=true; S.fail();
+  banner('DEFEATED','linear-gradient(90deg,var(--red),var(--pink))');
+  save();
+  setTimeout(showDeath, 950);
+}
+function showDeath(){
+  const m=$('#modal'), sheet=$('#sheet');
+  const relicCount=G.run.relics.length;
+  sheet.innerHTML=`
+    <h2 style="color:var(--red)">You Fell on Floor ${G.floor}</h2>
+    <p>Bosses cleared: <b>${G.bossesCleared}</b> · Gold banked: <b>${fmt(G.gold)}🪙</b> · Shards: <b>${G.shards}🔷</b><br>
+    Your ${relicCount} relic${relicCount===1?'':'s'} fade away, but your progress holds.</p>
+    <div class="upgrades" style="gap:6px">
+      <div class="upg" style="cursor:default;border-color:var(--gold-2)"><div class="u-ic">🚩</div><div class="u-body"><div class="u-t" style="color:var(--gold)">Checkpoint: Floor ${G.checkpoint}</div><div class="u-d">Your next dive resumes here — cleared bosses stay cleared</div></div></div>
+      <div class="upg" style="cursor:default"><div class="u-ic">🏰</div><div class="u-body"><div class="u-t">Upgrade in the Tower</div><div class="u-d">Spend gold & shards, then descend stronger</div></div></div>
+    </div>
+    <button class="btn" id="toTowerBtn">🏰 RETURN TO TOWER</button>`;
+  $('#toTowerBtn').onclick=()=>{ m.classList.remove('on'); goToTower(); };
+  m.classList.add('on');
+}
+
+function newRun(){
+  recompute();
+  G.floor = G.checkpoint;
+  G.run.relics=[]; recomputeRun();
+  G.hp = maxHP();
+  G.wiz_st={shield:0}; G.busy=false; G._casted=false;
+  renderRelicTray(); renderSpellbar(); renderHUD();
+  // every dive opens with a free boon so you always start building a build
+  startRoom('relic');
+}
+
+/* ---------- Roguelike room flow ---------- */
+function showSpellbar(){ const sb=$('#spellbar'); if(sb) sb.style.display=''; $('#castDock').classList.remove('on'); $('#roomDock').classList.remove('on'); }
+function hideSpellbar(){ const sb=$('#spellbar'); if(sb) sb.style.display='none'; }
+function hideRoomDock(){ $('#roomDock').classList.remove('on'); }
+function showRoomDock(html){ hideSpellbar(); $('#castDock').classList.remove('on');
+  const rm=$('#roomMini'); rm.className='mini docked'; rm.innerHTML=html; $('#roomDock').classList.add('on'); }
+
+function startRoom(type){
+  G.roomType=type;
+  hideRoomDock();
+  const scene=$('#sceneDungeon');
+  if(type==='combat' || type==='elite' || type==='boss'){
+    scene.classList.remove('room');
+    showSpellbar(); spawnEnemy(type); G.busy=false; renderSpellbar(); renderHUD(); endTurn();
+  } else {
+    // non-combat: show the room host in the enemy slot instead of a lingering monster
+    scene.classList.add('room');
+    G.enemy=null;
+    $('#enemyName').textContent=ROOMS[type].label;
+    $('#enemyGlyph').textContent=ROOMS[type].icon;
+    renderStatus();
+    G.busy=false;
+    if(type==='merchant') renderMerchant();
+    else if(type==='relic') renderRelicChoice();
+    else if(type==='rest') renderRest();
+  }
+}
+function advanceRoom(){
+  G.floor++; renderHUD();
+  if(G.floor % 10 === 0){ startRoom('boss'); return; }
+  const type = rollRoom();
+  const labels={ merchant:'💰 MERCHANT', relic:'🎁 RELIC SHRINE', rest:'🏕️ REST SITE', elite:'💀 ELITE!' };
+  if(labels[type]) banner(labels[type], 'linear-gradient(90deg,var(--gold),var(--purple-2))');
+  startRoom(type);
+}
+function rollRoom(){
+  // combat-heavy weighted pool; special rooms sprinkle in at random
+  const pool=['combat','combat','combat','relic','merchant','rest'];
+  if(G.floor>=4) pool.push('elite');
+  return pick(pool);
+}
+function renderMerchant(){ G._shop={ relicId:randomRelicId(), relicSold:false }; drawMerchant(); }
+function drawMerchant(){
+  const s=G._shop, R=RELICS[s.relicId];
+  const relicCost=20+G.floor*7, healCost=12+G.floor*4, canHeal=G.hp<maxHP();
+  let html=`<h3>💰 Merchant</h3><div class="sub">Trade gold for run power · you have ${fmt(G.gold)}🪙</div><div class="shop">`;
+  html+=`<div class="shop-row ${s.relicSold?'sold':(G.gold>=relicCost?'':'cant')}" data-buy="relic">
+    <div class="s-ic">${R.icon}</div><div class="s-body"><div class="s-t">${R.name}</div><div class="s-d">${R.desc}</div></div>
+    <div class="s-cost">${s.relicSold?'✓ sold':relicCost+'🪙'}</div></div>`;
+  html+=`<div class="shop-row ${(canHeal&&G.gold>=healCost)?'':'cant'}" data-buy="heal">
+    <div class="s-ic">❤️</div><div class="s-body"><div class="s-t">Healing Draught</div><div class="s-d">Restore 50% HP</div></div>
+    <div class="s-cost">${healCost}🪙</div></div>`;
+  html+=`</div><button class="btn ghost" id="leaveShop">Leave →</button>`;
+  showRoomDock(html);
+  $('#roomMini').querySelectorAll('.shop-row').forEach(row=>{
+    row.onclick=()=>{
+      const kind=row.dataset.buy;
+      if(kind==='relic' && !s.relicSold && G.gold>=relicCost){ G.gold-=relicCost; s.relicSold=true; gainRelic(s.relicId); drawMerchant(); }
+      else if(kind==='heal' && G.gold>=healCost && G.hp<maxHP()){ G.gold-=healCost; G.hp=Math.min(maxHP(),G.hp+maxHP()*0.5);
+        floatDmg('+'+fmt(maxHP()*0.5),'#4dffa1',false); S.win(); renderHUD(); drawMerchant(); }
+    };
+  });
+  $('#leaveShop').onclick=()=>{ S.click(); advanceRoom(); };
+}
+function renderRelicChoice(){
+  const ids=pickRelics(3);
+  let html=`<h3>🎁 Relic Shrine</h3><div class="sub">Choose one — it boosts your whole run</div><div class="relic-cards">`;
+  ids.forEach((id,i)=>{ const R=RELICS[id]; html+=`<button class="relic-card" data-i="${i}"><div class="rc-ic">${R.icon}</div><div class="rc-n">${R.name}</div><div class="rc-d">${R.desc}</div></button>`; });
+  html+=`</div>`;
+  showRoomDock(html);
+  document.querySelectorAll('#roomMini .relic-card').forEach((el,i)=> el.onclick=()=>{ gainRelic(ids[i]); advanceRoom(); });
+}
+function renderRest(){
+  const html=`<h3>🏕️ Rest Site</h3><div class="sub">Catch your breath before pressing on</div><div class="rest-opts">
+    <button class="rest-opt" id="restHeal"><div class="ro-t">❤️ Meditate</div><small>Restore 45% HP</small></button>
+    <button class="rest-opt" id="restScav"><div class="ro-t">🎁 Scavenge</div><small>Gain a random relic</small></button>
+  </div>`;
+  showRoomDock(html);
+  $('#restHeal').onclick=()=>{ G.hp=Math.min(maxHP(),G.hp+maxHP()*0.45); floatDmg('+'+fmt(maxHP()*0.45),'#4dffa1',false); S.win(); renderHUD(); advanceRoom(); };
+  $('#restScav').onclick=()=>{ gainRelic(randomRelicId()); advanceRoom(); };
+}
+
+/* =========================================================================
+   START SCREEN
+   ========================================================================= */
+function showStart(offInfo){
+  const m=$('#modal'), sheet=$('#sheet');
+  const offLine = offInfo ? `<div class="upg" style="cursor:default;border-color:var(--green)"><div class="u-ic">🔮</div><div class="u-body"><div class="u-t" style="color:var(--green)">Welcome back!</div><div class="u-d">Your tower earned <b>${fmt(offInfo.g)}🪙</b>${offInfo.sh?` and <b>${offInfo.sh}🔷</b>`:''} while you were away (${offInfo.label}).</div></div></div>` : '';
+  sheet.innerHTML=`
+    <h1>GAMBLER WIZARD</h1>
+    <p style="font-size:14px">Cast spells by <b>gambling</b>. Every spell is a risk-reward minigame. Rest in your <b>tower</b> — its arcane turret earns gold even while you're away — then descend into the <b>dungeon</b> to fight for shards and glory.</p>
+    <div class="upgrades" style="gap:6px">
+      ${offLine}
+      <div class="upg" style="cursor:default"><div class="u-ic">🏰</div><div class="u-body"><div class="u-t">Your Tower earns idle gold</div><div class="u-d">Upgrade the turret, your spells, wizard & run modifiers</div></div></div>
+      <div class="upg" style="cursor:default"><div class="u-ic">⚔️</div><div class="u-body"><div class="u-t">Dive the dungeon for shards</div><div class="u-d">Clearing bosses permanently boosts your idle income</div></div></div>
+    </div>
+    <button class="btn" id="startBtn">🏰 ENTER THE TOWER</button>`;
+  $('#startBtn').onclick=()=>{ ac(); m.classList.remove('on'); goToTower(); };
+  m.classList.add('on');
+}
+
+/* =========================================================================
+   DERIVED STATS · SAVE / LOAD · IDLE
+   ========================================================================= */
+function recompute(){
+  G.power   = 10  + G.upg.power*4;
+  G.maxHp   = 120 + G.upg.maxhp*30;
+  G.critMult= 1.8 + G.upg.crit*0.3;
+  if(G.hp>maxHP()) G.hp=maxHP();
+}
+function maxHP(){ return G.maxHp + (G.run.bonusHp||0); }
+
+// aggregate all owned relics into the run bonus object
+function recomputeRun(){
+  const r=G.run;
+  r.dmgMult=1; r.critChance=0; r.critMult=0; r.goldMult=1; r.lifesteal=0;
+  r.startShield=0; r.diceMin=0; r.fizzleFloor=0; r.bonusHp=0; r.shockChance=0; r.jackpotX=1;
+  for(const id of r.relics){ RELICS[id].apply(r); }
+}
+function gainRelic(id, announce=true){
+  G.run.relics.push(id);
+  const beforeMax=maxHP();
+  recomputeRun();
+  const gainedHp=maxHP()-beforeMax; if(gainedHp>0) G.hp=Math.min(maxHP(), G.hp+gainedHp);
+  renderRelicTray(); renderHUD();
+  const R=RELICS[id];
+  if(announce){ S.win(); banner(R.icon+' '+R.name, 'linear-gradient(90deg,var(--gold),var(--purple-2))'); }
+}
+function renderRelicTray(){
+  const tray=$('#relicTray'); if(!tray) return;
+  const counts={}; G.run.relics.forEach(id=>counts[id]=(counts[id]||0)+1);
+  tray.innerHTML = Object.keys(counts).map(id=>{
+    const R=RELICS[id], c=counts[id];
+    return `<div class="relic-chip" data-id="${id}" title="${R.name} — ${R.desc}">${R.icon}${c>1?`<span class="rc-x">${c}</span>`:''}</div>`;
+  }).join('');
+  tray.querySelectorAll('.relic-chip').forEach(el=> el.onclick=()=>showRelicTip(el.dataset.id, el));
+}
+let _tipT=null;
+function showRelicTip(id, el){
+  const R=RELICS[id]; const tray=$('#relicTray');
+  const old=$('#relicTip'); if(old) old.remove();
+  const tip=document.createElement('div'); tip.id='relicTip'; tip.className='relic-tip';
+  tip.innerHTML=`<b>${R.icon} ${R.name}</b><div class="rt-d">${R.desc}</div>`;
+  tray.appendChild(tip);
+  clearTimeout(_tipT); _tipT=setTimeout(()=>tip.remove(), 2600);
+}
+function idleRate(){   // gold per second
+  return (0.8 + G.upg.towerRate*0.7) * (1 + G.bossesCleared*0.3) * (1 + G.upg.fireRate*0.12);
+}
+function shardRate(){  // shards per second
+  return G.upg.towerShard>0 ? 0.0025*G.upg.towerShard*(1+G.bossesCleared*0.2) : 0;
+}
+function idleCapSec(){ return (2 + G.upg.idleCap*2)*3600; }
+
+const SAVE_KEY='gamblerWizardSave_v1';
+function save(){
+  try{ localStorage.setItem(SAVE_KEY, JSON.stringify({
+    gold:G.gold, shards:G.shards, bossesCleared:G.bossesCleared, checkpoint:G.checkpoint,
+    upg:G.upg, mods:G.mods,
+    spellLvls: Object.fromEntries(Object.keys(SPELLS).map(k=>[k, SPELLS[k].lvl||0])),
+    unlocked: Object.keys(SPELLS).filter(k=>SPELLS[k].unlocked),
+    lastSeen: Date.now(),
+  })); }catch(e){}
+}
+function load(){
+  try{
+    const s=JSON.parse(localStorage.getItem(SAVE_KEY)); if(!s) return null;
+    G.gold=s.gold||0; G.shards=s.shards||0; G.bossesCleared=s.bossesCleared||0;
+    G.checkpoint=s.checkpoint||1;
+    Object.assign(G.upg, s.upg||{}); Object.assign(G.mods, s.mods||{});
+    Object.keys(SPELLS).forEach(k=>{
+      SPELLS[k].lvl = (s.spellLvls && s.spellLvls[k])||0;
+      if(s.unlocked) SPELLS[k].unlocked = s.unlocked.includes(k);
+    });
+    return s;
+  }catch(e){ return null; }
+}
+function relTime(sec){
+  const h=Math.floor(sec/3600), m=Math.floor((sec%3600)/60);
+  if(h>0) return `${h}h ${m}m`; if(m>0) return `${m}m`; return `${Math.floor(sec)}s`;
+}
+function applyOffline(lastSeen){
+  if(!lastSeen) return null;
+  const dt=Math.max(0,(Date.now()-lastSeen)/1000);
+  const capped=Math.min(dt, idleCapSec());
+  if(capped<8) return null;
+  const g=Math.floor(idleRate()*capped), sh=Math.floor(shardRate()*capped);
+  G.gold+=g; G.shards+=sh;
+  return { g, sh, label: relTime(capped) + (dt>idleCapSec()?' · capped':'') };
+}
+
+/* =========================================================================
+   SCENES
+   ========================================================================= */
+function showScene(name){
+  G.scene=name;
+  const app=$('#app');
+  app.classList.toggle('at-tower', name==='tower');
+  app.classList.toggle('at-dungeon', name==='dungeon');
+  $('#sceneTower').classList.toggle('on', name==='tower');
+  $('#sceneDungeon').classList.toggle('on', name==='dungeon');
+  if(name==='tower'){ renderTowerPanel(); startTowerLoop(); }
+  else { stopTowerLoop(); }
+  renderHUD();
+}
+function goToTower(){
+  recompute();
+  showScene('tower'); renderHUD(); save();
+}
+function enterDungeon(){
+  save(); showScene('dungeon'); newRun();
+}
+
+/* =========================================================================
+   TOWER UPGRADE PANELS
+   ========================================================================= */
+const costOf = (base,growth,lvl)=> Math.round(base*Math.pow(growth,lvl));
+const GOLD_UPGRADES = {
+  tower: [
+    {k:'towerRate', ic:'🔮', t:'Arcane Turret',   d:l=>`Idle gold income · Lv ${l}`,       base:30,  growth:1.55},
+    {k:'fireRate',  ic:'⚡', t:'Rapid Runes',      d:l=>`Turret fire rate + income · Lv ${l}`,base:45,  growth:1.6},
+    {k:'towerShard',ic:'🔷', t:'Shard Extractor',  d:l=>`Idle shard drip · Lv ${l}`,        base:150, growth:1.9},
+    {k:'idleCap',   ic:'🔋', t:'Ley-line Battery', d:l=>`Idle cap: ${2+l*2}h · Lv ${l}`,     base:100, growth:1.9},
+  ],
+  wizard: [
+    {k:'power', ic:'⚡', t:'Wizard Power', d:l=>`Power ${10+l*4} → ${14+l*4}`,               base:40, growth:1.5},
+    {k:'maxhp', ic:'❤️', t:'Vitality',     d:l=>`Max HP ${120+l*30} → ${150+l*30}`,          base:35, growth:1.45},
+    {k:'crit',  ic:'✦', t:'Crit Power',   d:l=>`Crit ${(1.8+l*0.3).toFixed(1)}× → ${(2.1+l*0.3).toFixed(1)}×`, base:60, growth:1.65},
+  ],
+};
+const MOD_UPGRADES = [
+  {k:'goldRush', ic:'🪙', t:'Golden Touch', d:l=>`+${(l+1)*12}% dungeon gold`,       base:4, growth:1.7},
+  {k:'ward',     ic:'🛡️', t:'Aegis Ward',   d:l=>`Start runs with ${(l+1)*20} shield`,base:6, growth:2.0},
+  {k:'lucky',    ic:'🍀', t:'Lucky Charm',  d:l=>`+${(l+1)*5}% crit chance in runs`,  base:5, growth:1.9},
+];
+
+function towerRow({ic,title,desc,lvl,cost,cur,canBuy,maxed,onBuy}){
+  const div=document.createElement('div');
+  div.className='upg'+(canBuy||maxed?'':' cant');
+  const costHtml = maxed ? `<div class="u-cost max">MAX</div>`
+    : `<div class="u-cost ${cur}">${fmt(cost)}${cur==='shard'?'🔷':'🪙'}</div>`;
+  div.innerHTML=`<div class="u-ic">${ic}</div>
+    <div class="u-body"><div class="u-t">${title}<span class="u-lvl">Lv ${lvl}</span></div><div class="u-d">${desc}</div></div>
+    ${costHtml}`;
+  if(canBuy && !maxed) div.onclick=onBuy;
+  return div;
+}
+function renderTowerPanel(){
+  const panel=$('#towerPanel'); if(!panel) return;
+  panel.innerHTML='';
+  const tab=G.towerTab;
+
+  if(tab==='tower' || tab==='wizard'){
+    const head=document.createElement('div'); head.className='panel-head';
+    head.textContent = tab==='tower' ? 'Tower · spend gold' : 'Wizard · spend gold';
+    panel.appendChild(head);
+    GOLD_UPGRADES[tab].forEach(u=>{
+      const lvl=G.upg[u.k], cost=costOf(u.base,u.growth,lvl), can=G.gold>=cost;
+      panel.appendChild(towerRow({ ic:u.ic, title:u.t, desc:u.d(lvl), lvl, cost, cur:'gold', canBuy:can,
+        onBuy:()=>{ if(G.gold<cost)return; G.gold-=cost; G.upg[u.k]++; recompute(); S.win(); renderTowerPanel(); renderHUD(); save(); } }));
+    });
+  }
+
+  if(tab==='spells'){
+    const head=document.createElement('div'); head.className='panel-head'; head.textContent='Spells · spend shards';
+    panel.appendChild(head);
+    ['spark','slots','dice','crash','wheel','crate','jack'].forEach(k=>{
+      const sp=SPELLS[k];
+      if(!sp.unlocked){
+        const can=G.shards>=sp.cost;
+        panel.appendChild(towerRow({ ic:sp.glyph, title:sp.name+' — locked', desc:'Unlock this gambling spell', lvl:0,
+          cost:sp.cost, cur:'shard', canBuy:can,
+          onBuy:()=>{ if(G.shards<sp.cost)return; G.shards-=sp.cost; sp.unlocked=true; S.jackpot();
+            banner('UNLOCKED','linear-gradient(90deg,var(--neon),var(--gold))'); renderTowerPanel(); renderSpellbar(); renderHUD(); save(); } }));
+      } else {
+        const lvl=sp.lvl||0, cost=costOf(3,1.7,lvl), can=G.shards>=cost;
+        panel.appendChild(towerRow({ ic:sp.glyph, title:sp.name, desc:`Empower — base dmg +${lvl*12}% → +${(lvl+1)*12}%`, lvl,
+          cost, cur:'shard', canBuy:can,
+          onBuy:()=>{ if(G.shards<cost)return; G.shards-=cost; sp.lvl=(sp.lvl||0)+1; S.win(); renderTowerPanel(); renderHUD(); save(); } }));
+      }
+    });
+  }
+
+  if(tab==='mods'){
+    const head=document.createElement('div'); head.className='panel-head'; head.textContent='Run Modifiers · spend shards';
+    panel.appendChild(head);
+    MOD_UPGRADES.forEach(u=>{
+      const lvl=G.mods[u.k], cost=costOf(u.base,u.growth,lvl), can=G.shards>=cost, maxed=lvl>=8;
+      panel.appendChild(towerRow({ ic:u.ic, title:u.t, desc:u.d(lvl), lvl, cost, cur:'shard', canBuy:can, maxed,
+        onBuy:()=>{ if(G.shards<cost)return; G.shards-=cost; G.mods[u.k]++; S.win(); renderTowerPanel(); renderHUD(); save(); } }));
+    });
+    const note=document.createElement('div'); note.className='panel-head';
+    note.style.cssText='text-transform:none;letter-spacing:0;color:var(--ink-dim);font-family:var(--sans);font-size:11px;margin-top:8px';
+    note.innerHTML='🗺️ Modifiers are permanent and apply to every dungeon run.';
+    panel.appendChild(note);
+  }
+}
+
+/* =========================================================================
+   IDLE TOWER DEFENSE (canvas)
+   ========================================================================= */
+let TD=null;
+function startTowerLoop(){
+  const cv=$('#tdCanvas'), stage=$('#towerStage'); if(!cv||!stage) return;
+  const ctx=cv.getContext('2d');
+  const fit=()=>{ const r=stage.getBoundingClientRect(); cv.width=r.width; cv.height=r.height; };
+  fit();
+  if(TD && TD.ro) TD.ro.disconnect();
+  TD={ mons:[], bolts:[], pops:[], last:performance.now(), spawnT:0.5, fireT:0, pending:0, run:true, ro:new ResizeObserver(fit) };
+  TD.ro.observe(stage);
+
+  function drawTower(x,y){
+    ctx.save();
+    const w=32,h=58;
+    ctx.fillStyle='#2a1a5a'; ctx.strokeStyle='#b28bff'; ctx.lineWidth=2;
+    ctx.beginPath(); ctx.moveTo(x-w/2,y); ctx.lineTo(x-w/2+3,y-h); ctx.lineTo(x+w/2-3,y-h); ctx.lineTo(x+w/2,y); ctx.closePath(); ctx.fill(); ctx.stroke();
+    // battlement
+    for(let i=-1;i<=1;i++){ ctx.fillRect(x+i*10-3, y-h-5, 6, 6); }
+    // door
+    ctx.fillStyle='#150e2b'; ctx.beginPath(); ctx.moveTo(x-6,y); ctx.lineTo(x-6,y-12); ctx.arc(x,y-12,6,Math.PI,0); ctx.lineTo(x+6,y); ctx.fill();
+    // window glow
+    ctx.fillStyle='#ffd35c'; ctx.shadowColor='#ffd35c'; ctx.shadowBlur=14; ctx.fillRect(x-3,y-h*0.62,6,7); ctx.shadowBlur=0;
+    // floating orb
+    const ob=y-h-20;
+    ctx.fillStyle='#4be1ff'; ctx.shadowColor='#4be1ff'; ctx.shadowBlur=18; ctx.beginPath(); ctx.arc(x,ob,5,0,7); ctx.fill(); ctx.shadowBlur=0;
+    ctx.restore();
+    return {x, y:ob};
+  }
+
+  function frame(t){
+    if(!TD||!TD.run) return;
+    const dt=Math.min(0.05,(t-TD.last)/1000); TD.last=t;
+    const W=cv.width, H=cv.height, tx=W/2, ty=H-14;
+
+    // accrue idle income
+    const inc=idleRate()*dt; G.gold+=inc; TD.pending+=inc;
+    G._shardFrac += shardRate()*dt;
+    if(G._shardFrac>=1){ const n=Math.floor(G._shardFrac); G._shardFrac-=n; G.shards+=n;
+      TD.pops.push({x:tx,y:ty-70,txt:'+'+n+'🔷',c:'#4be1ff',life:1.1,age:0}); }
+
+    // spawn monsters
+    TD.spawnT-=dt;
+    if(TD.spawnT<=0){ TD.spawnT=rand(0.7,1.4);
+      TD.mons.push({ x:rand(W*0.12,W*0.88), y:-12, r:rand(9,13), spd:rand(12,22), g:pick(['👺','🦇','🟢','👹','🕷️','👻']) }); }
+
+    // fire at nearest
+    TD.fireT-=dt;
+    const fireEvery=clamp(0.85 - G.upg.fireRate*0.05, 0.26, 0.85);
+    if(TD.fireT<=0 && TD.mons.length){
+      TD.fireT=fireEvery;
+      let tgt=null,bd=1e9;
+      for(const m of TD.mons){ if(m.dead)continue; const d=Math.hypot(m.x-tx,m.y-(ty-70)); if(d<bd){bd=d;tgt=m;} }
+      if(tgt) TD.bolts.push({x:tx,y:ty-70,tgt,spd:560});
+    }
+
+    // update monsters
+    for(const m of TD.mons){ if(m.dead)continue; m.y+=m.spd*dt; if(m.y>ty-4) m.dead=true; }
+    // update bolts
+    for(const b of TD.bolts){ if(b.done)continue; const m=b.tgt;
+      if(!m||m.dead){ b.done=true; continue; }
+      const dx=m.x-b.x, dy=m.y-b.y, d=Math.hypot(dx,dy), step=b.spd*dt;
+      if(d<=step){ b.done=true; m.dead=true;
+        const pop=Math.floor(TD.pending); if(pop>=1){ TD.pending-=pop; TD.pops.push({x:m.x,y:m.y,txt:'+'+fmt(pop),c:'#ffd35c',life:.9,age:0}); }
+        for(let i=0;i<8;i++) TD.pops.push({spark:true,x:m.x,y:m.y,vx:rand(-70,70),vy:rand(-90,10),life:.5,age:0,c:'#ffd35c'});
+      } else { b.x+=dx/d*step; b.y+=dy/d*step; }
+    }
+    TD.mons=TD.mons.filter(m=>!m.dead);
+    TD.bolts=TD.bolts.filter(b=>!b.done);
+
+    // draw
+    ctx.clearRect(0,0,W,H);
+    const g=ctx.createRadialGradient(tx,ty,4,tx,ty,H*0.95);
+    g.addColorStop(0,'rgba(123,75,255,.22)'); g.addColorStop(1,'transparent');
+    ctx.fillStyle=g; ctx.fillRect(0,0,W,H);
+    const orb=drawTower(tx,ty);
+    ctx.textAlign='center'; ctx.textBaseline='middle';
+    for(const m of TD.mons){ ctx.font=(m.r*1.7|0)+'px serif'; ctx.fillText(m.g,m.x,m.y); }
+    for(const b of TD.bolts){ ctx.beginPath(); ctx.fillStyle='#c8f5ff'; ctx.shadowColor='#4be1ff'; ctx.shadowBlur=12; ctx.arc(b.x,b.y,3.5,0,7); ctx.fill(); ctx.shadowBlur=0; }
+    for(const p of TD.pops){ p.age+=dt;
+      if(p.spark){ p.x+=p.vx*dt; p.y+=p.vy*dt; p.vy+=220*dt; ctx.globalAlpha=Math.max(0,1-p.age/p.life); ctx.fillStyle=p.c; ctx.beginPath(); ctx.arc(p.x,p.y,2.4,0,7); ctx.fill(); ctx.globalAlpha=1; }
+      else { p.y-=22*dt; ctx.globalAlpha=Math.max(0,1-p.age/p.life); ctx.font='800 14px Inter,sans-serif'; ctx.fillStyle=p.c; ctx.fillText(p.txt,p.x,p.y); ctx.globalAlpha=1; }
+    }
+    TD.pops=TD.pops.filter(p=>p.age<p.life);
+
+    // live HUD
+    const idleTxt='+'+fmt(idleRate()*60)+'/min';
+    const rb=$('#towerIdleBadge'); if(rb) rb.textContent=idleTxt;
+    const ir=$('#idleRateTxt'); if(ir) ir.textContent=idleTxt;
+    $('#gold').textContent=fmt(G.gold); $('#shard').textContent=G.shards;
+
+    TD.raf=requestAnimationFrame(frame);
+  }
+  TD.raf=requestAnimationFrame(frame);
+}
+function stopTowerLoop(){
+  if(TD){ TD.run=false; if(TD.raf) cancelAnimationFrame(TD.raf); if(TD.ro) TD.ro.disconnect(); }
+  save();
+}
+
+/* =========================================================================
+   Ambient magical dust
+   ========================================================================= */
+function initDust(){
+  const cv=$('#dust'), ctx=cv.getContext('2d');
+  function size(){ cv.width=cv.clientWidth; cv.height=cv.clientHeight; }
+  const app=$('#app'); cv.style.width='100%'; cv.style.height='100%';
+  new ResizeObserver(size).observe(app); size();
+  const N=46, ps=[];
+  for(let i=0;i<N;i++) ps.push({x:Math.random(),y:Math.random(),r:rand(0.6,2.4),s:rand(.02,.09),h:Math.random()});
+  (function loop(){
+    ctx.clearRect(0,0,cv.width,cv.height);
+    ps.forEach(p=>{ p.y-=p.s/100; if(p.y<-0.02){p.y=1.02;p.x=Math.random();}
+      const x=p.x*cv.width, y=p.y*cv.height;
+      const col = p.h<.5?'255,211,92':'123,150,255';
+      ctx.beginPath(); ctx.fillStyle=`rgba(${col},${0.5*Math.sin(p.y*Math.PI)+0.2})`;
+      ctx.arc(x,y,p.r,0,7); ctx.fill();
+    });
+    requestAnimationFrame(loop);
+  })();
+}
+
+/* =========================================================================
+   BOOT
+   ========================================================================= */
+window.addEventListener('load', ()=>{
+  initDust();
+  const saved=load();
+  recompute();
+  if(G.hp<=0 || !G.hp) G.hp=G.maxHp;
+  const off = saved ? applyOffline(saved.lastSeen) : null;
+
+  // tower tab switching
+  document.querySelectorAll('.ttab').forEach(btn=>{
+    btn.onclick=()=>{ S.click(); G.towerTab=btn.dataset.tab;
+      document.querySelectorAll('.ttab').forEach(b=>b.classList.toggle('on', b===btn));
+      renderTowerPanel();
+    };
+  });
+  $('#enterBtn').onclick=()=>{ S.click(); enterDungeon(); };
+  $('#retreatBtn').onclick=()=>{ if(G.busy) return; S.click(); closeMini(); goToTower(); };
+
+  // persist on leave
+  window.addEventListener('beforeunload', save);
+  document.addEventListener('visibilitychange', ()=>{ if(document.hidden) save(); });
+
+  // keyboard controls (PC)
+  window.addEventListener('keydown', e=>{
+    // Enter confirms an open modal (start / death)
+    const modal=$('#modal');
+    if(e.key==='Enter' && modal.classList.contains('on')){
+      const b=modal.querySelector('.btn'); if(b){ e.preventDefault(); b.click(); return; }
+    }
+    if(G.scene!=='dungeon') return;
+    const docked=$('#castDock').classList.contains('on');
+    // Space / Enter = cash out (or any active panel button)
+    if((e.key===' '||e.key==='Enter') && docked){
+      const b=$('#cashBtn'); if(b && !b.disabled){ e.preventDefault(); b.click(); }
+      return;
+    }
+    // number keys 1-6 = cast that spell
+    const n=parseInt(e.key,10);
+    if(n>=1 && n<=6 && !G.busy && !docked){
+      const el=document.querySelectorAll('#spellbar .spell')[n-1];
+      if(el) el.click();
+    }
+  });
+
+  renderSpellbar();
+  renderHUD();
+  showStart(off);
+});
+</script>
