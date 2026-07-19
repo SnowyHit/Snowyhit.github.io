@@ -149,15 +149,34 @@
 
   .status-strip { display:flex; gap:5px; min-height: 22px; flex-wrap: wrap; }
   .enemy .status-strip { justify-content: flex-end; }
+  /* enemy statuses sit right above the HP bar; collapse the row when there are none */
+  #enemyStatus { min-height:0; margin-bottom:5px; }
+  #enemyStatus:empty { display:none; }
   .chip {
-    font-size: 11px; font-weight: 800; padding: 3px 7px; border-radius: 8px;
-    display:flex; align-items:center; gap:3px;
-    background: rgba(0,0,0,.35); border:1px solid rgba(255,255,255,.1);
+    font-size: 11.5px; font-weight: 800; padding: 4px 8px; border-radius: 9px;
+    display:flex; align-items:center; gap:4px; white-space:nowrap;
+    background: rgba(0,0,0,.4); border:1px solid rgba(255,255,255,.12);
     animation: pop .25s ease;
   }
-  .chip.burn { color:#ff9a4d; } .chip.shock { color: var(--neon); }
-  .chip.curse { color: var(--pink); } .chip.shield { color: var(--green); }
+  .chip.burn  { color:#ffb87a; background:rgba(255,120,40,.16);  border-color:rgba(255,120,40,.4); }
+  .chip.shock { color: var(--neon); background:rgba(75,225,255,.16); border-color:rgba(75,225,255,.5);
+    animation: pop .25s ease, stunpulse 1s ease-in-out infinite; }
+  .chip.curse { color: var(--pink); background:rgba(255,92,200,.16); border-color:rgba(255,92,200,.4); }
+  .chip.shield { color: var(--green); background:rgba(77,255,161,.14); border-color:rgba(77,255,161,.4); }
   @keyframes pop { from { transform: scale(.4); opacity:0 } to { transform: scale(1); opacity:1 } }
+  @keyframes stunpulse { 0%,100%{ box-shadow:0 0 0 0 rgba(75,225,255,0);} 50%{ box-shadow:0 0 10px 1px rgba(75,225,255,.5);} }
+
+  /* enemy avatar reflects its afflictions so they're impossible to miss */
+  .avatar.st-burn  { box-shadow: 0 14px 40px rgba(0,0,0,.5), inset 0 0 30px rgba(255,120,40,.4), 0 0 26px rgba(255,120,40,.4); }
+  .avatar.st-curse { box-shadow: 0 14px 40px rgba(0,0,0,.5), inset 0 0 30px rgba(255,92,200,.4), 0 0 24px rgba(255,92,200,.35); }
+  .avatar.st-stun  { animation: idle 3.4s ease-in-out infinite, stunwob 0.6s ease-in-out infinite; }
+  .avatar.st-stun::after {
+    content:'💫'; position:absolute; top:-14px; left:50%; font-size:24px;
+    transform:translateX(-50%); animation: spinstars 1.6s linear infinite;
+    filter: drop-shadow(0 0 6px var(--neon)); pointer-events:none;
+  }
+  @keyframes stunwob { 0%,100%{ transform: rotate(-3deg);} 50%{ transform: rotate(3deg);} }
+  @keyframes spinstars { from{ transform: translateX(-50%) rotate(0deg);} to{ transform: translateX(-50%) rotate(360deg);} }
 
   .vs {
     align-self: center; margin: 2px 0;
@@ -281,6 +300,21 @@
   .rc-ic { font-size:30px; filter:drop-shadow(0 0 8px rgba(255,211,92,.4)); }
   .rc-n { font-weight:800; font-size:12px; margin-top:4px; }
   .rc-d { font-size:10.5px; color:var(--gold); margin-top:3px; line-height:1.25; }
+  .rc-lv { font-size:10px; font-weight:800; color:var(--neon); margin-top:4px; }
+
+  /* ---------- Character stats sheet ---------- */
+  .stat-head { font-family:var(--display); font-size:11px; letter-spacing:2px; text-transform:uppercase;
+    color:var(--ink-dim); margin:10px 2px 2px; }
+  .stat-head:first-child { margin-top:2px; }
+  .stat-line { display:flex; align-items:center; gap:10px; padding:9px 12px; border-radius:11px;
+    background:var(--panel); border:1px solid var(--panel-line); }
+  .stat-line .sl-ic { font-size:18px; width:22px; text-align:center; }
+  .stat-line .sl-body { flex:1; min-width:0; }
+  .stat-line .sl-t { font-weight:700; font-size:13px; }
+  .stat-line .sl-sub { font-size:10px; color:var(--ink-dim); }
+  .stat-line .sl-v { font-weight:800; font-size:14px; color:var(--gold); white-space:nowrap; }
+  .stat-line .sl-v.dim { color:var(--ink-dim); }
+  .stat-line .sl-v.neon { color:var(--neon); }
 
   .rest-opts { display:flex; gap:8px; }
   .rest-opt { flex:1; cursor:pointer; border:1px solid var(--panel-line); border-radius:14px; padding:14px 8px; text-align:center;
@@ -454,9 +488,9 @@
   .tower-idle-badge { position:absolute; top:8px; right:12px; font-weight:800; font-size:11px; color:var(--green);
     background: rgba(0,0,0,.45); padding:4px 9px; border-radius:999px; border:1px solid var(--panel-line); }
 
-  .tower-tabs { display:flex; gap:6px; padding:10px 12px 4px; }
-  .ttab { flex:1; cursor:pointer; font-weight:800; font-size:11.5px; padding:9px 2px; border-radius:12px; color:var(--ink-dim);
-    background:var(--panel); border:1px solid var(--panel-line); transition:all .15s; text-align:center; }
+  .tower-tabs { display:flex; gap:5px; padding:10px 12px 4px; }
+  .ttab { flex:1; cursor:pointer; font-weight:800; font-size:10.5px; padding:9px 1px; border-radius:11px; color:var(--ink-dim);
+    background:var(--panel); border:1px solid var(--panel-line); transition:all .15s; text-align:center; white-space:nowrap; }
   .ttab:hover { color:var(--ink); }
   .ttab.on { color:var(--ink); border-color:var(--purple-2); box-shadow: inset 0 0 16px rgba(123,75,255,.28); }
 
@@ -528,13 +562,13 @@
     <!-- enemy -->
     <div class="combatant enemy">
       <div class="namebar"><span id="enemyName">Goblin Gambler</span><span class="tag" id="enemyTag">Lv 1</span></div>
+      <div class="status-strip" id="enemyStatus"></div>
       <div class="hpwrap"><div class="hpbar">
         <div class="hpghost" id="enemyGhost"></div>
         <div class="hpfill" id="enemyHp"></div>
         <div class="hptext" id="enemyHpText">100 / 100</div>
       </div></div>
       <div class="avatar-row">
-        <div class="status-strip" id="enemyStatus"></div>
         <div class="avatar" id="enemyAvatar"><div class="aura"></div><span id="enemyGlyph">👺</span></div>
       </div>
     </div>
@@ -568,10 +602,11 @@
       <div class="tower-idle-badge" id="towerIdleBadge">+0/min</div>
     </div>
     <div class="tower-tabs" id="towerTabs">
-      <button class="ttab on" data-tab="tower">🏰 Tower</button>
-      <button class="ttab" data-tab="spells">✨ Spells</button>
+      <button class="ttab on" data-tab="stats">📊 Stats</button>
       <button class="ttab" data-tab="wizard">🧙 Wizard</button>
-      <button class="ttab" data-tab="mods">🗺️ Run Mods</button>
+      <button class="ttab" data-tab="tower">🏰 Tower</button>
+      <button class="ttab" data-tab="spells">✨ Spells</button>
+      <button class="ttab" data-tab="mods">🗺️ Mods</button>
     </div>
     <div class="tower-panel" id="towerPanel"></div>
     <button class="btn enter-btn" id="enterBtn">⚔️ ENTER THE DUNGEON</button>
@@ -598,6 +633,25 @@ const randi = (a,b)=> Math.floor(rand(a,b+1));
 const pick = arr => arr[Math.floor(Math.random()*arr.length)];
 const clamp = (v,a,b)=> Math.max(a,Math.min(b,v));
 const fmt = n => n>=1000 ? (n/1000).toFixed(n>=10000?0:1)+'k' : Math.round(n).toString();
+
+/* =========================================================================
+   BALANCE — one place for all the combat/progression math.
+   Design targets: normal enemy dies in ~4-5 casts at matched power;
+   wizard survives ~6-10 hits; each upgrade level is a noticeable step;
+   jackpot spell results can still spike for big moments.
+   ========================================================================= */
+const BAL = {
+  pwrBase: 10,  pwrPerLvl: 5,      // Wizard Power  (main damage number)
+  hpBase: 120,  hpPerLvl: 30,      // Max HP
+  critBase: 0.10, luckyPerLvl: 0.05,
+  critDmgBase: 1.8, critDmgPerLvl: 0.3,
+  enemyHp:  f => Math.round(40 + 12*f + 1.4*f*f),   // smooth, no exponential wall
+  enemyAtk: f => Math.round(6 + 1.5*f + 0.06*f*f),
+  bossHpX: 2.4, bossAtkX: 1.5,
+  eliteHpX: 1.8, eliteAtkX: 1.25,
+  roomHeal: 0.15,                   // heal between rooms (combat is now more frequent)
+  baseCrit: 0.10,                   // base crit chance
+};
 
 /* ---------- Audio (tiny WebAudio blips) ---------- */
 let AC=null;
@@ -636,29 +690,32 @@ const G = {
   enemy: null,
   bossesCleared: 0,
   scene: 'tower',
-  towerTab: 'tower',
+  towerTab: 'stats',
   // permanent upgrade levels (bought in the tower)
-  upg: { power:0, maxhp:0, crit:0, towerRate:0, fireRate:0, towerShard:0, idleCap:0 },
+  upg: { power:0, maxhp:0, crit:0, spellmult:0, regen:0, revive:0,
+         towerRate:0, fireRate:0, idleMult:0, bossBonus:0, towerShard:0, idleCap:0 },
   // dungeon run modifiers (permanent, bought in tower)
-  mods: { goldRush:0, ward:0, lucky:0 },
+  mods: { goldRush:0, ward:0, lucky:0, overcharge:0, bulwark:0, ignite:0 },
   _shardFrac: 0,
   // roguelike progress
   checkpoint: 1,              // floor a fresh run starts on (advances past cleared bosses)
   roomType: 'combat',
   // run-only state (relics + aggregated boosts), reset every dive
-  run: { relics:[], dmgMult:1, critChance:0, critMult:0, goldMult:1, lifesteal:0,
-         startShield:0, diceMin:0, fizzleFloor:0, bonusHp:0, shockChance:0, jackpotX:1 },
+  // relics is a { id: level } map — duplicates level up an owned relic
+  run: { relics:{}, dmgMult:1, critChance:0, critMult:0, goldMult:1, lifesteal:0,
+         startShield:0, diceMin:0, fizzleFloor:0, bonusHp:0, shockChance:0, jackpotX:1, revivesLeft:0 },
 };
 
 /* ---------- Spells ---------- */
 const SPELLS = {
-  spark:  { key:'spark',  name:'Spark',    glyph:'✨', base: 42, cost: 0,  unlocked:true },
-  slots:  { key:'slots',  name:'Fireball', glyph:'🎰', base: 34, cost: 0,  unlocked:true },
-  dice:   { key:'dice',   name:'Chaos',    glyph:'🎲', base: 30, cost: 0,  unlocked:true },
-  crash:  { key:'crash',  name:'Overload', glyph:'📈', base: 26, cost: 6,  unlocked:false },
-  wheel:  { key:'wheel',  name:'Roulette', glyph:'🎡', base: 30, cost: 8,  unlocked:false },
-  crate:  { key:'crate',  name:'Crate',    glyph:'🎁', base: 30, cost: 10, unlocked:false },
-  jack:   { key:'jack',   name:'Necrojack',glyph:'🃏', base: 30, cost: 14, unlocked:false },
+  // base = damage factor per PWR; higher-variance spells carry it in their result multipliers
+  spark:  { key:'spark',  name:'Spark',    glyph:'✨', base: 1.6,  cost: 0,  unlocked:true },
+  slots:  { key:'slots',  name:'Fireball', glyph:'🎰', base: 1.3,  cost: 0,  unlocked:true },
+  dice:   { key:'dice',   name:'Chaos',    glyph:'🎲', base: 1.35, cost: 0,  unlocked:true },
+  crash:  { key:'crash',  name:'Overload', glyph:'📈', base: 1.25, cost: 6,  unlocked:false },
+  wheel:  { key:'wheel',  name:'Roulette', glyph:'🎡', base: 0.95, cost: 8,  unlocked:false },
+  crate:  { key:'crate',  name:'Crate',    glyph:'🎁', base: 0.95, cost: 10, unlocked:false },
+  jack:   { key:'jack',   name:'Necrojack',glyph:'🃏', base: 1.3,  cost: 14, unlocked:false },
 };
 Object.values(SPELLS).forEach(s=> s.lvl = 0);
 // effective base damage grows +12% per empower level
@@ -696,8 +753,16 @@ const RELICS = {
   crown:  { icon:'👑', name:'Gilded Crown',  desc:'+25% dmg · +25% gold',       apply:r=>{r.dmgMult*=1.25; r.goldMult*=1.25;} },
 };
 const RELIC_IDS = Object.keys(RELICS);
-function randomRelicId(){ return pick(RELIC_IDS); }
-function pickRelics(n){ const pool=RELIC_IDS.slice(); const out=[]; for(let i=0;i<n && pool.length;i++){ out.push(pool.splice(randi(0,pool.length-1),1)[0]); } return out; }
+const RELIC_CAP = 5;   // max distinct relics; after this, only upgrades to owned relics
+function relicCount(){ return Object.keys(G.run.relics).length; }
+function relicsFull(){ return relicCount() >= RELIC_CAP; }
+function pickN(arr, n){ const pool=arr.slice(), out=[]; for(let i=0;i<n && pool.length;i++){ out.push(pool.splice(randi(0,pool.length-1),1)[0]); } return out; }
+// which relic ids a shrine/merchant/drop can offer right now
+function relicOffer(n){
+  if(!relicsFull()){ const unowned=RELIC_IDS.filter(id=>!(id in G.run.relics)); return pickN(unowned.length?unowned:Object.keys(G.run.relics), n); }
+  return pickN(Object.keys(G.run.relics), n);   // capped → upgrades only
+}
+function rollRelicGain(){ const o=relicOffer(1); return o.length?o[0]:pick(RELIC_IDS); }
 
 /* ---------- Room types (dungeon doors) ---------- */
 const ROOMS = {
@@ -736,13 +801,20 @@ function updateBar(who, hp, max){
 function renderStatus(){
   const build=(el,st)=>{ el.innerHTML='';
     if(!st) return;
-    if(st.burn>0) el.innerHTML+=`<span class="chip burn">🔥${st.burn}</span>`;
-    if(st.shock>0) el.innerHTML+=`<span class="chip shock">⚡${st.shock}</span>`;
-    if(st.curse>0) el.innerHTML+=`<span class="chip curse">💀+${Math.round(st.curse*100)}%</span>`;
-    if(st.shield>0) el.innerHTML+=`<span class="chip shield">🛡️${st.shield}</span>`;
+    if(st.burn>0)  el.innerHTML+=`<span class="chip burn">🔥 Burn ${st.burn}</span>`;
+    if(st.shock>0) el.innerHTML+=`<span class="chip shock">⚡ Stunned${st.shock>1?' '+st.shock:''}</span>`;
+    if(st.curse>0) el.innerHTML+=`<span class="chip curse">💀 Curse +${Math.round(st.curse*100)}%</span>`;
+    if(st.shield>0)el.innerHTML+=`<span class="chip shield">🛡️ ${st.shield}</span>`;
   };
   build($('#enemyStatus'), G.enemy? G.enemy.st : null);
   build($('#wizStatus'), G.wiz_st);
+  // mirror the enemy's afflictions on its avatar so they're impossible to miss
+  const av=$('#enemyAvatar'), st=G.enemy&&G.enemy.st;
+  if(av){
+    av.classList.toggle('st-stun', !!(st&&st.shock>0));
+    av.classList.toggle('st-burn', !!(st&&st.burn>0));
+    av.classList.toggle('st-curse',!!(st&&st.curse>0));
+  }
 }
 G.wiz_st = { shield:0 };
 
@@ -810,8 +882,8 @@ function spawnEnemy(kind){
   const isElite = kind==='elite';
   const t = isBoss ? BOSSES[(Math.floor(G.floor/10)-1+BOSSES.length)%BOSSES.length] : pick(ENEMY_TYPES);
   const f = G.floor;
-  const hp = Math.round((60 + f*22 + f*f*1.6) * (isBoss?4.2:1) * (isElite?2.1:1));
-  const atk = Math.round((6 + f*2.4) * (isBoss?1.7:1) * (isElite?1.4:1));
+  const hp = Math.round(BAL.enemyHp(f) * (isBoss?BAL.bossHpX:1) * (isElite?BAL.eliteHpX:1));
+  const atk = Math.round(BAL.enemyAtk(f) * (isBoss?BAL.bossAtkX:1) * (isElite?BAL.eliteAtkX:1));
   G.enemy = {
     name:(isElite?'Elite '+t.name:t.name), glyph:t.glyph, trait:t.trait, isBoss, isElite,
     maxHp:hp, hp:hp, atk,
@@ -837,10 +909,13 @@ async function dealDamage(mult, opts={}){
     if(G.run.fizzleFloor>0){ mult = G.run.fizzleFloor; }
     else { floatDmg('MISS', '#b6a9d9', true); S.fail(); return; }
   }
-  let base = spellBase(G.current) * G.power * mult * G.run.dmgMult;
+  // Overcharge mod: amplify the gamble result itself (bigger swings)
+  if(G.mods.overcharge>0) mult *= (1 + G.mods.overcharge*0.06);
+  // Arcane Mastery: flat multiplicative damage
+  let base = spellBase(G.current) * G.power * mult * G.run.dmgMult * (1 + G.upg.spellmult*0.06);
   // curse on enemy amplifies incoming
   if(e.st.curse>0) base *= (1+e.st.curse);
-  const critChance = 0.10 + (G.mods.lucky||0)*0.05 + (G.run.critChance||0);
+  const critChance = BAL.baseCrit + (G.mods.lucky||0)*BAL.luckyPerLvl + (G.run.critChance||0);
   const isCrit = opts.crit || Math.random() < critChance;
   if(isCrit) base *= (G.critMult + (G.run.critMult||0)) * (G.run.jackpotX||1);
   dmg = Math.round(base);
@@ -865,11 +940,15 @@ async function dealDamage(mult, opts={}){
   }
   // Storm Rune relic: chance to shock on hit
   if(G.run.shockChance>0 && Math.random()<G.run.shockChance){ e.st.shock=Math.max(e.st.shock,1); }
+  // Pyromancy mod: chance to ignite on hit
+  if(G.mods.ignite>0 && Math.random()<G.mods.ignite*0.12){ e.st.burn=Math.max(e.st.burn,2); }
   if(opts.shield){ G.wiz_st.shield += opts.shield; }
   renderHUD();
 }
 
 async function hurtWizard(dmg, backfire=false){
+  // Bulwark mod: reduce incoming damage (capped)
+  if(G.mods.bulwark>0) dmg = Math.round(dmg * (1 - Math.min(0.6, G.mods.bulwark*0.06)));
   // shield soak
   if(G.wiz_st.shield>0){
     const soak=Math.min(G.wiz_st.shield, dmg);
@@ -882,7 +961,16 @@ async function hurtWizard(dmg, backfire=false){
     burst(false,'#ff6b7a',14); shake(); S.hit();
   }
   renderHUD();
-  if(G.hp<=0){ await sleep(500); death(); }
+  if(G.hp<=0){
+    // Second Wind: revive instead of dying while charges remain
+    if(G.run.revivesLeft>0){
+      G.run.revivesLeft--; G.hp=Math.round(maxHP()*0.3);
+      banner('🌀 SECOND WIND','linear-gradient(90deg,var(--neon),var(--green))');
+      burst(false,'#4be1ff',26); S.win(); renderHUD();
+      return;
+    }
+    await sleep(500); death();
+  }
 }
 
 async function enemyTurn(){
@@ -898,8 +986,9 @@ async function enemyTurn(){
   // shock: skip
   if(e.st.shock>0){
     e.st.shock--; renderStatus();
-    floatDmg('⚡STUN','#4be1ff',true);
-    await sleep(400); endTurn(); return;
+    floatDmg('⚡ STUNNED!','#4be1ff',true);
+    burst(true,'#4be1ff',10);
+    await sleep(550); endTurn(); return;
   }
   // attack
   await sleep(220);
@@ -933,9 +1022,9 @@ async function enemyDefeated(){
   save();
   await sleep(e.isBoss?1250:800);
   // elites always drop a relic
-  if(e.isElite){ gainRelic(randomRelicId()); await sleep(750); }
-  // small heal between rooms
-  G.hp = clamp(G.hp + maxHP()*0.10, 0, maxHP());
+  if(e.isElite){ gainRelic(rollRelicGain()); await sleep(750); }
+  // heal between rooms (Meditation adds to it)
+  G.hp = clamp(G.hp + maxHP()*(BAL.roomHeal + G.upg.regen*0.04), 0, maxHP());
   renderHUD();
   advanceRoom();
   G.busy=false;
@@ -1303,11 +1392,11 @@ function death(){
 }
 function showDeath(){
   const m=$('#modal'), sheet=$('#sheet');
-  const relicCount=G.run.relics.length;
+  const rc=relicCount();
   sheet.innerHTML=`
     <h2 style="color:var(--red)">You Fell on Floor ${G.floor}</h2>
     <p>Bosses cleared: <b>${G.bossesCleared}</b> · Gold banked: <b>${fmt(G.gold)}🪙</b> · Shards: <b>${G.shards}🔷</b><br>
-    Your ${relicCount} relic${relicCount===1?'':'s'} fade away, but your progress holds.</p>
+    Your ${rc} relic${rc===1?'':'s'} fade away, but your progress holds.</p>
     <div class="upgrades" style="gap:6px">
       <div class="upg" style="cursor:default;border-color:var(--gold-2)"><div class="u-ic">🚩</div><div class="u-body"><div class="u-t" style="color:var(--gold)">Checkpoint: Floor ${G.checkpoint}</div><div class="u-d">Your next dive resumes here — cleared bosses stay cleared</div></div></div>
       <div class="upg" style="cursor:default"><div class="u-ic">🏰</div><div class="u-body"><div class="u-t">Upgrade in the Tower</div><div class="u-d">Spend gold & shards, then descend stronger</div></div></div>
@@ -1320,7 +1409,8 @@ function showDeath(){
 function newRun(){
   recompute();
   G.floor = G.checkpoint;
-  G.run.relics=[]; recomputeRun();
+  G.run.relics={}; recomputeRun();
+  G.run.revivesLeft = G.upg.revive;   // Second Wind charges for this dive
   G.hp = maxHP();
   G.wiz_st={shield:0}; G.busy=false; G._casted=false;
   renderRelicTray(); renderSpellbar(); renderHUD();
@@ -1364,18 +1454,22 @@ function advanceRoom(){
   startRoom(type);
 }
 function rollRoom(){
-  // combat-heavy weighted pool; special rooms sprinkle in at random
-  const pool=['combat','combat','combat','relic','merchant','rest'];
-  if(G.floor>=4) pool.push('elite');
-  return pick(pool);
+  // heavily combat-weighted; special rooms are an occasional treat
+  const w = { combat:74, elite:(G.floor>=4?6:0), relic:8, merchant:6, rest:6 };
+  let total=0; for(const k in w) total+=w[k];
+  let r=Math.random()*total;
+  for(const k in w){ if((r-=w[k])<0) return k; }
+  return 'combat';
 }
-function renderMerchant(){ G._shop={ relicId:randomRelicId(), relicSold:false }; drawMerchant(); }
+function renderMerchant(){ const o=relicOffer(1); G._shop={ relicId:o.length?o[0]:null, relicSold:false }; drawMerchant(); }
 function drawMerchant(){
-  const s=G._shop, R=RELICS[s.relicId];
+  const s=G._shop, R=s.relicId?RELICS[s.relicId]:null;
   const relicCost=20+G.floor*7, healCost=12+G.floor*4, canHeal=G.hp<maxHP();
+  const owned=s.relicId?(G.run.relics[s.relicId]||0):0;
+  const relicTitle = R ? (owned?`${R.name} → Lv ${owned+1}`:R.name) : '—';
   let html=`<h3>💰 Merchant</h3><div class="sub">Trade gold for run power · you have ${fmt(G.gold)}🪙</div><div class="shop">`;
-  html+=`<div class="shop-row ${s.relicSold?'sold':(G.gold>=relicCost?'':'cant')}" data-buy="relic">
-    <div class="s-ic">${R.icon}</div><div class="s-body"><div class="s-t">${R.name}</div><div class="s-d">${R.desc}</div></div>
+  if(R) html+=`<div class="shop-row ${s.relicSold?'sold':(G.gold>=relicCost?'':'cant')}" data-buy="relic">
+    <div class="s-ic">${R.icon}</div><div class="s-body"><div class="s-t">${relicTitle}</div><div class="s-d">${R.desc}</div></div>
     <div class="s-cost">${s.relicSold?'✓ sold':relicCost+'🪙'}</div></div>`;
   html+=`<div class="shop-row ${(canHeal&&G.gold>=healCost)?'':'cant'}" data-buy="heal">
     <div class="s-ic">❤️</div><div class="s-body"><div class="s-t">Healing Draught</div><div class="s-d">Restore 50% HP</div></div>
@@ -1393,12 +1487,22 @@ function drawMerchant(){
   $('#leaveShop').onclick=()=>{ S.click(); advanceRoom(); };
 }
 function renderRelicChoice(){
-  const ids=pickRelics(3);
-  let html=`<h3>🎁 Relic Shrine</h3><div class="sub">Choose one — it boosts your whole run</div><div class="relic-cards">`;
-  ids.forEach((id,i)=>{ const R=RELICS[id]; html+=`<button class="relic-card" data-i="${i}"><div class="rc-ic">${R.icon}</div><div class="rc-n">${R.name}</div><div class="rc-d">${R.desc}</div></button>`; });
-  html+=`</div>`;
+  const upgrading = relicsFull();
+  const ids = relicOffer(3);
+  const sub = upgrading
+    ? `Relics full (${RELIC_CAP}/${RELIC_CAP}) — choose one to <b>upgrade</b>`
+    : `Choose one — it boosts your whole run · ${relicCount()}/${RELIC_CAP} relics`;
+  let html=`<h3>🎁 Relic Shrine</h3><div class="sub">${sub}</div><div class="relic-cards">`;
+  ids.forEach((id,i)=>{
+    const R=RELICS[id];
+    const lvl=G.run.relics[id]||0;
+    const badge = upgrading ? `<div class="rc-lv">Lv ${lvl} → ${lvl+1}</div>` : '';
+    html+=`<button class="relic-card" data-i="${i}"><div class="rc-ic">${R.icon}</div><div class="rc-n">${R.name}</div><div class="rc-d">${R.desc}</div>${badge}</button>`;
+  });
+  html+=`</div><button class="btn ghost" id="skipRelic">Skip →</button>`;
   showRoomDock(html);
   document.querySelectorAll('#roomMini .relic-card').forEach((el,i)=> el.onclick=()=>{ gainRelic(ids[i]); advanceRoom(); });
+  $('#skipRelic').onclick=()=>{ S.click(); advanceRoom(); };
 }
 function renderRest(){
   const html=`<h3>🏕️ Rest Site</h3><div class="sub">Catch your breath before pressing on</div><div class="rest-opts">
@@ -1407,7 +1511,7 @@ function renderRest(){
   </div>`;
   showRoomDock(html);
   $('#restHeal').onclick=()=>{ G.hp=Math.min(maxHP(),G.hp+maxHP()*0.45); floatDmg('+'+fmt(maxHP()*0.45),'#4dffa1',false); S.win(); renderHUD(); advanceRoom(); };
-  $('#restScav').onclick=()=>{ gainRelic(randomRelicId()); advanceRoom(); };
+  $('#restScav').onclick=()=>{ gainRelic(rollRelicGain()); advanceRoom(); };
 }
 
 /* =========================================================================
@@ -1433,35 +1537,37 @@ function showStart(offInfo){
    DERIVED STATS · SAVE / LOAD · IDLE
    ========================================================================= */
 function recompute(){
-  G.power   = 10  + G.upg.power*4;
-  G.maxHp   = 120 + G.upg.maxhp*30;
-  G.critMult= 1.8 + G.upg.crit*0.3;
+  G.power   = BAL.pwrBase    + G.upg.power*BAL.pwrPerLvl;
+  G.maxHp   = BAL.hpBase     + G.upg.maxhp*BAL.hpPerLvl;
+  G.critMult= BAL.critDmgBase+ G.upg.crit*BAL.critDmgPerLvl;
   if(G.hp>maxHP()) G.hp=maxHP();
 }
 function maxHP(){ return G.maxHp + (G.run.bonusHp||0); }
 
-// aggregate all owned relics into the run bonus object
+// aggregate all owned relics (× their level) into the run bonus object
 function recomputeRun(){
   const r=G.run;
   r.dmgMult=1; r.critChance=0; r.critMult=0; r.goldMult=1; r.lifesteal=0;
   r.startShield=0; r.diceMin=0; r.fizzleFloor=0; r.bonusHp=0; r.shockChance=0; r.jackpotX=1;
-  for(const id of r.relics){ RELICS[id].apply(r); }
+  for(const id in r.relics){ const lvl=r.relics[id]; for(let i=0;i<lvl;i++) RELICS[id].apply(r); }
 }
 function gainRelic(id, announce=true){
-  G.run.relics.push(id);
+  // if capped and this is a new relic, redirect to upgrading an owned one
+  if(!(id in G.run.relics) && relicsFull()){ id = pick(Object.keys(G.run.relics)); }
+  G.run.relics[id] = (G.run.relics[id]||0) + 1;
+  const lvl = G.run.relics[id];
   const beforeMax=maxHP();
   recomputeRun();
   const gainedHp=maxHP()-beforeMax; if(gainedHp>0) G.hp=Math.min(maxHP(), G.hp+gainedHp);
   renderRelicTray(); renderHUD();
   const R=RELICS[id];
-  if(announce){ S.win(); banner(R.icon+' '+R.name, 'linear-gradient(90deg,var(--gold),var(--purple-2))'); }
+  if(announce){ S.win(); banner(R.icon+' '+R.name+(lvl>1?' Lv '+lvl:''), 'linear-gradient(90deg,var(--gold),var(--purple-2))'); }
 }
 function renderRelicTray(){
   const tray=$('#relicTray'); if(!tray) return;
-  const counts={}; G.run.relics.forEach(id=>counts[id]=(counts[id]||0)+1);
-  tray.innerHTML = Object.keys(counts).map(id=>{
-    const R=RELICS[id], c=counts[id];
-    return `<div class="relic-chip" data-id="${id}" title="${R.name} — ${R.desc}">${R.icon}${c>1?`<span class="rc-x">${c}</span>`:''}</div>`;
+  tray.innerHTML = Object.keys(G.run.relics).map(id=>{
+    const R=RELICS[id], lvl=G.run.relics[id];
+    return `<div class="relic-chip" data-id="${id}" title="${R.name} (Lv ${lvl}) — ${R.desc}">${R.icon}${lvl>1?`<span class="rc-x">${lvl}</span>`:''}</div>`;
   }).join('');
   tray.querySelectorAll('.relic-chip').forEach(el=> el.onclick=()=>showRelicTip(el.dataset.id, el));
 }
@@ -1470,12 +1576,15 @@ function showRelicTip(id, el){
   const R=RELICS[id]; const tray=$('#relicTray');
   const old=$('#relicTip'); if(old) old.remove();
   const tip=document.createElement('div'); tip.id='relicTip'; tip.className='relic-tip';
-  tip.innerHTML=`<b>${R.icon} ${R.name}</b><div class="rt-d">${R.desc}</div>`;
+  tip.innerHTML=`<b>${R.icon} ${R.name} · Lv ${G.run.relics[id]||1}</b><div class="rt-d">${R.desc}${(G.run.relics[id]>1)?' (per level)':''}</div>`;
   tray.appendChild(tip);
   clearTimeout(_tipT); _tipT=setTimeout(()=>tip.remove(), 2600);
 }
 function idleRate(){   // gold per second
-  return (0.8 + G.upg.towerRate*0.7) * (1 + G.bossesCleared*0.3) * (1 + G.upg.fireRate*0.12);
+  return (0.8 + G.upg.towerRate*0.7)
+       * (1 + G.bossesCleared*(0.3 + G.upg.bossBonus*0.1))   // Conqueror's Crown
+       * (1 + G.upg.fireRate*0.12)
+       * (1 + G.upg.idleMult*0.08);                           // Golden Runes
 }
 function shardRate(){  // shards per second
   return G.upg.towerShard>0 ? 0.0025*G.upg.towerShard*(1+G.bossesCleared*0.2) : 0;
@@ -1547,21 +1656,29 @@ function enterDungeon(){
 const costOf = (base,growth,lvl)=> Math.round(base*Math.pow(growth,lvl));
 const GOLD_UPGRADES = {
   tower: [
-    {k:'towerRate', ic:'🔮', t:'Arcane Turret',   d:l=>`Idle gold income · Lv ${l}`,       base:30,  growth:1.55},
-    {k:'fireRate',  ic:'⚡', t:'Rapid Runes',      d:l=>`Turret fire rate + income · Lv ${l}`,base:45,  growth:1.6},
-    {k:'towerShard',ic:'🔷', t:'Shard Extractor',  d:l=>`Idle shard drip · Lv ${l}`,        base:150, growth:1.9},
-    {k:'idleCap',   ic:'🔋', t:'Ley-line Battery', d:l=>`Idle cap: ${2+l*2}h · Lv ${l}`,     base:100, growth:1.9},
+    {k:'towerRate', ic:'🔮', t:'Arcane Turret',   d:l=>`Idle gold income · Lv ${l}`,          base:30,  growth:1.55},
+    {k:'fireRate',  ic:'⚡', t:'Rapid Runes',      d:l=>`Turret fire rate + income · Lv ${l}`, base:45,  growth:1.6},
+    {k:'idleMult',  ic:'⭐', t:'Golden Runes',     d:l=>`Idle income +${l*8}% → +${(l+1)*8}%`, base:90,  growth:1.7},
+    {k:'bossBonus', ic:'👑', t:"Conqueror's Crown",d:l=>`Each boss: +${l*10}% → +${(l+1)*10}% idle`, base:130, growth:1.85},
+    {k:'towerShard',ic:'🔷', t:'Shard Extractor',  d:l=>`Idle shard drip · Lv ${l}`,           base:150, growth:1.9},
+    {k:'idleCap',   ic:'🔋', t:'Ley-line Battery', d:l=>`Idle cap: ${2+l*2}h → ${2+(l+1)*2}h`, base:100, growth:1.9},
   ],
   wizard: [
-    {k:'power', ic:'⚡', t:'Wizard Power', d:l=>`Power ${10+l*4} → ${14+l*4}`,               base:40, growth:1.5},
-    {k:'maxhp', ic:'❤️', t:'Vitality',     d:l=>`Max HP ${120+l*30} → ${150+l*30}`,          base:35, growth:1.45},
-    {k:'crit',  ic:'✦', t:'Crit Power',   d:l=>`Crit ${(1.8+l*0.3).toFixed(1)}× → ${(2.1+l*0.3).toFixed(1)}×`, base:60, growth:1.65},
+    {k:'power',     ic:'⚡', t:'Wizard Power',   d:l=>`Power ${BAL.pwrBase+l*BAL.pwrPerLvl} → ${BAL.pwrBase+(l+1)*BAL.pwrPerLvl}`, base:40, growth:1.45},
+    {k:'spellmult', ic:'🔮', t:'Arcane Mastery', d:l=>`All damage +${l*6}% → +${(l+1)*6}%`,   base:70, growth:1.55},
+    {k:'crit',      ic:'✦', t:'Crit Power',     d:l=>`Crit ${(BAL.critDmgBase+l*BAL.critDmgPerLvl).toFixed(1)}× → ${(BAL.critDmgBase+(l+1)*BAL.critDmgPerLvl).toFixed(1)}×`, base:60, growth:1.6},
+    {k:'maxhp',     ic:'❤️', t:'Vitality',       d:l=>`Max HP ${BAL.hpBase+l*BAL.hpPerLvl} → ${BAL.hpBase+(l+1)*BAL.hpPerLvl}`, base:35, growth:1.4},
+    {k:'regen',     ic:'🌿', t:'Meditation',     d:l=>`Heal ${Math.round((BAL.roomHeal+l*0.04)*100)}% → ${Math.round((BAL.roomHeal+(l+1)*0.04)*100)}% per room`, base:55, growth:1.5},
+    {k:'revive',    ic:'🌀', t:'Second Wind',    d:l=>`Revive ${l} → ${l+1}× per run at 30% HP`, base:220, growth:2.3},
   ],
 };
 const MOD_UPGRADES = [
-  {k:'goldRush', ic:'🪙', t:'Golden Touch', d:l=>`+${(l+1)*12}% dungeon gold`,       base:4, growth:1.7},
-  {k:'ward',     ic:'🛡️', t:'Aegis Ward',   d:l=>`Start runs with ${(l+1)*20} shield`,base:6, growth:2.0},
-  {k:'lucky',    ic:'🍀', t:'Lucky Charm',  d:l=>`+${(l+1)*5}% crit chance in runs`,  base:5, growth:1.9},
+  {k:'goldRush',  ic:'🪙', t:'Golden Touch', d:l=>`+${(l+1)*12}% dungeon gold`,        base:4, growth:1.7},
+  {k:'overcharge',ic:'🎯', t:'Overcharge',   d:l=>`Spell results +${(l+1)*6}% · bigger gambles`, base:6, growth:1.85},
+  {k:'ward',      ic:'🛡️', t:'Aegis Ward',   d:l=>`Start runs with ${(l+1)*20} shield`, base:6, growth:2.0},
+  {k:'bulwark',   ic:'🪨', t:'Bulwark',      d:l=>`−${(l+1)*6}% damage taken`,          base:7, growth:2.0},
+  {k:'lucky',     ic:'🍀', t:'Lucky Charm',  d:l=>`+${(l+1)*5}% crit chance in runs`,   base:5, growth:1.9},
+  {k:'ignite',    ic:'🔥', t:'Pyromancy',    d:l=>`+${(l+1)*12}% chance to Burn on hit`, base:6, growth:1.85},
 ];
 
 function towerRow({ic,title,desc,lvl,cost,cur,canBuy,maxed,onBuy}){
@@ -1575,10 +1692,42 @@ function towerRow({ic,title,desc,lvl,cost,cur,canBuy,maxed,onBuy}){
   if(canBuy && !maxed) div.onclick=onBuy;
   return div;
 }
+function renderStats(panel){
+  const line=(ic,t,v,sub,cls)=>`<div class="stat-line"><div class="sl-ic">${ic}</div><div class="sl-body"><div class="sl-t">${t}</div>${sub?`<div class="sl-sub">${sub}</div>`:''}</div><div class="sl-v ${cls||''}">${v}</div></div>`;
+  const crit=Math.round((BAL.baseCrit+(G.mods.lucky||0)*BAL.luckyPerLvl)*100);
+  let h='';
+  h+=`<div class="stat-head">Offense</div>`;
+  h+=line('⚡','Wizard Power', G.power, 'Scales the damage of every spell');
+  h+=line('🔮','Spell Mastery', '+'+(G.upg.spellmult*6)+'%', 'Bonus to all spell damage', G.upg.spellmult?'':'dim');
+  h+=line('🎯','Overcharge', '+'+(G.mods.overcharge*6)+'%', 'Amplifies gamble results', G.mods.overcharge?'':'dim');
+  h+=line('🍀','Crit Chance', crit+'%', 'Chance for a critical hit');
+  h+=line('💥','Crit Damage', G.critMult.toFixed(1)+'×', 'Extra damage on a crit');
+  h+=line('🔥','Burn Chance', '+'+(G.mods.ignite*12)+'%', 'Chance to ignite enemies on hit', G.mods.ignite?'':'dim');
+  h+=`<div class="stat-head">Defense</div>`;
+  h+=line('❤️','Max HP', G.maxHp, 'Health you dive with');
+  h+=line('🛡️','Ward Shield', (G.mods.ward*20)||'—', 'Shield at the start of each fight', G.mods.ward?'':'dim');
+  h+=line('🪨','Damage Reduction', Math.min(60,G.mods.bulwark*6)+'%', 'Less damage from enemy hits', G.mods.bulwark?'':'dim');
+  h+=line('🌿','Room Heal', Math.round((BAL.roomHeal+G.upg.regen*0.04)*100)+'%', 'HP restored between rooms');
+  h+=line('🌀','Second Wind', G.upg.revive?G.upg.revive+'×/run':'—', 'Cheat death, revive at 30% HP', G.upg.revive?'':'dim');
+  h+=`<div class="stat-head">Economy</div>`;
+  h+=line('💰','Gold Find', '+'+((G.mods.goldRush||0)*12)+'%', 'Bonus gold from the dungeon');
+  h+=line('🔮','Idle Income', '+'+fmt(idleRate()*60)+'/min', 'Tower gold earned while resting', 'neon');
+  h+=line('🔷','Idle Shards', shardRate()>0?('+'+(shardRate()*60).toFixed(1)+'/min'):'—', 'Tower shard drip', 'neon');
+  h+=`<div class="stat-head">Tower</div>`;
+  h+=line('⚡','Turret Level', 'Lv '+G.upg.fireRate, 'Tower fire rate & income');
+  h+=line('🔋','Idle Cap', (2+G.upg.idleCap*2)+'h', 'Max offline earnings stored');
+  h+=`<div class="stat-head">Dungeon</div>`;
+  h+=line('🚩','Checkpoint', 'Floor '+G.checkpoint, 'Where your next dive begins', 'neon');
+  h+=line('💀','Bosses Cleared', G.bossesCleared, 'Each one permanently boosts idle income');
+  h+=line('🎁','Relic Slots', RELIC_CAP, 'Max distinct relics per run');
+  panel.innerHTML=h;
+}
 function renderTowerPanel(){
   const panel=$('#towerPanel'); if(!panel) return;
   panel.innerHTML='';
   const tab=G.towerTab;
+
+  if(tab==='stats'){ renderStats(panel); return; }
 
   if(tab==='tower' || tab==='wizard'){
     const head=document.createElement('div'); head.className='panel-head';
@@ -1587,7 +1736,7 @@ function renderTowerPanel(){
     GOLD_UPGRADES[tab].forEach(u=>{
       const lvl=G.upg[u.k], cost=costOf(u.base,u.growth,lvl), can=G.gold>=cost;
       panel.appendChild(towerRow({ ic:u.ic, title:u.t, desc:u.d(lvl), lvl, cost, cur:'gold', canBuy:can,
-        onBuy:()=>{ if(G.gold<cost)return; G.gold-=cost; G.upg[u.k]++; recompute(); S.win(); renderTowerPanel(); renderHUD(); save(); } }));
+        onBuy:()=>{ if(G.gold<cost)return; G.gold-=cost; G.upg[u.k]++; recompute(); S.win(); towerPulse(); renderTowerPanel(); renderHUD(); save(); } }));
     });
   }
 
@@ -1630,68 +1779,105 @@ function renderTowerPanel(){
    IDLE TOWER DEFENSE (canvas)
    ========================================================================= */
 let TD=null;
+const TD_FOES=[
+  {c1:'#8dffb0',c2:'#1f9c52'}, {c1:'#c1a3ff',c2:'#5a2fb0'},
+  {c1:'#ff9fb0',c2:'#c22344'}, {c1:'#9bedff',c2:'#1f7fa8'},
+  {c1:'#ffe08a',c2:'#c98a12'},
+];
+const TOWER_H=66;              // keep in sync between draw + physics
+function towerPulse(){ if(TD) TD.pulseT=0.9; }   // ripple when an upgrade is bought
 function startTowerLoop(){
   const cv=$('#tdCanvas'), stage=$('#towerStage'); if(!cv||!stage) return;
   const ctx=cv.getContext('2d');
   const fit=()=>{ const r=stage.getBoundingClientRect(); cv.width=r.width; cv.height=r.height; };
   fit();
   if(TD && TD.ro) TD.ro.disconnect();
-  TD={ mons:[], bolts:[], pops:[], last:performance.now(), spawnT:0.5, fireT:0, pending:0, run:true, ro:new ResizeObserver(fit) };
+  TD={ mons:[], bolts:[], pops:[], last:performance.now(), spawnT:0.4, fireT:0, pending:0, run:true, t:0, pulseT:0, ro:new ResizeObserver(fit) };
   TD.ro.observe(stage);
 
-  function drawTower(x,y){
-    ctx.save();
-    const w=32,h=58;
-    ctx.fillStyle='#2a1a5a'; ctx.strokeStyle='#b28bff'; ctx.lineWidth=2;
-    ctx.beginPath(); ctx.moveTo(x-w/2,y); ctx.lineTo(x-w/2+3,y-h); ctx.lineTo(x+w/2-3,y-h); ctx.lineTo(x+w/2,y); ctx.closePath(); ctx.fill(); ctx.stroke();
-    // battlement
-    for(let i=-1;i<=1;i++){ ctx.fillRect(x+i*10-3, y-h-5, 6, 6); }
-    // door
-    ctx.fillStyle='#150e2b'; ctx.beginPath(); ctx.moveTo(x-6,y); ctx.lineTo(x-6,y-12); ctx.arc(x,y-12,6,Math.PI,0); ctx.lineTo(x+6,y); ctx.fill();
-    // window glow
-    ctx.fillStyle='#ffd35c'; ctx.shadowColor='#ffd35c'; ctx.shadowBlur=14; ctx.fillRect(x-3,y-h*0.62,6,7); ctx.shadowBlur=0;
-    // floating orb
-    const ob=y-h-20;
-    ctx.fillStyle='#4be1ff'; ctx.shadowColor='#4be1ff'; ctx.shadowBlur=18; ctx.beginPath(); ctx.arc(x,ob,5,0,7); ctx.fill(); ctx.shadowBlur=0;
+  function rr(x,y,w,h,r){ ctx.beginPath(); ctx.moveTo(x+r,y); ctx.arcTo(x+w,y,x+w,y+h,r); ctx.arcTo(x+w,y+h,x,y+h,r); ctx.arcTo(x,y+h,x,y,r); ctx.arcTo(x,y,x+w,y,r); ctx.closePath(); }
+
+  function drawEnemy(m){
+    const r=m.r, sq=1+Math.sin(TD.t*6+m.phase)*0.08;
+    ctx.save(); ctx.translate(m.x,m.y); ctx.scale(1/sq, sq);
+    const grd=ctx.createRadialGradient(0,-r*0.35,r*0.2, 0,0,r);
+    grd.addColorStop(0,m.c1); grd.addColorStop(1,m.c2);
+    ctx.fillStyle=grd; ctx.shadowColor=m.c2; ctx.shadowBlur=10;
+    ctx.beginPath(); ctx.arc(0,0,r,0,7); ctx.fill(); ctx.shadowBlur=0;
+    ctx.fillStyle=m.c2;   // horns
+    ctx.beginPath(); ctx.moveTo(-r*0.6,-r*0.5); ctx.lineTo(-r*0.22,-r*0.95); ctx.lineTo(-r*0.05,-r*0.5); ctx.fill();
+    ctx.beginPath(); ctx.moveTo(r*0.6,-r*0.5); ctx.lineTo(r*0.22,-r*0.95); ctx.lineTo(r*0.05,-r*0.5); ctx.fill();
+    ctx.fillStyle='#fff';   // eyes
+    ctx.beginPath(); ctx.arc(-r*0.3,-r*0.05,r*0.24,0,7); ctx.arc(r*0.3,-r*0.05,r*0.24,0,7); ctx.fill();
+    ctx.fillStyle='#170e2c';
+    ctx.beginPath(); ctx.arc(-r*0.27,0,r*0.12,0,7); ctx.arc(r*0.33,0,r*0.12,0,7); ctx.fill();
     ctx.restore();
-    return {x, y:ob};
+  }
+
+  function drawTower(x, groundY){
+    const w=36, h=TOWER_H;
+    ctx.fillStyle='rgba(0,0,0,.45)'; ctx.beginPath(); ctx.ellipse(x, groundY+3, w*0.72, 7, 0,0,7); ctx.fill();
+    const bg=ctx.createLinearGradient(x-w/2,0,x+w/2,0);
+    bg.addColorStop(0,'#2e1e5e'); bg.addColorStop(.5,'#5a3fa0'); bg.addColorStop(1,'#241650');
+    ctx.fillStyle=bg; ctx.strokeStyle='#b28bff'; ctx.lineWidth=2;
+    rr(x-w/2, groundY-h, w, h, 7); ctx.fill(); ctx.stroke();
+    ctx.fillStyle='#4a2f88';   // battlements
+    for(let i=-1;i<=1;i++) ctx.fillRect(x+i*12-4, groundY-h-7, 8, 9);
+    ctx.fillStyle='rgba(255,255,255,.06)'; rr(x-w/2+3, groundY-h+4, w-6, 9, 4); ctx.fill();
+    ctx.fillStyle='#140c28';   // door
+    ctx.beginPath(); ctx.moveTo(x-7,groundY); ctx.lineTo(x-7,groundY-14); ctx.arc(x,groundY-14,7,Math.PI,0); ctx.lineTo(x+7,groundY); ctx.fill();
+    ctx.fillStyle='#ffd35c'; ctx.shadowColor='#ffd35c'; ctx.shadowBlur=12;   // window
+    ctx.fillRect(x-4, groundY-h*0.60, 8, 10); ctx.shadowBlur=0;
+    if(G.upg.towerShard>0){   // shard crystal appears with the extractor
+      ctx.save(); ctx.translate(x+w/2-1, groundY-h*0.42); ctx.rotate(Math.PI/4);
+      ctx.fillStyle='#4be1ff'; ctx.shadowColor='#4be1ff'; ctx.shadowBlur=10;
+      const s=4+Math.min(3,G.upg.towerShard*0.6); ctx.fillRect(-s,-s,s*2,s*2); ctx.restore(); ctx.shadowBlur=0;
+    }
+    const orbY=groundY-h-24;   // orb — glow & size scale with Arcane Turret
+    const orbR=6+Math.min(4, G.upg.towerRate*0.5);
+    ctx.fillStyle='#8ff0ff'; ctx.shadowColor='#4be1ff'; ctx.shadowBlur=10+Math.min(22, G.upg.towerRate*2.2);
+    ctx.beginPath(); ctx.arc(x,orbY,orbR,0,7); ctx.fill(); ctx.shadowBlur=0;
+    const runes=Math.min(6, G.upg.fireRate);   // orbiting runes = Rapid Runes level
+    for(let i=0;i<runes;i++){
+      const a=TD.t*2 + i*(Math.PI*2/runes), rx=x+Math.cos(a)*16, ry=orbY+Math.sin(a)*9;
+      ctx.fillStyle='#ffd35c'; ctx.shadowColor='#ffb02e'; ctx.shadowBlur=8;
+      ctx.beginPath(); ctx.arc(rx,ry,2.4,0,7); ctx.fill();
+    }
+    ctx.shadowBlur=0;
+    return orbY;
   }
 
   function frame(t){
     if(!TD||!TD.run) return;
-    const dt=Math.min(0.05,(t-TD.last)/1000); TD.last=t;
-    const W=cv.width, H=cv.height, tx=W/2, ty=H-14;
+    const dt=Math.min(0.05,(t-TD.last)/1000); TD.last=t; TD.t+=dt;
+    const W=cv.width, H=cv.height, tx=W/2, ty=H-16, orbY=ty-TOWER_H-24;
 
-    // accrue idle income
     const inc=idleRate()*dt; G.gold+=inc; TD.pending+=inc;
     G._shardFrac += shardRate()*dt;
     if(G._shardFrac>=1){ const n=Math.floor(G._shardFrac); G._shardFrac-=n; G.shards+=n;
-      TD.pops.push({x:tx,y:ty-70,txt:'+'+n+'🔷',c:'#4be1ff',life:1.1,age:0}); }
+      TD.pops.push({x:tx,y:orbY-14,txt:'+'+n+'🔷',c:'#4be1ff',life:1.1,age:0}); }
 
-    // spawn monsters
     TD.spawnT-=dt;
-    if(TD.spawnT<=0){ TD.spawnT=rand(0.7,1.4);
-      TD.mons.push({ x:rand(W*0.12,W*0.88), y:-12, r:rand(9,13), spd:rand(12,22), g:pick(['👺','🦇','🟢','👹','🕷️','👻']) }); }
+    if(TD.spawnT<=0){ TD.spawnT=rand(0.8,1.6);
+      TD.mons.push({ x:rand(W*0.14,W*0.86), y:-14, r:rand(11,15), spd:rand(11,18), phase:rand(0,6.28), ...pick(TD_FOES) }); }
 
-    // fire at nearest
     TD.fireT-=dt;
-    const fireEvery=clamp(0.85 - G.upg.fireRate*0.05, 0.26, 0.85);
-    if(TD.fireT<=0 && TD.mons.length){
-      TD.fireT=fireEvery;
+    const fireEvery=clamp(0.8 - G.upg.fireRate*0.06, 0.22, 0.8);
+    const fireLine=H*0.18;   // only shoot foes that have descended into view
+    if(TD.fireT<=0){
       let tgt=null,bd=1e9;
-      for(const m of TD.mons){ if(m.dead)continue; const d=Math.hypot(m.x-tx,m.y-(ty-70)); if(d<bd){bd=d;tgt=m;} }
-      if(tgt) TD.bolts.push({x:tx,y:ty-70,tgt,spd:560});
+      for(const m of TD.mons){ if(m.dead || m.y<fireLine)continue; const d=Math.hypot(m.x-tx,m.y-orbY); if(d<bd){bd=d;tgt=m;} }
+      if(tgt){ TD.fireT=fireEvery; TD.bolts.push({x:tx,y:orbY,tgt,spd:600,trail:[]}); }
     }
 
-    // update monsters
-    for(const m of TD.mons){ if(m.dead)continue; m.y+=m.spd*dt; if(m.y>ty-4) m.dead=true; }
-    // update bolts
+    for(const m of TD.mons){ if(m.dead)continue; m.y+=m.spd*dt; m.x+=Math.sin(TD.t*3+m.phase)*0.3; if(m.y>ty-6) m.dead=true; }
     for(const b of TD.bolts){ if(b.done)continue; const m=b.tgt;
       if(!m||m.dead){ b.done=true; continue; }
+      b.trail.push({x:b.x,y:b.y}); if(b.trail.length>6) b.trail.shift();
       const dx=m.x-b.x, dy=m.y-b.y, d=Math.hypot(dx,dy), step=b.spd*dt;
       if(d<=step){ b.done=true; m.dead=true;
         const pop=Math.floor(TD.pending); if(pop>=1){ TD.pending-=pop; TD.pops.push({x:m.x,y:m.y,txt:'+'+fmt(pop),c:'#ffd35c',life:.9,age:0}); }
-        for(let i=0;i<8;i++) TD.pops.push({spark:true,x:m.x,y:m.y,vx:rand(-70,70),vy:rand(-90,10),life:.5,age:0,c:'#ffd35c'});
+        for(let i=0;i<10;i++) TD.pops.push({spark:true,x:m.x,y:m.y,vx:rand(-80,80),vy:rand(-100,10),life:.5,age:0,c:m.c1});
       } else { b.x+=dx/d*step; b.y+=dy/d*step; }
     }
     TD.mons=TD.mons.filter(m=>!m.dead);
@@ -1702,17 +1888,25 @@ function startTowerLoop(){
     const g=ctx.createRadialGradient(tx,ty,4,tx,ty,H*0.95);
     g.addColorStop(0,'rgba(123,75,255,.22)'); g.addColorStop(1,'transparent');
     ctx.fillStyle=g; ctx.fillRect(0,0,W,H);
-    const orb=drawTower(tx,ty);
-    ctx.textAlign='center'; ctx.textBaseline='middle';
-    for(const m of TD.mons){ ctx.font=(m.r*1.7|0)+'px serif'; ctx.fillText(m.g,m.x,m.y); }
-    for(const b of TD.bolts){ ctx.beginPath(); ctx.fillStyle='#c8f5ff'; ctx.shadowColor='#4be1ff'; ctx.shadowBlur=12; ctx.arc(b.x,b.y,3.5,0,7); ctx.fill(); ctx.shadowBlur=0; }
+    ctx.strokeStyle='rgba(178,139,255,.18)'; ctx.lineWidth=1;
+    ctx.beginPath(); ctx.moveTo(0,ty+2); ctx.lineTo(W,ty+2); ctx.stroke();
+    if(TD.pulseT>0){ TD.pulseT-=dt; const k=1-TD.pulseT/0.9;
+      ctx.strokeStyle=`rgba(255,211,92,${(1-k)*0.6})`; ctx.lineWidth=2;
+      ctx.beginPath(); ctx.arc(tx, ty-30, 20+k*60, 0,7); ctx.stroke(); }
+    for(const m of TD.mons) drawEnemy(m);
+    drawTower(tx,ty);
+    for(const b of TD.bolts){
+      for(let i=0;i<b.trail.length;i++){ const tp=b.trail[i];
+        ctx.fillStyle=`rgba(139,240,255,${i/b.trail.length*0.5})`; ctx.beginPath(); ctx.arc(tp.x,tp.y,2,0,7); ctx.fill(); }
+      ctx.fillStyle='#e6fbff'; ctx.shadowColor='#4be1ff'; ctx.shadowBlur=12;
+      ctx.beginPath(); ctx.arc(b.x,b.y,3.5,0,7); ctx.fill(); ctx.shadowBlur=0;
+    }
     for(const p of TD.pops){ p.age+=dt;
       if(p.spark){ p.x+=p.vx*dt; p.y+=p.vy*dt; p.vy+=220*dt; ctx.globalAlpha=Math.max(0,1-p.age/p.life); ctx.fillStyle=p.c; ctx.beginPath(); ctx.arc(p.x,p.y,2.4,0,7); ctx.fill(); ctx.globalAlpha=1; }
-      else { p.y-=22*dt; ctx.globalAlpha=Math.max(0,1-p.age/p.life); ctx.font='800 14px Inter,sans-serif'; ctx.fillStyle=p.c; ctx.fillText(p.txt,p.x,p.y); ctx.globalAlpha=1; }
+      else { p.y-=22*dt; ctx.globalAlpha=Math.max(0,1-p.age/p.life); ctx.font='800 14px Inter,sans-serif'; ctx.textAlign='center'; ctx.fillStyle=p.c; ctx.fillText(p.txt,p.x,p.y); ctx.globalAlpha=1; }
     }
     TD.pops=TD.pops.filter(p=>p.age<p.life);
 
-    // live HUD
     const idleTxt='+'+fmt(idleRate()*60)+'/min';
     const rb=$('#towerIdleBadge'); if(rb) rb.textContent=idleTxt;
     const ir=$('#idleRateTxt'); if(ir) ir.textContent=idleTxt;
