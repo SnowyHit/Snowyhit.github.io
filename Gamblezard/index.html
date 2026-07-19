@@ -187,13 +187,15 @@
   /* ---------- Spell bar ---------- */
   .spellbar {
     position: relative; z-index: 3;
-    display: grid; grid-template-columns: repeat(6, 1fr); gap: 8px;
-    padding: 10px 12px calc(12px + env(safe-area-inset-bottom));
+    display: flex; flex-wrap: wrap; justify-content: center; gap: 8px;
+    width: 100%; max-width: 560px; margin: 0 auto;
+    padding: 8px 12px calc(12px + env(safe-area-inset-bottom));
     background: linear-gradient(180deg, transparent, rgba(10,7,19,.7) 30%);
   }
   .spell {
-    position: relative; cursor: pointer;
-    border-radius: 16px; padding: 10px 4px 8px;
+    position: relative; cursor: pointer; min-width: 0;
+    flex: 0 0 calc(25% - 6px);
+    border-radius: 16px; padding: 9px 4px 8px;
     background: var(--panel); border: 1px solid var(--panel-line);
     text-align: center; transition: transform .12s, box-shadow .2s, border-color .2s;
     box-shadow: inset 0 0 16px rgba(123,75,255,.12);
@@ -204,7 +206,8 @@
     place-items:center; font-size:9px; font-weight:800; color:var(--ink-dim);
     background:rgba(0,0,0,.35); border:1px solid var(--panel-line); border-radius:5px; }
   .spell .glyph { font-size: 26px; filter: drop-shadow(0 0 8px rgba(255,211,92,.35)); }
-  .spell .nm { font-size: 9.5px; font-weight: 800; margin-top: 3px; color: var(--ink-dim); letter-spacing:.3px; }
+  .spell .nm { font-size: 9.5px; font-weight: 800; margin-top: 3px; color: var(--ink-dim); letter-spacing:.3px;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
   .spell.locked { filter: grayscale(.8) brightness(.6); }
   .spell.locked::after {
     content: "🔒 " attr(data-cost); position:absolute; inset:0;
@@ -424,6 +427,8 @@
   .card .b { align-self:flex-end; transform: rotate(180deg); }
   @keyframes deal { from{transform: translateY(-20px) rotate(-8deg); opacity:0} to{transform:none;opacity:1} }
   .bj-total { font-size:12px; color:var(--ink-dim); font-weight:800; margin-top:2px; }
+  .bj-actions { display:flex; gap:8px; }
+  .bj-actions .btn { flex:1; }
 
   /* Damage numbers + fx layer */
   #fx { position:absolute; inset:0; z-index:15; pointer-events:none; overflow:hidden; }
@@ -478,6 +483,12 @@
     background:var(--panel); border:1px solid var(--panel-line); border-radius:12px; padding:8px 12px; transition: border-color .15s; }
   .retreat-btn:hover { border-color: var(--purple-2); }
   #app.at-dungeon .retreat-btn { display:block; }
+  .settings-btn { display:none; margin-left:auto; cursor:pointer; font-size:16px; line-height:1;
+    padding:8px 11px; border-radius:12px; background:var(--panel); border:1px solid var(--panel-line);
+    color:var(--ink); transition:border-color .15s, transform .1s; }
+  .settings-btn:hover { border-color: var(--purple-2); }
+  .settings-btn:active { transform: scale(.94); }
+  #app.at-tower .settings-btn { display:block; }
 
   /* ---------- Tower ---------- */
   .tower-stage { position:relative; height:34%; min-height:168px; margin:4px 12px 0; border-radius:18px; overflow:hidden;
@@ -552,6 +563,7 @@
     <div class="stat gold"><span class="ic">🪙</span><span id="gold">0</span></div>
     <div class="stat shard"><span class="ic">🔷</span><span id="shard">0</span></div>
     <div class="stat idle"><span class="ic">🔮</span><span id="idleRateTxt">+0/min</span></div>
+    <button class="settings-btn" id="settingsBtn" title="Settings">⚙️</button>
     <button class="retreat-btn" id="retreatBtn" title="Return to the tower">🏰 Retreat</button>
     <div class="floor-badge"><small>FLOOR</small><span id="floorNum">1</span></div>
   </div>
@@ -657,6 +669,7 @@ const BAL = {
 let AC=null;
 function ac(){ if(!AC){ try{AC=new (window.AudioContext||window.webkitAudioContext)();}catch(e){} } return AC; }
 function beep(freq=440, dur=0.08, type='sine', vol=0.12, slideTo=null){
+  if(G.muted) return;
   const c=ac(); if(!c) return;
   const o=c.createOscillator(), g=c.createGain();
   o.type=type; o.frequency.value=freq;
@@ -691,6 +704,7 @@ const G = {
   bossesCleared: 0,
   scene: 'tower',
   towerTab: 'stats',
+  muted: false,
   // permanent upgrade levels (bought in the tower)
   upg: { power:0, maxhp:0, crit:0, spellmult:0, regen:0, revive:0,
          towerRate:0, fireRate:0, idleMult:0, bossBonus:0, towerShard:0, idleCap:0 },
@@ -820,8 +834,7 @@ G.wiz_st = { shield:0 };
 
 function renderSpellbar(){
   const bar=$('#spellbar'); bar.innerHTML='';
-  const order=['spark','slots','dice','crash','wheel','crate'];
-  // jack replaces one slot when unlocked to keep 6-grid clean; show crate/jack toggle
+  const order=['spark','slots','dice','crash','wheel','crate','jack'];
   const list = order.slice();
   list.forEach((k,i)=>{
     const sp=SPELLS[k];
@@ -1058,6 +1071,7 @@ const MINI = {
   crash: { render: renderCrash },   // self-starts + you time the CASH OUT
   wheel: { render: renderWheel, auto: spinWheel },
   crate: { render: renderCrate },   // you pick a crate
+  jack:  { render: renderJack },    // you Hit / Stand vs the dealer
 };
 function openMini(key){
   const dock=$('#castDock'), mini=$('#mini');
@@ -1382,6 +1396,70 @@ function burstAt(el, color, n){
 }
 
 /* =========================================================================
+   MINIGAME 7 — NECROJACK (Blackjack)
+   ========================================================================= */
+const CARD_SUITS=['♠','♥','♦','♣'];
+const CARD_RANKS=[['A',11],['2',2],['3',3],['4',4],['5',5],['6',6],['7',7],['8',8],['9',9],['10',10],['J',10],['Q',10],['K',10]];
+function bjCard(){ const s=pick(CARD_SUITS), rk=pick(CARD_RANKS); return {r:rk[0], v:rk[1], s, red:(s==='♥'||s==='♦')}; }
+function bjValue(cards){ let sum=0, aces=0; for(const c of cards){ sum+=c.v; if(c.r==='A') aces++; } while(sum>21 && aces>0){ sum-=10; aces--; } return sum; }
+function renderJack(mini){
+  G._bj={ player:[bjCard(),bjCard()], dealer:[bjCard(),bjCard()], reveal:false, done:false, msg:'' };
+  drawJack(mini);
+}
+function drawJack(mini){
+  const st=G._bj, pv=bjValue(st.player);
+  const card=c=>`<div class="card ${c.red?'red':''}"><span>${c.r}</span><span class="b">${c.s}</span></div>`;
+  const dealerCards = st.reveal ? st.dealer.map(card).join('') : card(st.dealer[0])+`<div class="card back"></div>`;
+  const dv = st.reveal ? bjValue(st.dealer) : '?';
+  mini.className='mini docked';
+  mini.innerHTML=`
+    <h3>🃏 Necrojack</h3>
+    <div class="sub">Beat the dealer · 21 = massive + Curse · bust backfires</div>
+    <div class="bj-area">
+      <div class="bj-row"><div class="who">DEALER · ${dv}</div><div class="cards">${dealerCards}</div></div>
+      <div class="bj-row"><div class="who">YOU · ${pv}</div><div class="cards">${st.player.map(card).join('')}</div></div>
+    </div>
+    <div class="result-line" id="jackRes" style="color:${st.color||'var(--ink)'}">${st.msg||''}</div>
+    ${st.done?'':'<div class="bj-actions"><button class="btn" id="bjHit">HIT</button><button class="btn ghost" id="bjStand">STAND</button></div>'}`;
+  if(!st.done){ $('#bjHit').onclick=jackHit; $('#bjStand').onclick=jackStand; }
+}
+function jackHit(){
+  const st=G._bj; if(st.done) return;
+  st.player.push(bjCard());
+  const pv=bjValue(st.player);
+  if(pv>21){ st.reveal=true; resolveJack('bust'); }
+  else if(pv===21){ jackStand(); }
+  else drawJack($('#mini'));
+}
+function jackStand(){
+  const st=G._bj; if(st.done) return;
+  st.reveal=true;
+  while(bjValue(st.dealer)<17) st.dealer.push(bjCard());
+  const pv=bjValue(st.player), dv=bjValue(st.dealer);
+  let outcome;
+  if(st.player.length===2 && pv===21) outcome='blackjack';
+  else if(dv>21 || pv>dv) outcome='win';
+  else if(pv===dv) outcome='draw';
+  else outcome='lose';
+  resolveJack(outcome);
+}
+function resolveJack(outcome){
+  const st=G._bj; st.done=true;
+  const map={
+    blackjack:{mult:4.0, msg:'BLACKJACK! 💀', status:{curse:0.2}, crit:true, color:'var(--gold)'},
+    win:      {mult:2.2, msg:'You win!',       color:'var(--green)'},
+    draw:     {mult:0.4, msg:'Push — glancing hit', color:'var(--ink)'},
+    lose:     {mult:0,   msg:'Dealer wins — miss', color:'var(--ink-dim)'},
+    bust:     {mult:1.0, msg:'BUST — backfire!', self:true, color:'var(--red)'},
+  };
+  const o=map[outcome]; st.msg=o.msg; st.color=o.color;
+  drawJack($('#mini'));
+  if(outcome==='blackjack'){ S.jackpot(); banner('BLACKJACK','linear-gradient(90deg,var(--gold),var(--pink))'); }
+  else if(outcome==='win') S.win(); else S.fail();
+  resolve(o.mult, {status:o.status, self:o.self, crit:o.crit, hold: outcome==='blackjack'?950:800});
+}
+
+/* =========================================================================
    DEATH → SHOP → RESTART
    ========================================================================= */
 function death(){
@@ -1595,7 +1673,7 @@ const SAVE_KEY='gamblerWizardSave_v1';
 function save(){
   try{ localStorage.setItem(SAVE_KEY, JSON.stringify({
     gold:G.gold, shards:G.shards, bossesCleared:G.bossesCleared, checkpoint:G.checkpoint,
-    upg:G.upg, mods:G.mods,
+    upg:G.upg, mods:G.mods, muted:G.muted,
     spellLvls: Object.fromEntries(Object.keys(SPELLS).map(k=>[k, SPELLS[k].lvl||0])),
     unlocked: Object.keys(SPELLS).filter(k=>SPELLS[k].unlocked),
     lastSeen: Date.now(),
@@ -1606,6 +1684,7 @@ function load(){
     const s=JSON.parse(localStorage.getItem(SAVE_KEY)); if(!s) return null;
     G.gold=s.gold||0; G.shards=s.shards||0; G.bossesCleared=s.bossesCleared||0;
     G.checkpoint=s.checkpoint||1;
+    G.muted=!!s.muted;
     Object.assign(G.upg, s.upg||{}); Object.assign(G.mods, s.mods||{});
     Object.keys(SPELLS).forEach(k=>{
       SPELLS[k].lvl = (s.spellLvls && s.spellLvls[k])||0;
@@ -1648,6 +1727,53 @@ function goToTower(){
 }
 function enterDungeon(){
   save(); showScene('dungeon'); newRun();
+}
+
+/* =========================================================================
+   SETTINGS (mute / reset)
+   ========================================================================= */
+function showSettings(){
+  const m=$('#modal'), sheet=$('#sheet');
+  sheet.innerHTML=`
+    <h2>⚙️ Settings</h2>
+    <div class="upgrades" style="gap:10px; margin:12px 0 16px">
+      <div class="upg" id="muteRow">
+        <div class="u-ic">${G.muted?'🔇':'🔊'}</div>
+        <div class="u-body"><div class="u-t">Sound Effects</div><div class="u-d">${G.muted?'Muted — tap to turn on':'On — tap to mute'}</div></div>
+        <div class="u-cost" style="color:${G.muted?'var(--ink-dim)':'var(--green)'}">${G.muted?'OFF':'ON'}</div>
+      </div>
+      <div class="upg" id="resetRow" style="border-color:rgba(255,77,94,.5)">
+        <div class="u-ic">🗑️</div>
+        <div class="u-body"><div class="u-t" style="color:var(--red)">Reset Game</div><div class="u-d">Erase all progress permanently</div></div>
+      </div>
+    </div>
+    <button class="btn" id="settingsClose">Close</button>`;
+  $('#muteRow').onclick=()=>{ G.muted=!G.muted; save(); if(!G.muted) S.click(); showSettings(); };
+  $('#resetRow').onclick=()=>confirmReset();
+  $('#settingsClose').onclick=()=>{ S.click(); m.classList.remove('on'); };
+  m.classList.add('on');
+}
+function confirmReset(){
+  const sheet=$('#sheet');
+  sheet.innerHTML=`
+    <h2 style="color:var(--red)">Reset Everything?</h2>
+    <p>This wipes all gold, shards, upgrades, unlocked spells and dungeon progress.<br><b>This cannot be undone.</b></p>
+    <button class="btn ghost" id="resetNo">Cancel</button>
+    <button class="btn danger" id="resetYes" style="margin-top:8px">Yes, erase my save</button>`;
+  $('#resetNo').onclick=()=>{ S.click(); showSettings(); };
+  $('#resetYes').onclick=()=>resetGame();
+}
+function resetGame(){
+  try{ localStorage.removeItem(SAVE_KEY); }catch(e){}
+  // reset in-memory to defaults so the beforeunload save writes a clean slate, then reload
+  G.gold=0; G.shards=0; G.bossesCleared=0; G.checkpoint=1; G.muted=false;
+  G.upg={ power:0, maxhp:0, crit:0, spellmult:0, regen:0, revive:0,
+          towerRate:0, fireRate:0, idleMult:0, bossBonus:0, towerShard:0, idleCap:0 };
+  G.mods={ goldRush:0, ward:0, lucky:0, overcharge:0, bulwark:0, ignite:0 };
+  Object.keys(SPELLS).forEach(k=>{ SPELLS[k].lvl=0; SPELLS[k].unlocked=['spark','slots','dice'].includes(k); });
+  G.run.relics={}; recomputeRun(); recompute(); G.hp=G.maxHp;
+  save();
+  location.reload();
 }
 
 /* =========================================================================
@@ -1961,6 +2087,7 @@ window.addEventListener('load', ()=>{
     };
   });
   $('#enterBtn').onclick=()=>{ S.click(); enterDungeon(); };
+  $('#settingsBtn').onclick=()=>{ ac(); S.click(); showSettings(); };
   $('#retreatBtn').onclick=()=>{ if(G.busy) return; S.click(); closeMini(); goToTower(); };
 
   // persist on leave
@@ -1981,9 +2108,9 @@ window.addEventListener('load', ()=>{
       const b=$('#cashBtn'); if(b && !b.disabled){ e.preventDefault(); b.click(); }
       return;
     }
-    // number keys 1-6 = cast that spell
+    // number keys 1-7 = cast that spell
     const n=parseInt(e.key,10);
-    if(n>=1 && n<=6 && !G.busy && !docked){
+    if(n>=1 && n<=7 && !G.busy && !docked){
       const el=document.querySelectorAll('#spellbar .spell')[n-1];
       if(el) el.click();
     }
