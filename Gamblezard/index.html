@@ -163,6 +163,13 @@
     animation: pop .25s ease, stunpulse 1s ease-in-out infinite; }
   .chip.curse { color: var(--pink); background:rgba(255,92,200,.16); border-color:rgba(255,92,200,.4); }
   .chip.shield { color: var(--green); background:rgba(77,255,161,.14); border-color:rgba(77,255,161,.4); }
+  .chip.weak   { color: var(--green); background:rgba(77,255,161,.14); border-color:rgba(77,255,161,.4); }
+  .chip.resist { color: var(--ink-dim); background:rgba(255,255,255,.05); }
+
+  /* spell-vs-monster affinity strip under the enemy name */
+  .aff-strip { display:flex; gap:5px; justify-content:flex-end; align-items:center; flex-wrap:wrap; margin-bottom:4px; }
+  .aff-strip:empty { display:none; }
+  .aff-strip .trait-line { flex-basis:100%; font-size:10px; color:var(--ink-dim); text-align:right; }
   @keyframes pop { from { transform: scale(.4); opacity:0 } to { transform: scale(1); opacity:1 } }
   @keyframes stunpulse { 0%,100%{ box-shadow:0 0 0 0 rgba(75,225,255,0);} 50%{ box-shadow:0 0 10px 1px rgba(75,225,255,.5);} }
 
@@ -215,6 +222,13 @@
     background: rgba(6,4,14,.55); border-radius:16px;
   }
   .spell.disabled { pointer-events:none; opacity:.5; }
+  .spell.stunned { filter: grayscale(.9) brightness(.65); }
+  .spell.stunned::after {
+    content:'⚡'; position:absolute; inset:0;
+    display:grid; place-items:center; font-size:22px;
+    background: rgba(6,4,14,.5); border-radius:16px;
+    filter: drop-shadow(0 0 6px var(--neon));
+  }
   .spell.tut { animation: tut 1.2s ease-in-out infinite; }
   @keyframes tut { 0%,100%{ box-shadow: 0 0 0 0 rgba(255,211,92,.0), inset 0 0 16px rgba(123,75,255,.12);} 50%{ box-shadow: 0 0 0 4px rgba(255,211,92,.35), inset 0 0 16px rgba(123,75,255,.12);} }
 
@@ -469,6 +483,21 @@
   .upg .u-d { font-size:11px; color: var(--ink-dim); }
   .upg .u-cost { font-weight:800; color: var(--gold); font-size:13px; white-space:nowrap; }
   .upg.cant { opacity:.5; pointer-events:none; }
+
+  /* daily quest progress bar */
+  .qbar { height:5px; border-radius:3px; background:rgba(255,255,255,.08); margin:4px 0 2px; overflow:hidden; }
+  .qbar i { display:block; height:100%; background:linear-gradient(90deg,var(--neon),var(--green)); border-radius:3px; }
+
+  /* dodge timing challenge */
+  .dodge-track { position:relative; height:26px; border-radius:13px; margin:10px auto 12px; max-width:340px;
+    background:rgba(0,0,0,.45); border:1px solid var(--panel-line); overflow:hidden; }
+  .dodge-track .dz.safe { position:absolute; left:34%; width:32%; top:0; bottom:0; background:rgba(77,255,161,.22); }
+  .dodge-track .dz.perfect { position:absolute; left:46%; width:8%; top:0; bottom:0;
+    background:rgba(77,255,161,.55); box-shadow:0 0 12px rgba(77,255,161,.5); }
+  .dodge-marker { position:absolute; top:-2px; bottom:-2px; width:4px; left:0;
+    background:#fff; box-shadow:0 0 10px var(--neon); border-radius:2px; }
+
+  .relic-chip.daily { border-color: var(--neon); cursor:default; }
   .legend { display:flex; flex-wrap:wrap; gap:6px 14px; justify-content:center; font-size:11px; color:var(--ink-dim); margin-top:6px; }
 
   /* ---------- Scenes (tower / dungeon) ---------- */
@@ -574,6 +603,7 @@
     <!-- enemy -->
     <div class="combatant enemy">
       <div class="namebar"><span id="enemyName">Goblin Gambler</span><span class="tag" id="enemyTag">Lv 1</span></div>
+      <div class="aff-strip" id="enemyAffinity"></div>
       <div class="status-strip" id="enemyStatus"></div>
       <div class="hpwrap"><div class="hpbar">
         <div class="hpghost" id="enemyGhost"></div>
@@ -619,6 +649,7 @@
       <button class="ttab" data-tab="tower">🏰 Tower</button>
       <button class="ttab" data-tab="spells">✨ Spells</button>
       <button class="ttab" data-tab="mods">🗺️ Mods</button>
+      <button class="ttab" data-tab="daily">📅 Daily</button>
     </div>
     <div class="tower-panel" id="towerPanel"></div>
     <button class="btn enter-btn" id="enterBtn">⚔️ ENTER THE DUNGEON</button>
@@ -645,6 +676,18 @@ const randi = (a,b)=> Math.floor(rand(a,b+1));
 const pick = arr => arr[Math.floor(Math.random()*arr.length)];
 const clamp = (v,a,b)=> Math.max(a,Math.min(b,v));
 const fmt = n => n>=1000 ? (n/1000).toFixed(n>=10000?0:1)+'k' : Math.round(n).toString();
+
+/* ---------- Daily-cycle helpers (local calendar day, seeded rolls) ---------- */
+const dateStr = d => d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
+const todayStr = () => dateStr(new Date());
+const yesterdayStr = () => { const d=new Date(); d.setDate(d.getDate()-1); return dateStr(d); };
+function mulberry32(a){ return function(){ a|=0; a=a+0x6D2B79F5|0;
+  let t=Math.imul(a^a>>>15,1|a); t=t+Math.imul(t^t>>>7,61|t)^t;
+  return ((t^t>>>14)>>>0)/4294967296; }; }
+const daySeed = s => { let h=0; for(const c of s) h=(h*31+c.charCodeAt(0))|0; return h; };
+function pickNSeeded(arr, n, rng){ const pool=arr.slice(), out=[];
+  for(let i=0;i<n && pool.length;i++) out.push(pool.splice(Math.floor(rng()*pool.length),1)[0]);
+  return out; }
 
 /* =========================================================================
    BALANCE — one place for all the combat/progression math.
@@ -687,6 +730,7 @@ const S = {
   coin:()=>beep(1200,.06,'triangle',.08),
   spin:()=>beep(600,.04,'square',.04),
   jackpot:()=>{ [523,659,784,1046].forEach((f,i)=>setTimeout(()=>beep(f,.12,'triangle',.13),i*80)); },
+  whoosh:()=>beep(760,.1,'sine',.1,240),
 };
 
 /* ---------- Game state ---------- */
@@ -709,15 +753,21 @@ const G = {
   upg: { power:0, maxhp:0, crit:0, spellmult:0, regen:0, revive:0,
          towerRate:0, fireRate:0, idleMult:0, bossBonus:0, towerShard:0, idleCap:0 },
   // dungeon run modifiers (permanent, bought in tower)
-  mods: { goldRush:0, ward:0, lucky:0, overcharge:0, bulwark:0, ignite:0 },
+  mods: { goldRush:0, ward:0, lucky:0, overcharge:0, bulwark:0, ignite:0, evade:0 },
   _shardFrac: 0,
+  // daily retention state (persisted)
+  daily: { streak:0, lastClaimDate:null, questDate:null, quests:[], dungeonDoneDate:null, relicTokens:0 },
+  // transients (not saved)
+  lastMult: 1,          // last spell result — mimic trait copies this
+  stunnedSpell: null,   // spell key jammed by the shock trait for one cast
+  dailyRun: null,       // active daily-dungeon modifiers {boon,bane,weakSpell}
   // roguelike progress
   checkpoint: 1,              // floor a fresh run starts on (advances past cleared bosses)
   roomType: 'combat',
   // run-only state (relics + aggregated boosts), reset every dive
   // relics is a { id: level } map — duplicates level up an owned relic
   run: { relics:{}, dmgMult:1, critChance:0, critMult:0, goldMult:1, lifesteal:0,
-         startShield:0, diceMin:0, fizzleFloor:0, bonusHp:0, shockChance:0, jackpotX:1, revivesLeft:0 },
+         startShield:0, diceMin:0, fizzleFloor:0, bonusHp:0, shockChance:0, jackpotX:1, revivesLeft:0, dodge:0 },
 };
 
 /* ---------- Spells ---------- */
@@ -736,13 +786,25 @@ Object.values(SPELLS).forEach(s=> s.lvl = 0);
 function spellBase(k){ return SPELLS[k].base * (1 + (SPELLS[k].lvl||0)*0.12); }
 
 /* ---------- Enemies ---------- */
+// weak = ×1.5 from those spells, resist = ×0.6 — every type is weak to
+// at least one starter spell (spark/slots/dice) so matchups matter from run one
 const ENEMY_TYPES = [
-  { name:'Goblin Gambler', glyph:'👺', trait:'greedy' },
-  { name:'Arcane Mimic',   glyph:'🪞', trait:'mimic' },
-  { name:'Shock Elemental',glyph:'⚡', trait:'shock' },
-  { name:'Cursed Knight',  glyph:'🗡️', trait:'curse' },
-  { name:'Slime Croupier', glyph:'🟢', trait:'none' },
-  { name:'Bat Swarm',      glyph:'🦇', trait:'none' },
+  { name:'Goblin Gambler', glyph:'👺', trait:'greedy',
+    weak:['dice','jack'],   resist:['spark'],
+    traitDesc:'💰 Steals gold on hit — slay it to reclaim +50%' },
+  { name:'Arcane Mimic',   glyph:'🪞', trait:'mimic',
+    weak:['spark','crate'], resist:['wheel'],
+    traitDesc:'🪞 Copies your last spell result every 3rd turn' },
+  { name:'Shock Elemental',glyph:'⚡', trait:'shock',
+    weak:['slots','dice'],  resist:['spark','crash'],
+    traitDesc:'⚡ Its hits may jam one of your spells' },
+  { name:'Cursed Knight',  glyph:'🗡️', trait:'curse',
+    weak:['spark','jack'],  resist:['slots'],
+    traitDesc:'💀 Hits harder · may curse you' },
+  { name:'Slime Croupier', glyph:'🟢', trait:'none',
+    weak:['slots','crash'], resist:['dice'], traitDesc:'' },
+  { name:'Bat Swarm',      glyph:'🦇', trait:'none',
+    weak:['spark','wheel'], resist:['crate'], traitDesc:'' },
 ];
 const BOSSES = [
   { name:'The House',      glyph:'🎩', trait:'boss' },
@@ -765,6 +827,8 @@ const RELICS = {
   pact:   { icon:'❤️', name:'Blood Pact',    desc:'+40 max HP this run',        apply:r=>r.bonusHp+=40 },
   jack:   { icon:'🌟', name:'Jackpot Charm', desc:'Mega & crit hits ×2',        apply:r=>r.jackpotX*=2 },
   crown:  { icon:'👑', name:'Gilded Crown',  desc:'+25% dmg · +25% gold',       apply:r=>{r.dmgMult*=1.25; r.goldMult*=1.25;} },
+  mist:   { icon:'🌫️', name:'Mist Cloak',    desc:'+10% dodge chance',          apply:r=>r.dodge+=0.10 },
+  haste:  { icon:'💨', name:'Zephyr Boots',  desc:'+6% dodge · +10% dmg',       apply:r=>{r.dodge+=0.06; r.dmgMult*=1.10;} },
 };
 const RELIC_IDS = Object.keys(RELICS);
 const RELIC_CAP = 5;   // max distinct relics; after this, only upgrades to owned relics
@@ -786,6 +850,77 @@ const ROOMS = {
   relic:   { icon:'🎁', label:'Relic Shrine',desc:'Choose a free relic' },
   rest:    { icon:'🏕️', label:'Rest Site',   desc:'Heal or scavenge' },
 };
+
+/* =========================================================================
+   DAILY SYSTEMS — login streak, quests, daily dungeon
+   All rolls are seeded from the local calendar day so a refresh never rerolls.
+   ========================================================================= */
+const QUEST_POOL = [
+  {id:'kill12',  ev:'kill',    goal:12,  t:'Slay 12 monsters',             g:60,  s:1},
+  {id:'elite2',  ev:'elite',   goal:2,   t:'Defeat 2 elites',              g:80,  s:2},
+  {id:'boss1',   ev:'boss',    goal:1,   t:'Defeat a boss',                g:120, s:3},
+  {id:'crit8',   ev:'crit',    goal:8,   t:'Land 8 critical hits',         g:60,  s:1},
+  {id:'big3',    ev:'bighit',  goal:3,   t:'Land 3 hits of ×3 or more',    g:80,  s:2},
+  {id:'rooms10', ev:'room',    goal:10,  t:'Advance through 10 rooms',     g:80,  s:2},
+  {id:'gold400', ev:'gold',    goal:400, t:'Earn 400 gold in the dungeon', g:0,   s:2},
+  {id:'dodge5',  ev:'dodge',   goal:5,   t:'Dodge 5 attacks',              g:60,  s:1},
+  {id:'weak6',   ev:'weakhit', goal:6,   t:'Exploit a weakness 6 times',   g:60,  s:1},
+  {id:'bj21',    ev:'bj21',    goal:1,   t:'Win Necrojack with 21',        g:100, s:2, needs:'jack'},
+  {id:'jackpot1',ev:'jackpot', goal:1,   t:'Hit any jackpot',              g:100, s:2},
+];
+const STREAK_REWARDS = [ // index = (streak-1) % 7 — the cycle repeats weekly
+  {g:30}, {g:60}, {g:80,s:1}, {g:120}, {s:2}, {g:200}, {s:3, token:1},
+];
+const DAILY_BOONS = [
+  {id:'gold2x',  t:'💰 Gold Rush — dungeon gold ×2'},
+  {id:'shard3x', t:'🔷 Shardfall — every kill drops a shard'},
+  {id:'weakday', t:'🎯 Exposed — ALL enemies weak to'},   // spell name appended at roll
+  {id:'dodgeday',t:'🌫️ Misty — +10% dodge today'},
+  {id:'powday',  t:'⚡ Surge — +25% damage today'},
+];
+const DAILY_BANES = [
+  {id:'atkup',  t:'😈 Furious — enemies +30% attack'},
+  {id:'hpup',   t:'🛡️ Stalwart — enemies +25% HP'},
+  {id:'glass',  t:'💥 Glass — you take +25% damage'},
+  {id:'nofizz', t:'🎲 Cruel Odds — fizzles hurt you for 10% HP'},
+];
+// late-game scaling for fixed gold rewards (quests, streak, daily dungeon)
+function goldScale(){ return 1 + G.bossesCleared*0.3; }
+function rollDailyQuests(){
+  const rng = mulberry32(daySeed(todayStr()));
+  const pool = QUEST_POOL.filter(q=>!q.needs || SPELLS[q.needs].unlocked);
+  G.daily.quests = pickNSeeded(pool, 3, rng).map(q=>({id:q.id, progress:0, claimed:false}));
+  G.daily.questDate = todayStr();
+  save();
+}
+function dailyMods(){
+  const rng = mulberry32(daySeed(todayStr()+'D'));
+  const boon = DAILY_BOONS[Math.floor(rng()*DAILY_BOONS.length)];
+  const bane = DAILY_BANES[Math.floor(rng()*DAILY_BANES.length)];
+  const keys = Object.keys(SPELLS).filter(k=>SPELLS[k].unlocked);
+  const weakSpell = keys[Math.floor(rng()*keys.length)];
+  const boonT = boon.id==='weakday' ? boon.t+' '+SPELLS[weakSpell].glyph+' '+SPELLS[weakSpell].name : boon.t;
+  return { boon:boon.id, boonT, bane:bane.id, baneT:bane.t, weakSpell };
+}
+function streakClaimedToday(){ return G.daily.lastClaimDate === todayStr(); }
+function streakRewardText(streak){
+  const r = STREAK_REWARDS[(streak-1) % 7], parts=[];
+  if(r.g) parts.push(Math.round(r.g*goldScale())+'🪙');
+  if(r.s) parts.push(r.s+'🔷');
+  if(r.token) parts.push('🎁 bonus relic choice');
+  return parts.join(' + ');
+}
+function claimStreak(){
+  if(streakClaimedToday()) return;
+  G.daily.streak = (G.daily.lastClaimDate === yesterdayStr()) ? G.daily.streak+1 : 1;
+  G.daily.lastClaimDate = todayStr();
+  const r = STREAK_REWARDS[(G.daily.streak-1) % 7];
+  if(r.g) G.gold += Math.round(r.g*goldScale());
+  if(r.s) G.shards += r.s;
+  if(r.token) G.daily.relicTokens = (G.daily.relicTokens||0)+1;
+  S.jackpot(); banner('📅 DAY '+G.daily.streak+' STREAK','linear-gradient(90deg,var(--gold),var(--neon))');
+  renderHUD(); save();
+}
 
 /* =========================================================================
    RENDER / HUD
@@ -830,7 +965,22 @@ function renderStatus(){
     av.classList.toggle('st-curse',!!(st&&st.curse>0));
   }
 }
-G.wiz_st = { shield:0 };
+G.wiz_st = { shield:0, curse:0 };
+
+// weakness/resist badges + trait hint under the enemy name.
+// Rebuilt only on spawn and boss-weakness rotation so the chip pop doesn't replay.
+function renderAffinity(){
+  const el=$('#enemyAffinity'); if(!el) return;
+  const e=G.enemy;
+  if(!e){ el.innerHTML=''; return; }
+  const g=k=>SPELLS[k].glyph;
+  let h='';
+  if(e.rotWeak) h+=`<span class="chip weak">🎯 Exposed: ${g(e.rotWeak)}</span>`;
+  if(e.weak && e.weak.length)     h+=`<span class="chip weak">Weak ${e.weak.map(g).join('')}</span>`;
+  if(e.resist && e.resist.length) h+=`<span class="chip resist">Resist ${e.resist.map(g).join('')}</span>`;
+  if(e.traitDesc) h+=`<div class="trait-line">${e.traitDesc}</div>`;
+  el.innerHTML=h;
+}
 
 function renderSpellbar(){
   const bar=$('#spellbar'); bar.innerHTML='';
@@ -839,7 +989,7 @@ function renderSpellbar(){
   list.forEach((k,i)=>{
     const sp=SPELLS[k];
     const div=document.createElement('div');
-    div.className='spell'+(sp.unlocked?'':' locked')+(k==='slots' && G.floor===1 && !G._casted?' tut':'');
+    div.className='spell'+(sp.unlocked?'':' locked')+(k===G.stunnedSpell?' stunned':'')+(k==='slots' && G.floor===1 && !G._casted?' tut':'');
     if(!sp.unlocked) div.dataset.cost = sp.cost;
     div.innerHTML=`<span class="key">${i+1}</span><div class="glyph">${sp.glyph}</div><div class="nm">${sp.name}</div>`;
     div.onclick=()=>onSpell(k, div);
@@ -890,21 +1040,38 @@ function banner(text, grad){
 /* =========================================================================
    ENEMY SPAWN & COMBAT
    ========================================================================= */
+// bosses have no static weakness — instead a random unlocked spell is "Exposed"
+// (×1.5) and rotates every 2 casts, so boss fights force spell switching
+function rollBossWeak(e){
+  const keys = Object.keys(SPELLS).filter(k=>SPELLS[k].unlocked);
+  e.rotWeak = pick(keys);
+}
 function spawnEnemy(kind){
   const isBoss = kind==='boss';
   const isElite = kind==='elite';
   const t = isBoss ? BOSSES[(Math.floor(G.floor/10)-1+BOSSES.length)%BOSSES.length] : pick(ENEMY_TYPES);
   const f = G.floor;
-  const hp = Math.round(BAL.enemyHp(f) * (isBoss?BAL.bossHpX:1) * (isElite?BAL.eliteHpX:1));
-  const atk = Math.round(BAL.enemyAtk(f) * (isBoss?BAL.bossAtkX:1) * (isElite?BAL.eliteAtkX:1));
+  let hp = Math.round(BAL.enemyHp(f) * (isBoss?BAL.bossHpX:1) * (isElite?BAL.eliteHpX:1));
+  let atk = Math.round(BAL.enemyAtk(f) * (isBoss?BAL.bossAtkX:1) * (isElite?BAL.eliteAtkX:1));
+  if(G.dailyRun){
+    if(G.dailyRun.bane==='atkup') atk = Math.round(atk*1.3);
+    if(G.dailyRun.bane==='hpup')  hp  = Math.round(hp*1.25);
+  }
   G.enemy = {
     name:(isElite?'Elite '+t.name:t.name), glyph:t.glyph, trait:t.trait, isBoss, isElite,
     maxHp:hp, hp:hp, atk,
+    weak:(t.weak||[]).slice(), resist:(t.resist||[]).slice(), traitDesc:t.traitDesc||'',
+    stolen:0, mimicT:0, castCount:0, atkN:0, rotWeak:null,
     st:{ burn:0, shock:0, curse:0, shield:0 },
   };
+  if(isBoss) rollBossWeak(G.enemy);
+  if(G.dailyRun && G.dailyRun.boon==='weakday'){
+    G.enemy.weak=[G.dailyRun.weakSpell]; G.enemy.resist=[];
+  }
+  G.lastMult=1; G.stunnedSpell=null;
   // wizard enters every fight with base ward + relic shields
   G.wiz_st.shield = (G.mods.ward||0)*20 + (G.run.startShield||0);
-  renderHUD();
+  renderHUD(); renderAffinity();
   const av=$('#enemyAvatar'); av.style.animation='none'; void av.offsetWidth; av.style.animation='';
 }
 
@@ -912,6 +1079,10 @@ async function dealDamage(mult, opts={}){
   // opts: {status:{burn,shock,curse}, crit:false, label, self:false, freeTurn:false, shield:0}
   const e=G.enemy;
   let dmg = 0;
+  // mimic memory + boss weakness rotation — every cast counts, even fizzles
+  G.lastMult = mult;
+  e.castCount = (e.castCount||0)+1;
+  if(e.isBoss && e.castCount%2===0){ rollBossWeak(e); renderAffinity(); }
   if(opts.self){ // backfire onto wizard
     dmg = Math.round(spellBase(G.current) * G.power * mult * 0.35);
     await hurtWizard(dmg, true);
@@ -920,22 +1091,36 @@ async function dealDamage(mult, opts={}){
   // Wild Card relic: fizzles still deal a fraction instead of whiffing
   if(mult<=0){
     if(G.run.fizzleFloor>0){ mult = G.run.fizzleFloor; }
-    else { floatDmg('MISS', '#b6a9d9', true); S.fail(); return; }
+    else {
+      floatDmg('MISS', '#b6a9d9', true); S.fail();
+      if(G.dailyRun && G.dailyRun.bane==='nofizz'){ await hurtWizard(Math.round(maxHP()*0.10), true); }
+      return;
+    }
   }
   // Overcharge mod: amplify the gamble result itself (bigger swings)
   if(G.mods.overcharge>0) mult *= (1 + G.mods.overcharge*0.06);
   // Arcane Mastery: flat multiplicative damage
   let base = spellBase(G.current) * G.power * mult * G.run.dmgMult * (1 + G.upg.spellmult*0.06);
+  // spell-vs-monster affinity: weakness ×1.5, resistance ×0.6
+  const aff = e.rotWeak===G.current ? 1.5
+            : e.weak && e.weak.includes(G.current) ? 1.5
+            : e.resist && e.resist.includes(G.current) ? 0.6 : 1;
+  base *= aff;
+  if(aff>1) questEvent('weakhit');
+  if(G.dailyRun && G.dailyRun.boon==='powday') base *= 1.25;
   // curse on enemy amplifies incoming
   if(e.st.curse>0) base *= (1+e.st.curse);
   const critChance = BAL.baseCrit + (G.mods.lucky||0)*BAL.luckyPerLvl + (G.run.critChance||0);
   const isCrit = opts.crit || Math.random() < critChance;
   if(isCrit) base *= (G.critMult + (G.run.critMult||0)) * (G.run.jackpotX||1);
   dmg = Math.round(base);
+  if(isCrit) questEvent('crit');
+  if(mult>=3) questEvent('bighit');
 
   e.hp -= dmg;
-  const color = isCrit ? '#ff5cc8' : (mult>=3?'#ffd35c':'#ffe9a8');
-  floatDmg((isCrit?'✦ ':'')+fmt(dmg), color, true, mult>=3||isCrit);
+  const color = isCrit ? '#ff5cc8' : (aff<1 ? '#b6a9d9' : (mult>=3||aff>1?'#ffd35c':'#ffe9a8'));
+  const affTag = aff>1 ? 'WEAK! ' : '';
+  floatDmg((isCrit?'✦ ':'')+affTag+fmt(dmg)+(aff<1?' RESIST':''), color, true, mult>=3||isCrit||aff>1);
   burst(true, color, mult>=3?26:16);
   shake(); isCrit?S.crit():S.hit();
 
@@ -960,6 +1145,9 @@ async function dealDamage(mult, opts={}){
 }
 
 async function hurtWizard(dmg, backfire=false){
+  // wizard curse stacks (Cursed Knight) and the Glass daily bane amplify damage taken
+  if(G.wiz_st.curse>0) dmg = Math.round(dmg * (1+G.wiz_st.curse));
+  if(G.dailyRun && G.dailyRun.bane==='glass') dmg = Math.round(dmg*1.25);
   // Bulwark mod: reduce incoming damage (capped)
   if(G.mods.bulwark>0) dmg = Math.round(dmg * (1 - Math.min(0.6, G.mods.bulwark*0.06)));
   // shield soak
@@ -986,6 +1174,97 @@ async function hurtWizard(dmg, backfire=false){
   }
 }
 
+/* ---------- Dodge: passive chance + active timing challenge ---------- */
+function dodgeChance(){
+  return Math.min(0.35,
+    (G.run.dodge||0) + (G.mods.evade||0)*0.03
+    + (G.dailyRun && G.dailyRun.boon==='dodgeday' ? 0.10 : 0));
+}
+function enemyLunge(){
+  const av=$('#enemyAvatar'); av.style.transition='transform .15s';
+  av.style.transform='scale(1.12) translateX(-14px)'; setTimeout(()=>av.style.transform='',160);
+}
+// quick timing bar in the cast dock — hit the green zone to evade, center to counter
+function dodgeChallenge(){
+  return new Promise(res=>{
+    const dock=$('#castDock'), mini=$('#mini');
+    $('#spellbar').style.display='none';
+    mini.className='mini docked';
+    mini.innerHTML=`<h3>⚠️ Heavy Attack</h3>
+      <div class="sub">Tap DODGE in the green zone — dead center counters!</div>
+      <div class="dodge-track"><div class="dz safe"></div><div class="dz perfect"></div><div class="dodge-marker" id="dodgeMarker"></div></div>
+      <button class="btn" id="dodgeBtn">DODGE!</button>`;
+    dock.classList.add('on');
+    let done=false, pos=0;
+    const t0=performance.now(), DUR=1100;
+    const finish=r=>{ if(done) return; done=true; closeMini(); res(r); };
+    requestAnimationFrame(function sweep(t){
+      if(done) return;
+      pos=(t-t0)/DUR;
+      if(pos>=1){ finish('miss'); return; }
+      const m=$('#dodgeMarker'); if(m) m.style.left=(pos*100)+'%';
+      requestAnimationFrame(sweep);
+    });
+    $('#dodgeBtn').onclick=()=>{
+      if(pos>=0.46 && pos<=0.54) finish('perfect');
+      else if(pos>=0.34 && pos<=0.66) finish('safe');
+      else finish('miss');
+    };
+  });
+}
+// every enemy attack funnels through here: passive dodge → active challenge →
+// hit lands → on-hit traits (greedy steal, shock jam, curse stack).
+// Backfires and burn ticks bypass this on purpose — they can never be dodged.
+async function enemyAttack(dmg, opts={}){
+  const e=G.enemy;
+  if(Math.random()<dodgeChance()){
+    enemyLunge(); await sleep(180);
+    floatDmg('DODGED!','#4be1ff',false); burst(false,'#4be1ff',10); S.whoosh();
+    questEvent('dodge'); return 'dodged';
+  }
+  e.atkN=(e.atkN||0)+1;
+  const challenge = !opts.noChallenge &&
+    (e.isBoss ? e.atkN%3===0 : e.isElite ? Math.random()<0.4 : Math.random()<0.2);
+  if(challenge){
+    banner('⚠️ HEAVY ATTACK','linear-gradient(90deg,var(--red),var(--gold))');
+    await sleep(300);
+    const r=await dodgeChallenge();
+    if(r!=='miss'){
+      enemyLunge(); await sleep(120);
+      floatDmg('DODGED!','#4be1ff',false); burst(false,'#4be1ff',12); S.whoosh();
+      questEvent('dodge');
+      if(r==='perfect'){
+        const cdmg=Math.round(G.power*1.5);
+        e.hp-=cdmg; floatDmg('⚔️ '+fmt(cdmg),'#ffd35c',true); burst(true,'#ffd35c',14); S.win();
+        renderHUD();
+        if(e.hp<=0){ await enemyDefeated(); return 'killed'; }
+      }
+      return 'dodged';
+    }
+  }
+  enemyLunge();
+  const hpBefore=G.hp;
+  await hurtWizard(dmg);
+  const taken=hpBefore-G.hp;   // real HP damage — fully-shielded hits trigger no traits
+  if(G.hp>0 && taken>0){
+    if(e.trait==='greedy'){
+      const amt=Math.min(G.gold, 4+G.floor*2);
+      if(amt>0){ G.gold-=amt; e.stolen=(e.stolen||0)+amt;
+        floatDmg('-'+amt+'🪙','#ffb02e',false); renderHUD(); }
+    }
+    if(e.trait==='shock' && Math.random()<0.25){
+      const jam=Object.keys(SPELLS).filter(k=>SPELLS[k].unlocked);
+      if(jam.length>=2){ G.stunnedSpell=pick(jam);
+        floatDmg('⚡ '+SPELLS[G.stunnedSpell].glyph+' JAMMED','#4be1ff',false); }
+    }
+    if(e.trait==='curse' && Math.random()<0.30){
+      G.wiz_st.curse=Math.min(0.24,(G.wiz_st.curse||0)+0.08);
+      renderStatus();
+    }
+  }
+  return 'hit';
+}
+
 async function enemyTurn(){
   const e=G.enemy;
   // burn tick
@@ -1006,41 +1285,88 @@ async function enemyTurn(){
   // attack
   await sleep(220);
   let dmg = e.atk + randi(-2,3);
+  let isMimic=false;
+  if(e.trait==='mimic'){
+    e.mimicT=(e.mimicT||0)+1;
+    if(e.mimicT%3===0){
+      if(G.lastMult<=0){
+        banner('🪞 MIRRORED FIZZLE','linear-gradient(90deg,var(--purple-2),var(--neon))');
+        floatDmg('MISS','#b6a9d9',true); S.fail();
+        await sleep(550); endTurn(); return;
+      }
+      const cm=clamp(G.lastMult,0.5,3);
+      dmg=Math.round(e.atk*cm); isMimic=true;
+      banner('🪞 MIMICRY ×'+cm.toFixed(1),'linear-gradient(90deg,var(--purple-2),var(--pink))');
+      await sleep(400);
+    }
+  }
   if(e.trait==='curse'){ dmg=Math.round(dmg*1.15); }
-  const av=$('#enemyAvatar'); av.style.transition='transform .15s';
-  av.style.transform='scale(1.12) translateX(-14px)'; setTimeout(()=>av.style.transform='',160);
-  await hurtWizard(dmg);
+  const r=await enemyAttack(dmg,{noChallenge:isMimic});
+  if(r==='killed') return;
   if(G.hp>0) endTurn();
 }
 
 function endTurn(){
   G.busy=false;
-  // re-enable spells
-  document.querySelectorAll('.spell').forEach(s=>s.classList.remove('disabled'));
+  // rebuild re-enables spells and reflects any jam the shock trait applied
+  renderSpellbar();
 }
 
 async function enemyDefeated(){
   const e=G.enemy; G.busy=true;
   burst(true,'#ffd35c',40); S.win();
-  const goldMod = (1 + (G.mods.goldRush||0)*0.12) * (G.run.goldMult||1);
-  const goldGain = Math.round((10+G.floor*6)*(e.isBoss?5:(e.isElite?2:1))*rand(.9,1.2)*goldMod);
-  const shardGain = e.isBoss? randi(3,6) : (Math.random()<0.35?1:0);
+  let goldMod = (1 + (G.mods.goldRush||0)*0.12) * (G.run.goldMult||1);
+  if(G.dailyRun && G.dailyRun.boon==='gold2x') goldMod*=2;
+  let goldGain = Math.round((10+G.floor*6)*(e.isBoss?5:(e.isElite?2:1))*rand(.9,1.2)*goldMod);
+  // greedy trait: reclaim everything it stole, plus 50% interest
+  if(e.stolen>0){
+    goldGain += Math.round(e.stolen*1.5);
+    setTimeout(()=>floatDmg('💰 RECLAIMED','#ffb02e',true), 400);
+  }
+  const shardChance = (G.dailyRun && G.dailyRun.boon==='shard3x') ? 1 : 0.35;
+  const shardGain = e.isBoss? randi(3,6) : (Math.random()<shardChance?1:0);
   G.gold += goldGain; G.shards += shardGain;
   floatDmg('+'+goldGain+'🪙','#ffd35c',true);
   if(shardGain) setTimeout(()=>floatDmg('+'+shardGain+'🔷','#4be1ff',true), 200);
+  questEvent('kill');
+  if(e.isElite) questEvent('elite');
+  if(e.isBoss)  questEvent('boss');
+  questEvent('gold', goldGain);
   if(e.isBoss){
     G.bossesCleared++; G.checkpoint = G.floor+1;   // checkpoint: resume past the boss next dive
     banner('BOSS DOWN','linear-gradient(90deg,var(--gold),var(--pink))');
+    // daily dungeon completed: first boss of the run pays out and clears the modifiers
+    if(G.dailyRun){
+      const rw=Math.round(200*goldScale());
+      G.gold+=rw; G.shards+=5; G.dailyRun=null;
+      setTimeout(()=>{ banner('🌀 DAILY CLEARED — +5🔷 +'+rw+'🪙','linear-gradient(90deg,var(--neon),var(--gold))');
+        S.jackpot(); renderRelicTray(); renderHUD(); }, 1300);
+    }
   } else banner(e.isElite?'ELITE DOWN':'ROOM CLEAR','linear-gradient(90deg,var(--neon),var(--purple-2))');
   save();
   await sleep(e.isBoss?1250:800);
   // elites always drop a relic
   if(e.isElite){ gainRelic(rollRelicGain()); await sleep(750); }
-  // heal between rooms (Meditation adds to it)
+  // heal between rooms (Meditation adds to it) — curse lifts as the fight ends
+  G.wiz_st.curse=0;
   G.hp = clamp(G.hp + maxHP()*(BAL.roomHeal + G.upg.regen*0.04), 0, maxHP());
   renderHUD();
   advanceRoom();
   G.busy=false;
+}
+
+/* ---------- Daily quest progress — one call site per logical event ---------- */
+function questEvent(ev, amt=1){
+  if(G.daily.questDate!==todayStr()) return;   // stale quests never count
+  let hit=false;
+  for(const q of G.daily.quests){
+    const def=QUEST_POOL.find(p=>p.id===q.id);
+    if(!def || def.ev!==ev || q.claimed || q.progress>=def.goal) continue;
+    q.progress=Math.min(def.goal, q.progress+amt); hit=true;
+    if(q.progress>=def.goal)
+      setTimeout(()=>banner('📜 QUEST COMPLETE','linear-gradient(90deg,var(--gold),var(--neon))'), 600);
+  }
+  if(hit) save();
 }
 
 /* =========================================================================
@@ -1055,6 +1381,8 @@ function onSpell(key, el){
     else { S.fail(); flashShort(el); }
     return;
   }
+  if(key===G.stunnedSpell){ S.fail(); flashShort(el); floatDmg('⚡ JAMMED','#4be1ff',false); return; }
+  G.stunnedSpell=null;   // the jam lasts exactly one cast
   G._casted=true;
   G.current=key; G.busy=true;
   ac(); S.click();
@@ -1186,7 +1514,7 @@ function evalSlots(f){
   // highlight winning reels
   if(mult>=1){ [0,1,2].forEach(i=>{ if(f[i]==='🔥'||f[i]==='⭐') $('#reel'+i).classList.add('win'); }); }
   res.textContent=msg; res.style.color = mult>=3?'var(--gold)': mult>=1?'var(--ink)':'var(--ink-dim)';
-  if(jackpot){ S.jackpot(); banner('JACKPOT','linear-gradient(90deg,var(--gold),var(--red))'); }
+  if(jackpot){ S.jackpot(); banner('JACKPOT','linear-gradient(90deg,var(--gold),var(--red))'); questEvent('jackpot'); }
   else if(mult>=1) S.win(); else S.fail();
   resolve(mult, {status, crit:jackpot, hold: jackpot?900:650});
 }
@@ -1336,7 +1664,7 @@ function spinWheel(){
     const s=WHEEL[idx]; const res=$('#wheelRes');
     res.textContent = s.t==='MISS'?'Empty slice…': s.t==='JACKPOT'?'✦ JACKPOT ✦':'Landed '+s.t;
     res.style.color = s.mult>=3?'var(--gold)': s.mult>0?'var(--ink)':'var(--ink-dim)';
-    if(s.jackpot){ S.jackpot(); banner('JACKPOT','linear-gradient(90deg,var(--gold),var(--pink))'); }
+    if(s.jackpot){ S.jackpot(); banner('JACKPOT','linear-gradient(90deg,var(--gold),var(--pink))'); questEvent('jackpot'); }
     else if(s.mult>0) S.win(); else S.fail();
     resolve(s.mult, {status:s.status, freeTurn:s.free, crit:s.jackpot, hold: s.jackpot?900:650});
   }, 4500);
@@ -1379,7 +1707,7 @@ function openCrate(c){
     c.querySelector('.cover').textContent = r.mult>=4?'💥':'✨';
     const res=$('#crateRes'); res.textContent=r.t+' — '+r.mult+'× damage'; res.style.color=r.col;
     burstAt(c, r.col, r.mult>=4?30:16);
-    if(r.mult>=4){ S.jackpot(); banner(r.t,'linear-gradient(90deg,'+r.col+',var(--gold))'); }
+    if(r.mult>=4){ S.jackpot(); banner(r.t,'linear-gradient(90deg,'+r.col+',var(--gold))'); questEvent('jackpot'); }
     else if(r.mult>=1.5) S.win(); else S.fail();
     resolve(r.mult, {status:r.status, crit:r.mult>=4, hold: r.mult>=4?900:650});
   }, 620);
@@ -1454,7 +1782,8 @@ function resolveJack(outcome){
   };
   const o=map[outcome]; st.msg=o.msg; st.color=o.color;
   drawJack($('#mini'));
-  if(outcome==='blackjack'){ S.jackpot(); banner('BLACKJACK','linear-gradient(90deg,var(--gold),var(--pink))'); }
+  if(outcome==='blackjack' || (outcome==='win' && bjValue(st.player)===21)) questEvent('bj21');
+  if(outcome==='blackjack'){ S.jackpot(); banner('BLACKJACK','linear-gradient(90deg,var(--gold),var(--pink))'); questEvent('jackpot'); }
   else if(outcome==='win') S.win(); else S.fail();
   resolve(o.mult, {status:o.status, self:o.self, crit:o.crit, hold: outcome==='blackjack'?950:800});
 }
@@ -1464,6 +1793,7 @@ function resolveJack(outcome){
    ========================================================================= */
 function death(){
   G.busy=true; S.fail();
+  G.dailyRun=null;
   banner('DEFEATED','linear-gradient(90deg,var(--red),var(--pink))');
   save();
   setTimeout(showDeath, 950);
@@ -1490,7 +1820,8 @@ function newRun(){
   G.run.relics={}; recomputeRun();
   G.run.revivesLeft = G.upg.revive;   // Second Wind charges for this dive
   G.hp = maxHP();
-  G.wiz_st={shield:0}; G.busy=false; G._casted=false;
+  G.wiz_st={shield:0, curse:0}; G.busy=false; G._casted=false;
+  G.lastMult=1; G.stunnedSpell=null;
   renderRelicTray(); renderSpellbar(); renderHUD();
   // every dive opens with a free boon so you always start building a build
   startRoom('relic');
@@ -1516,7 +1847,7 @@ function startRoom(type){
     G.enemy=null;
     $('#enemyName').textContent=ROOMS[type].label;
     $('#enemyGlyph').textContent=ROOMS[type].icon;
-    renderStatus();
+    renderStatus(); renderAffinity();
     G.busy=false;
     if(type==='merchant') renderMerchant();
     else if(type==='relic') renderRelicChoice();
@@ -1525,6 +1856,7 @@ function startRoom(type){
 }
 function advanceRoom(){
   G.floor++; renderHUD();
+  questEvent('room');
   if(G.floor % 10 === 0){ startRoom('boss'); return; }
   const type = rollRoom();
   const labels={ merchant:'💰 MERCHANT', relic:'🎁 RELIC SHRINE', rest:'🏕️ REST SITE', elite:'💀 ELITE!' };
@@ -1566,10 +1898,13 @@ function drawMerchant(){
 }
 function renderRelicChoice(){
   const upgrading = relicsFull();
-  const ids = relicOffer(3);
-  const sub = upgrading
+  // streak day-7 token: this shrine offers a 4th choice (consumed on pick)
+  const useToken = (G.daily.relicTokens||0) > 0;
+  const ids = relicOffer(useToken?4:3);
+  let sub = upgrading
     ? `Relics full (${RELIC_CAP}/${RELIC_CAP}) — choose one to <b>upgrade</b>`
     : `Choose one — it boosts your whole run · ${relicCount()}/${RELIC_CAP} relics`;
+  if(useToken && ids.length>3) sub += ' · <b style="color:var(--gold)">🎁 streak bonus: 4 choices!</b>';
   let html=`<h3>🎁 Relic Shrine</h3><div class="sub">${sub}</div><div class="relic-cards">`;
   ids.forEach((id,i)=>{
     const R=RELICS[id];
@@ -1579,7 +1914,10 @@ function renderRelicChoice(){
   });
   html+=`</div><button class="btn ghost" id="skipRelic">Skip →</button>`;
   showRoomDock(html);
-  document.querySelectorAll('#roomMini .relic-card').forEach((el,i)=> el.onclick=()=>{ gainRelic(ids[i]); advanceRoom(); });
+  document.querySelectorAll('#roomMini .relic-card').forEach((el,i)=> el.onclick=()=>{
+    if(useToken && ids.length>3){ G.daily.relicTokens--; save(); }
+    gainRelic(ids[i]); advanceRoom();
+  });
   $('#skipRelic').onclick=()=>{ S.click(); advanceRoom(); };
 }
 function renderRest(){
@@ -1598,16 +1936,23 @@ function renderRest(){
 function showStart(offInfo){
   const m=$('#modal'), sheet=$('#sheet');
   const offLine = offInfo ? `<div class="upg" style="cursor:default;border-color:var(--green)"><div class="u-ic">🔮</div><div class="u-body"><div class="u-t" style="color:var(--green)">Welcome back!</div><div class="u-d">Your tower earned <b>${fmt(offInfo.g)}🪙</b>${offInfo.sh?` and <b>${offInfo.sh}🔷</b>`:''} while you were away (${offInfo.label}).</div></div></div>` : '';
+  const claimed = streakClaimedToday();
+  const nextDay = claimed ? G.daily.streak : (G.daily.lastClaimDate===yesterdayStr() ? G.daily.streak+1 : 1);
+  const streakLine = claimed
+    ? `<div class="upg cant" style="cursor:default"><div class="u-ic">🔥</div><div class="u-body"><div class="u-t">Daily Reward — Day ${G.daily.streak}</div><div class="u-d">✓ Claimed — come back tomorrow to keep the streak!</div></div><div class="u-cost">✓</div></div>`
+    : `<div class="upg" id="streakRow" style="border-color:var(--gold-2)"><div class="u-ic">🔥</div><div class="u-body"><div class="u-t" style="color:var(--gold)">Daily Reward — Day ${nextDay}</div><div class="u-d">${streakRewardText(nextDay)} · log in daily to grow the streak</div></div><div class="u-cost">CLAIM</div></div>`;
   sheet.innerHTML=`
     <h1>GAMBLER WIZARD</h1>
     <p style="font-size:14px">Cast spells by <b>gambling</b>. Every spell is a risk-reward minigame. Rest in your <b>tower</b> — its arcane turret earns gold even while you're away — then descend into the <b>dungeon</b> to fight for shards and glory.</p>
     <div class="upgrades" style="gap:6px">
+      ${streakLine}
       ${offLine}
       <div class="upg" style="cursor:default"><div class="u-ic">🏰</div><div class="u-body"><div class="u-t">Your Tower earns idle gold</div><div class="u-d">Upgrade the turret, your spells, wizard & run modifiers</div></div></div>
       <div class="upg" style="cursor:default"><div class="u-ic">⚔️</div><div class="u-body"><div class="u-t">Dive the dungeon for shards</div><div class="u-d">Clearing bosses permanently boosts your idle income</div></div></div>
     </div>
     <button class="btn" id="startBtn">🏰 ENTER THE TOWER</button>`;
   $('#startBtn').onclick=()=>{ ac(); m.classList.remove('on'); goToTower(); };
+  const sr=$('#streakRow'); if(sr) sr.onclick=()=>{ ac(); claimStreak(); showStart(offInfo); };
   m.classList.add('on');
 }
 
@@ -1626,7 +1971,7 @@ function maxHP(){ return G.maxHp + (G.run.bonusHp||0); }
 function recomputeRun(){
   const r=G.run;
   r.dmgMult=1; r.critChance=0; r.critMult=0; r.goldMult=1; r.lifesteal=0;
-  r.startShield=0; r.diceMin=0; r.fizzleFloor=0; r.bonusHp=0; r.shockChance=0; r.jackpotX=1;
+  r.startShield=0; r.diceMin=0; r.fizzleFloor=0; r.bonusHp=0; r.shockChance=0; r.jackpotX=1; r.dodge=0;
   for(const id in r.relics){ const lvl=r.relics[id]; for(let i=0;i<lvl;i++) RELICS[id].apply(r); }
 }
 function gainRelic(id, announce=true){
@@ -1643,11 +1988,15 @@ function gainRelic(id, announce=true){
 }
 function renderRelicTray(){
   const tray=$('#relicTray'); if(!tray) return;
-  tray.innerHTML = Object.keys(G.run.relics).map(id=>{
+  // daily-dungeon modifiers stay visible as chips at the front of the tray
+  const dailyChips = G.dailyRun
+    ? `<div class="relic-chip daily" title="${G.dailyRun.boonT}">🌀</div><div class="relic-chip daily" title="${G.dailyRun.baneT}">😈</div>`
+    : '';
+  tray.innerHTML = dailyChips + Object.keys(G.run.relics).map(id=>{
     const R=RELICS[id], lvl=G.run.relics[id];
     return `<div class="relic-chip" data-id="${id}" title="${R.name} (Lv ${lvl}) — ${R.desc}">${R.icon}${lvl>1?`<span class="rc-x">${lvl}</span>`:''}</div>`;
   }).join('');
-  tray.querySelectorAll('.relic-chip').forEach(el=> el.onclick=()=>showRelicTip(el.dataset.id, el));
+  tray.querySelectorAll('.relic-chip:not(.daily)').forEach(el=> el.onclick=()=>showRelicTip(el.dataset.id, el));
 }
 let _tipT=null;
 function showRelicTip(id, el){
@@ -1676,6 +2025,7 @@ function save(){
     upg:G.upg, mods:G.mods, muted:G.muted,
     spellLvls: Object.fromEntries(Object.keys(SPELLS).map(k=>[k, SPELLS[k].lvl||0])),
     unlocked: Object.keys(SPELLS).filter(k=>SPELLS[k].unlocked),
+    daily: G.daily,
     lastSeen: Date.now(),
   })); }catch(e){}
 }
@@ -1690,6 +2040,10 @@ function load(){
       SPELLS[k].lvl = (s.spellLvls && s.spellLvls[k])||0;
       if(s.unlocked) SPELLS[k].unlocked = s.unlocked.includes(k);
     });
+    // default-merge so pre-daily saves (and future fields) load cleanly
+    G.daily = Object.assign({streak:0, lastClaimDate:null, questDate:null, quests:[], dungeonDoneDate:null, relicTokens:0}, s.daily||{});
+    if(!Array.isArray(G.daily.quests)) G.daily.quests=[];
+    G.daily.quests = G.daily.quests.filter(q=>q && QUEST_POOL.some(p=>p.id===q.id));
     return s;
   }catch(e){ return null; }
 }
@@ -1723,9 +2077,12 @@ function showScene(name){
 }
 function goToTower(){
   recompute();
+  G.dailyRun=null;   // abandoning a daily dive forfeits it (attempt was consumed on entry)
+  if(G.daily.questDate!==todayStr()) rollDailyQuests();
   showScene('tower'); renderHUD(); save();
 }
 function enterDungeon(){
+  G.dailyRun=null;
   save(); showScene('dungeon'); newRun();
 }
 
@@ -1769,7 +2126,9 @@ function resetGame(){
   G.gold=0; G.shards=0; G.bossesCleared=0; G.checkpoint=1; G.muted=false;
   G.upg={ power:0, maxhp:0, crit:0, spellmult:0, regen:0, revive:0,
           towerRate:0, fireRate:0, idleMult:0, bossBonus:0, towerShard:0, idleCap:0 };
-  G.mods={ goldRush:0, ward:0, lucky:0, overcharge:0, bulwark:0, ignite:0 };
+  G.mods={ goldRush:0, ward:0, lucky:0, overcharge:0, bulwark:0, ignite:0, evade:0 };
+  G.daily={ streak:0, lastClaimDate:null, questDate:null, quests:[], dungeonDoneDate:null, relicTokens:0 };
+  G.dailyRun=null;
   Object.keys(SPELLS).forEach(k=>{ SPELLS[k].lvl=0; SPELLS[k].unlocked=['spark','slots','dice'].includes(k); });
   G.run.relics={}; recomputeRun(); recompute(); G.hp=G.maxHp;
   save();
@@ -1805,6 +2164,7 @@ const MOD_UPGRADES = [
   {k:'bulwark',   ic:'🪨', t:'Bulwark',      d:l=>`−${(l+1)*6}% damage taken`,          base:7, growth:2.0},
   {k:'lucky',     ic:'🍀', t:'Lucky Charm',  d:l=>`+${(l+1)*5}% crit chance in runs`,   base:5, growth:1.9},
   {k:'ignite',    ic:'🔥', t:'Pyromancy',    d:l=>`+${(l+1)*12}% chance to Burn on hit`, base:6, growth:1.85},
+  {k:'evade',     ic:'🌫️', t:'Mistward',     d:l=>`+${(l+1)*3}% dodge chance`,           base:6, growth:1.9},
 ];
 
 function towerRow({ic,title,desc,lvl,cost,cur,canBuy,maxed,onBuy}){
@@ -1833,6 +2193,7 @@ function renderStats(panel){
   h+=line('❤️','Max HP', G.maxHp, 'Health you dive with');
   h+=line('🛡️','Ward Shield', (G.mods.ward*20)||'—', 'Shield at the start of each fight', G.mods.ward?'':'dim');
   h+=line('🪨','Damage Reduction', Math.min(60,G.mods.bulwark*6)+'%', 'Less damage from enemy hits', G.mods.bulwark?'':'dim');
+  h+=line('🌫️','Dodge Chance', Math.min(35,G.mods.evade*3)+'%', 'Chance to evade enemy attacks (relics add more)', G.mods.evade?'':'dim');
   h+=line('🌿','Room Heal', Math.round((BAL.roomHeal+G.upg.regen*0.04)*100)+'%', 'HP restored between rooms');
   h+=line('🌀','Second Wind', G.upg.revive?G.upg.revive+'×/run':'—', 'Cheat death, revive at 30% HP', G.upg.revive?'':'dim');
   h+=`<div class="stat-head">Economy</div>`;
@@ -1899,6 +2260,65 @@ function renderTowerPanel(){
     note.innerHTML='🗺️ Modifiers are permanent and apply to every dungeon run.';
     panel.appendChild(note);
   }
+
+  if(tab==='daily'){
+    if(G.daily.questDate!==todayStr()) rollDailyQuests();   // midnight rollover guard
+    // login streak
+    const claimed=streakClaimedToday();
+    const nextDay = claimed ? G.daily.streak : (G.daily.lastClaimDate===yesterdayStr() ? G.daily.streak+1 : 1);
+    const sh=document.createElement('div'); sh.className='panel-head'; sh.textContent='Login Streak';
+    panel.appendChild(sh);
+    const sr=document.createElement('div');
+    sr.className='upg'+(claimed?' cant':'');
+    if(!claimed) sr.style.borderColor='var(--gold-2)';
+    sr.innerHTML=`<div class="u-ic">🔥</div><div class="u-body"><div class="u-t">Day ${claimed?G.daily.streak:nextDay} streak</div><div class="u-d">${claimed?'✓ Claimed — come back tomorrow':'Today: '+streakRewardText(nextDay)}</div></div><div class="u-cost">${claimed?'✓':'CLAIM'}</div>`;
+    if(!claimed) sr.onclick=()=>{ claimStreak(); renderTowerPanel(); };
+    panel.appendChild(sr);
+    // daily quests
+    const qh=document.createElement('div'); qh.className='panel-head'; qh.textContent='Daily Quests · reset at midnight';
+    panel.appendChild(qh);
+    G.daily.quests.forEach(q=>{
+      const def=QUEST_POOL.find(p=>p.id===q.id); if(!def) return;
+      const doneQ=q.progress>=def.goal;
+      const reward=[def.g?Math.round(def.g*goldScale())+'🪙':'', def.s?def.s+'🔷':''].filter(Boolean).join(' + ');
+      const pct=Math.round(Math.min(1,q.progress/def.goal)*100);
+      const row=document.createElement('div');
+      row.className='upg'+(q.claimed?' cant':'');
+      if(doneQ && !q.claimed) row.style.borderColor='var(--gold-2)';
+      row.innerHTML=`<div class="u-ic">📜</div><div class="u-body"><div class="u-t">${def.t}</div>
+        <div class="qbar"><i style="width:${pct}%"></i></div>
+        <div class="u-d">${Math.min(q.progress,def.goal)} / ${def.goal} · ${reward}</div></div>
+        <div class="u-cost">${q.claimed?'✓':(doneQ?'CLAIM':reward)}</div>`;
+      if(doneQ && !q.claimed) row.onclick=()=>{
+        q.claimed=true;
+        G.gold+=Math.round((def.g||0)*goldScale()); G.shards+=def.s||0;
+        S.win(); towerPulse(); renderHUD(); save(); renderTowerPanel();
+      };
+      panel.appendChild(row);
+    });
+    // daily dungeon
+    const dh=document.createElement('div'); dh.className='panel-head'; dh.textContent='Daily Dungeon';
+    panel.appendChild(dh);
+    const dm=dailyMods();
+    const used=G.daily.dungeonDoneDate===todayStr();
+    const card=document.createElement('div');
+    card.className='upg'+(used?' cant':'');
+    if(!used) card.style.borderColor='var(--neon)';
+    card.innerHTML=`<div class="u-ic">🌀</div><div class="u-body"><div class="u-t">${used?'✓ Attempt used — new modifiers tomorrow':"Today's dive"}</div>
+      <div class="u-d">${dm.boonT}<br>${dm.baneT}<br>Beat the first boss: <b>5🔷 + ${Math.round(200*goldScale())}🪙</b> · one attempt per day, win or lose</div></div>
+      <div class="u-cost">${used?'✓':'DIVE'}</div>`;
+    if(!used) card.onclick=()=>enterDailyDungeon();
+    panel.appendChild(card);
+  }
+}
+
+function enterDailyDungeon(){
+  if(G.daily.dungeonDoneDate===todayStr()) return;
+  G.daily.dungeonDoneDate=todayStr();   // consumed on entry — a refresh never refunds it
+  G.dailyRun=dailyMods();
+  save(); S.click();
+  showScene('dungeon'); newRun();
+  banner('🌀 DAILY DUNGEON','linear-gradient(90deg,var(--neon),var(--purple-2))');
 }
 
 /* =========================================================================
@@ -2078,6 +2498,7 @@ window.addEventListener('load', ()=>{
   recompute();
   if(G.hp<=0 || !G.hp) G.hp=G.maxHp;
   const off = saved ? applyOffline(saved.lastSeen) : null;
+  if(G.daily.questDate!==todayStr()) rollDailyQuests();
 
   // tower tab switching
   document.querySelectorAll('.ttab').forEach(btn=>{
@@ -2105,7 +2526,7 @@ window.addEventListener('load', ()=>{
     const docked=$('#castDock').classList.contains('on');
     // Space / Enter = cash out (or any active panel button)
     if((e.key===' '||e.key==='Enter') && docked){
-      const b=$('#cashBtn'); if(b && !b.disabled){ e.preventDefault(); b.click(); }
+      const b=$('#cashBtn')||$('#dodgeBtn'); if(b && !b.disabled){ e.preventDefault(); b.click(); }
       return;
     }
     // number keys 1-7 = cast that spell
