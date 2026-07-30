@@ -1,0 +1,339 @@
+{
+  "generatedAt": "2026-07-30T17:21:46.442Z",
+  "count": 6,
+  "projects": [
+    {
+      "slug": "bahceli-villa-renovasyonu",
+      "folder": "villa__Marmaris,-Muğla__2025__Bahçeli-Villa-Renovasyonu__160",
+      "title": "Bahçeli Villa Renovasyonu",
+      "categoryKey": "villa",
+      "category": "Villa",
+      "categoryGroup": "Lüks Villalar",
+      "location": "Marmaris, Muğla",
+      "year": "2025",
+      "area": "160 m²",
+      "cover": "projects/villa__Marmaris,-Muğla__2025__Bahçeli-Villa-Renovasyonu__160/cover.jpg",
+      "gallery": [
+        "projects/villa__Marmaris,-Muğla__2025__Bahçeli-Villa-Renovasyonu__160/galeri-01.jpg",
+        "projects/villa__Marmaris,-Muğla__2025__Bahçeli-Villa-Renovasyonu__160/galeri-02.jpg",
+        "projects/villa__Marmaris,-Muğla__2025__Bahçeli-Villa-Renovasyonu__160/galeri-03.jpg",
+        "projects/villa__Marmaris,-Muğla__2025__Bahçeli-Villa-Renovasyonu__160/galeri-04.jpg"
+      ],
+      "timeline": [
+        {
+          "order": 1,
+          "date": "2024-09",
+          "dateLabel": "Eylül 2024",
+          "title": "Mevcut Durum",
+          "images": [
+            "projects/villa__Marmaris,-Muğla__2025__Bahçeli-Villa-Renovasyonu__160/01__2024-09__Mevcut-Durum/01.jpg",
+            "projects/villa__Marmaris,-Muğla__2025__Bahçeli-Villa-Renovasyonu__160/01__2024-09__Mevcut-Durum/02.jpg",
+            "projects/villa__Marmaris,-Muğla__2025__Bahçeli-Villa-Renovasyonu__160/01__2024-09__Mevcut-Durum/03.jpg",
+            "projects/villa__Marmaris,-Muğla__2025__Bahçeli-Villa-Renovasyonu__160/01__2024-09__Mevcut-Durum/04.jpg",
+            "projects/villa__Marmaris,-Muğla__2025__Bahçeli-Villa-Renovasyonu__160/01__2024-09__Mevcut-Durum/05.jpg",
+            "projects/villa__Marmaris,-Muğla__2025__Bahçeli-Villa-Renovasyonu__160/01__2024-09__Mevcut-Durum/06.jpg"
+          ]
+        },
+        {
+          "order": 2,
+          "date": "2024-11",
+          "dateLabel": "Kasım 2024",
+          "title": "Yıkım ve Söküm",
+          "images": [
+            "projects/villa__Marmaris,-Muğla__2025__Bahçeli-Villa-Renovasyonu__160/02__2024-11__Yıkım-ve-Söküm/01.jpg",
+            "projects/villa__Marmaris,-Muğla__2025__Bahçeli-Villa-Renovasyonu__160/02__2024-11__Yıkım-ve-Söküm/02.jpg",
+            "projects/villa__Marmaris,-Muğla__2025__Bahçeli-Villa-Renovasyonu__160/02__2024-11__Yıkım-ve-Söküm/03.jpg"
+          ]
+        },
+        {
+          "order": 3,
+          "date": "2025-02",
+          "dateLabel": "Şubat 2025",
+          "title": "Cephe Mantolama ve Çatı",
+          "images": [
+            "projects/villa__Marmaris,-Muğla__2025__Bahçeli-Villa-Renovasyonu__160/03__2025-02__Cephe-Mantolama-ve-Çatı/01.jpg",
+            "projects/villa__Marmaris,-Muğla__2025__Bahçeli-Villa-Renovasyonu__160/03__2025-02__Cephe-Mantolama-ve-Çatı/02.jpg",
+            "projects/villa__Marmaris,-Muğla__2025__Bahçeli-Villa-Renovasyonu__160/03__2025-02__Cephe-Mantolama-ve-Çatı/03.jpg"
+          ]
+        },
+        {
+          "order": 4,
+          "date": "2025-04",
+          "dateLabel": "Nisan 2025",
+          "title": "Dış Cephe Tamamlandı",
+          "images": [
+            "projects/villa__Marmaris,-Muğla__2025__Bahçeli-Villa-Renovasyonu__160/04__2025-04__Dış-Cephe-Tamamlandı/01.jpg",
+            "projects/villa__Marmaris,-Muğla__2025__Bahçeli-Villa-Renovasyonu__160/04__2025-04__Dış-Cephe-Tamamlandı/02.jpg"
+          ]
+        },
+        {
+          "order": 5,
+          "date": "2025-06",
+          "dateLabel": "Haziran 2025",
+          "title": "İç Mekan ve Teslim",
+          "images": [
+            "projects/villa__Marmaris,-Muğla__2025__Bahçeli-Villa-Renovasyonu__160/05__2025-06__İç-Mekan-ve-Teslim/01.jpg",
+            "projects/villa__Marmaris,-Muğla__2025__Bahçeli-Villa-Renovasyonu__160/05__2025-06__İç-Mekan-ve-Teslim/02.jpg",
+            "projects/villa__Marmaris,-Muğla__2025__Bahçeli-Villa-Renovasyonu__160/05__2025-06__İç-Mekan-ve-Teslim/03.jpg",
+            "projects/villa__Marmaris,-Muğla__2025__Bahçeli-Villa-Renovasyonu__160/05__2025-06__İç-Mekan-ve-Teslim/04.jpg",
+            "projects/villa__Marmaris,-Muğla__2025__Bahçeli-Villa-Renovasyonu__160/05__2025-06__İç-Mekan-ve-Teslim/05.jpg",
+            "projects/villa__Marmaris,-Muğla__2025__Bahçeli-Villa-Renovasyonu__160/05__2025-06__İç-Mekan-ve-Teslim/06.jpg"
+          ]
+        }
+      ],
+      "imageCount": 25
+    },
+    {
+      "slug": "fk-cliffside-malikanesi",
+      "folder": "villa__Fethiye,-Muğla__2025__FK-Cliffside-Malikanesi__950",
+      "title": "FK Cliffside Malikanesi",
+      "categoryKey": "villa",
+      "category": "Villa",
+      "categoryGroup": "Lüks Villalar",
+      "location": "Fethiye, Muğla",
+      "year": "2025",
+      "area": "950 m²",
+      "cover": "projects/villa__Fethiye,-Muğla__2025__FK-Cliffside-Malikanesi__950/cover.svg",
+      "gallery": [
+        "projects/villa__Fethiye,-Muğla__2025__FK-Cliffside-Malikanesi__950/galeri-01.svg",
+        "projects/villa__Fethiye,-Muğla__2025__FK-Cliffside-Malikanesi__950/galeri-02.svg",
+        "projects/villa__Fethiye,-Muğla__2025__FK-Cliffside-Malikanesi__950/galeri-03.svg"
+      ],
+      "timeline": [
+        {
+          "order": 1,
+          "date": "2024-04",
+          "dateLabel": "Nisan 2024",
+          "title": "Kayalık Zemin Hazırlığı",
+          "images": [
+            "projects/villa__Fethiye,-Muğla__2025__FK-Cliffside-Malikanesi__950/01__2024-04__Kayalık-Zemin-Hazırlığı/asama-01.svg",
+            "projects/villa__Fethiye,-Muğla__2025__FK-Cliffside-Malikanesi__950/01__2024-04__Kayalık-Zemin-Hazırlığı/asama-02.svg"
+          ]
+        },
+        {
+          "order": 2,
+          "date": "2024-10",
+          "dateLabel": "Ekim 2024",
+          "title": "Kademeli Betonarme",
+          "images": [
+            "projects/villa__Fethiye,-Muğla__2025__FK-Cliffside-Malikanesi__950/02__2024-10__Kademeli-Betonarme/asama-01.svg",
+            "projects/villa__Fethiye,-Muğla__2025__FK-Cliffside-Malikanesi__950/02__2024-10__Kademeli-Betonarme/asama-02.svg",
+            "projects/villa__Fethiye,-Muğla__2025__FK-Cliffside-Malikanesi__950/02__2024-10__Kademeli-Betonarme/asama-03.svg"
+          ]
+        },
+        {
+          "order": 3,
+          "date": "2025-05",
+          "dateLabel": "Mayıs 2025",
+          "title": "Doğal Taş Cephe ve Havuz",
+          "images": [
+            "projects/villa__Fethiye,-Muğla__2025__FK-Cliffside-Malikanesi__950/03__2025-05__Doğal-Taş-Cephe-ve-Havuz/asama-01.svg",
+            "projects/villa__Fethiye,-Muğla__2025__FK-Cliffside-Malikanesi__950/03__2025-05__Doğal-Taş-Cephe-ve-Havuz/asama-02.svg"
+          ]
+        }
+      ],
+      "imageCount": 11
+    },
+    {
+      "slug": "fk-marmaris-bay-villasi",
+      "folder": "villa__Marmaris,-Muğla__2025__FK-Marmaris-Bay-Villası__720",
+      "title": "FK Marmaris Bay Villası",
+      "categoryKey": "villa",
+      "category": "Villa",
+      "categoryGroup": "Lüks Villalar",
+      "location": "Marmaris, Muğla",
+      "year": "2025",
+      "area": "720 m²",
+      "cover": "projects/villa__Marmaris,-Muğla__2025__FK-Marmaris-Bay-Villası__720/cover.svg",
+      "gallery": [
+        "projects/villa__Marmaris,-Muğla__2025__FK-Marmaris-Bay-Villası__720/galeri-01.svg",
+        "projects/villa__Marmaris,-Muğla__2025__FK-Marmaris-Bay-Villası__720/galeri-02.svg",
+        "projects/villa__Marmaris,-Muğla__2025__FK-Marmaris-Bay-Villası__720/galeri-03.svg"
+      ],
+      "timeline": [
+        {
+          "order": 1,
+          "date": "2024-03",
+          "dateLabel": "Mart 2024",
+          "title": "Zemin Etüdü ve Temel",
+          "images": [
+            "projects/villa__Marmaris,-Muğla__2025__FK-Marmaris-Bay-Villası__720/01__2024-03__Zemin-Etüdü-ve-Temel/asama-01.svg",
+            "projects/villa__Marmaris,-Muğla__2025__FK-Marmaris-Bay-Villası__720/01__2024-03__Zemin-Etüdü-ve-Temel/asama-02.svg"
+          ]
+        },
+        {
+          "order": 2,
+          "date": "2024-08",
+          "dateLabel": "Ağustos 2024",
+          "title": "Kaba İnşaat ve Brüt Beton",
+          "images": [
+            "projects/villa__Marmaris,-Muğla__2025__FK-Marmaris-Bay-Villası__720/02__2024-08__Kaba-İnşaat-ve-Brüt-Beton/asama-01.svg",
+            "projects/villa__Marmaris,-Muğla__2025__FK-Marmaris-Bay-Villası__720/02__2024-08__Kaba-İnşaat-ve-Brüt-Beton/asama-02.svg",
+            "projects/villa__Marmaris,-Muğla__2025__FK-Marmaris-Bay-Villası__720/02__2024-08__Kaba-İnşaat-ve-Brüt-Beton/asama-03.svg"
+          ]
+        },
+        {
+          "order": 3,
+          "date": "2025-01",
+          "dateLabel": "Ocak 2025",
+          "title": "İnce İşler ve Cephe",
+          "images": [
+            "projects/villa__Marmaris,-Muğla__2025__FK-Marmaris-Bay-Villası__720/03__2025-01__İnce-İşler-ve-Cephe/asama-01.svg",
+            "projects/villa__Marmaris,-Muğla__2025__FK-Marmaris-Bay-Villası__720/03__2025-01__İnce-İşler-ve-Cephe/asama-02.svg"
+          ]
+        },
+        {
+          "order": 4,
+          "date": "2025-06",
+          "dateLabel": "Haziran 2025",
+          "title": "Peyzaj ve Anahtar Teslim",
+          "images": [
+            "projects/villa__Marmaris,-Muğla__2025__FK-Marmaris-Bay-Villası__720/04__2025-06__Peyzaj-ve-Anahtar-Teslim/asama-01.svg",
+            "projects/villa__Marmaris,-Muğla__2025__FK-Marmaris-Bay-Villası__720/04__2025-06__Peyzaj-ve-Anahtar-Teslim/asama-02.svg"
+          ]
+        }
+      ],
+      "imageCount": 13
+    },
+    {
+      "slug": "fk-panorama-rezidanslari",
+      "folder": "konut__Bodrum,-Muğla__2024__FK-Panorama-Rezidansları__4200",
+      "title": "FK Panorama Rezidansları",
+      "categoryKey": "konut",
+      "category": "Konut",
+      "categoryGroup": "Konut",
+      "location": "Bodrum, Muğla",
+      "year": "2024",
+      "area": "4.200 m²",
+      "cover": "projects/konut__Bodrum,-Muğla__2024__FK-Panorama-Rezidansları__4200/cover.svg",
+      "gallery": [
+        "projects/konut__Bodrum,-Muğla__2024__FK-Panorama-Rezidansları__4200/galeri-01.svg",
+        "projects/konut__Bodrum,-Muğla__2024__FK-Panorama-Rezidansları__4200/galeri-02.svg"
+      ],
+      "timeline": [
+        {
+          "order": 1,
+          "date": "2023-05",
+          "dateLabel": "Mayıs 2023",
+          "title": "Hafriyat ve Fore Kazık",
+          "images": [
+            "projects/konut__Bodrum,-Muğla__2024__FK-Panorama-Rezidansları__4200/01__2023-05__Hafriyat-ve-Fore-Kazık/asama-01.svg",
+            "projects/konut__Bodrum,-Muğla__2024__FK-Panorama-Rezidansları__4200/01__2023-05__Hafriyat-ve-Fore-Kazık/asama-02.svg"
+          ]
+        },
+        {
+          "order": 2,
+          "date": "2023-11",
+          "dateLabel": "Kasım 2023",
+          "title": "Karkas ve Kat İmalatları",
+          "images": [
+            "projects/konut__Bodrum,-Muğla__2024__FK-Panorama-Rezidansları__4200/02__2023-11__Karkas-ve-Kat-İmalatları/asama-01.svg",
+            "projects/konut__Bodrum,-Muğla__2024__FK-Panorama-Rezidansları__4200/02__2023-11__Karkas-ve-Kat-İmalatları/asama-02.svg",
+            "projects/konut__Bodrum,-Muğla__2024__FK-Panorama-Rezidansları__4200/02__2023-11__Karkas-ve-Kat-İmalatları/asama-03.svg"
+          ]
+        },
+        {
+          "order": 3,
+          "date": "2024-07",
+          "dateLabel": "Temmuz 2024",
+          "title": "Cephe ve Ortak Alanlar",
+          "images": [
+            "projects/konut__Bodrum,-Muğla__2024__FK-Panorama-Rezidansları__4200/03__2024-07__Cephe-ve-Ortak-Alanlar/asama-01.svg",
+            "projects/konut__Bodrum,-Muğla__2024__FK-Panorama-Rezidansları__4200/03__2024-07__Cephe-ve-Ortak-Alanlar/asama-02.svg"
+          ]
+        }
+      ],
+      "imageCount": 10
+    },
+    {
+      "slug": "oasis-loft-ic-mekan-tasarimi",
+      "folder": "ic-mimari__Göcek,-Muğla__2024__Oasis-Loft-İç-Mekan-Tasarımı__280",
+      "title": "Oasis Loft İç Mekan Tasarımı",
+      "categoryKey": "ic-mimari",
+      "category": "İç Mimari",
+      "categoryGroup": "İç Mimari",
+      "location": "Göcek, Muğla",
+      "year": "2024",
+      "area": "280 m²",
+      "cover": "projects/ic-mimari__Göcek,-Muğla__2024__Oasis-Loft-İç-Mekan-Tasarımı__280/cover.svg",
+      "gallery": [
+        "projects/ic-mimari__Göcek,-Muğla__2024__Oasis-Loft-İç-Mekan-Tasarımı__280/galeri-01.svg",
+        "projects/ic-mimari__Göcek,-Muğla__2024__Oasis-Loft-İç-Mekan-Tasarımı__280/galeri-02.svg",
+        "projects/ic-mimari__Göcek,-Muğla__2024__Oasis-Loft-İç-Mekan-Tasarımı__280/galeri-03.svg"
+      ],
+      "timeline": [
+        {
+          "order": 1,
+          "date": "2024-02",
+          "dateLabel": "Şubat 2024",
+          "title": "Konsept ve Malzeme Seçimi",
+          "images": [
+            "projects/ic-mimari__Göcek,-Muğla__2024__Oasis-Loft-İç-Mekan-Tasarımı__280/01__2024-02__Konsept-ve-Malzeme-Seçimi/asama-01.svg",
+            "projects/ic-mimari__Göcek,-Muğla__2024__Oasis-Loft-İç-Mekan-Tasarımı__280/01__2024-02__Konsept-ve-Malzeme-Seçimi/asama-02.svg"
+          ]
+        },
+        {
+          "order": 2,
+          "date": "2024-05",
+          "dateLabel": "Mayıs 2024",
+          "title": "Uygulama ve Mobilya",
+          "images": [
+            "projects/ic-mimari__Göcek,-Muğla__2024__Oasis-Loft-İç-Mekan-Tasarımı__280/02__2024-05__Uygulama-ve-Mobilya/asama-01.svg",
+            "projects/ic-mimari__Göcek,-Muğla__2024__Oasis-Loft-İç-Mekan-Tasarımı__280/02__2024-05__Uygulama-ve-Mobilya/asama-02.svg",
+            "projects/ic-mimari__Göcek,-Muğla__2024__Oasis-Loft-İç-Mekan-Tasarımı__280/02__2024-05__Uygulama-ve-Mobilya/asama-03.svg"
+          ]
+        }
+      ],
+      "imageCount": 9
+    },
+    {
+      "slug": "zenith-is-ve-sanat-merkezi",
+      "folder": "ticari__Ataşehir,-İstanbul__2023__Zenith-İş-ve-Sanat-Merkezi__14500",
+      "title": "Zenith İş ve Sanat Merkezi",
+      "categoryKey": "ticari",
+      "category": "Ticari",
+      "categoryGroup": "Ticari",
+      "location": "Ataşehir, İstanbul",
+      "year": "2023",
+      "area": "14.500 m²",
+      "cover": "projects/ticari__Ataşehir,-İstanbul__2023__Zenith-İş-ve-Sanat-Merkezi__14500/cover.svg",
+      "gallery": [
+        "projects/ticari__Ataşehir,-İstanbul__2023__Zenith-İş-ve-Sanat-Merkezi__14500/galeri-01.svg",
+        "projects/ticari__Ataşehir,-İstanbul__2023__Zenith-İş-ve-Sanat-Merkezi__14500/galeri-02.svg"
+      ],
+      "timeline": [
+        {
+          "order": 1,
+          "date": "2021-09",
+          "dateLabel": "Eylül 2021",
+          "title": "Temel ve Bodrum Katları",
+          "images": [
+            "projects/ticari__Ataşehir,-İstanbul__2023__Zenith-İş-ve-Sanat-Merkezi__14500/01__2021-09__Temel-ve-Bodrum-Katları/asama-01.svg",
+            "projects/ticari__Ataşehir,-İstanbul__2023__Zenith-İş-ve-Sanat-Merkezi__14500/01__2021-09__Temel-ve-Bodrum-Katları/asama-02.svg"
+          ]
+        },
+        {
+          "order": 2,
+          "date": "2022-06",
+          "dateLabel": "Haziran 2022",
+          "title": "Çelik Konstrüksiyon",
+          "images": [
+            "projects/ticari__Ataşehir,-İstanbul__2023__Zenith-İş-ve-Sanat-Merkezi__14500/02__2022-06__Çelik-Konstrüksiyon/asama-01.svg",
+            "projects/ticari__Ataşehir,-İstanbul__2023__Zenith-İş-ve-Sanat-Merkezi__14500/02__2022-06__Çelik-Konstrüksiyon/asama-02.svg"
+          ]
+        },
+        {
+          "order": 3,
+          "date": "2023-03",
+          "dateLabel": "Mart 2023",
+          "title": "Giydirme Cephe ve Teslim",
+          "images": [
+            "projects/ticari__Ataşehir,-İstanbul__2023__Zenith-İş-ve-Sanat-Merkezi__14500/03__2023-03__Giydirme-Cephe-ve-Teslim/asama-01.svg",
+            "projects/ticari__Ataşehir,-İstanbul__2023__Zenith-İş-ve-Sanat-Merkezi__14500/03__2023-03__Giydirme-Cephe-ve-Teslim/asama-02.svg"
+          ]
+        }
+      ],
+      "imageCount": 9
+    }
+  ]
+}
