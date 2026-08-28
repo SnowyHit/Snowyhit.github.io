@@ -139,7 +139,10 @@ hr.ince{border:0;border-top:1px solid var(--cizgi);margin:22px 0}
 .kart-yuva{position:relative;margin:10px 0 14px}
 .kart{
   position:relative;
-  min-height:56vh;
+  height:calc(100vh - 215px);
+  height:calc(100dvh - 215px);
+  min-height:300px;
+  max-height:600px;
   padding:26px 20px;
   border:1px solid var(--amber-koyu);
   border-radius:var(--r);
@@ -149,7 +152,7 @@ hr.ince{border:0;border-top:1px solid var(--cizgi);margin:22px 0}
   overflow:hidden;
   cursor:pointer;
   user-select:none;-webkit-user-select:none;
-  touch-action:none;
+  touch-action:pan-y;
 }
 .kart::before,.kart::after{
   content:"";position:absolute;width:22px;height:22px;border:1px solid var(--amber);opacity:.75;pointer-events:none;
@@ -158,7 +161,7 @@ hr.ince{border:0;border-top:1px solid var(--cizgi);margin:22px 0}
 .kart::after{bottom:7px;right:7px;border-left:0;border-top:0}
 .kart-icerik{
   position:relative;z-index:1;opacity:0;transition:opacity .16s ease;
-  display:flex;flex-direction:column;gap:14px;
+  display:flex;flex-direction:column;gap:14px;height:100%;min-height:0;
 }
 .kart.acik .kart-icerik{opacity:1}
 .ortu{
@@ -188,11 +191,22 @@ hr.ince{border:0;border-top:1px solid var(--cizgi);margin:22px 0}
   color:var(--damga);border:3px double var(--damga);border-radius:4px;
   padding:4px 14px;opacity:.92;
 }
+/* Grid, çok sütun (columns) yerine: sabit yükseklikli kartın içinde
+   çok sütun yana taşar, grid ise aşağı doğru uzayıp dikey kaydırılır. */
 .mini-liste{
-  columns:2;column-gap:12px;margin:0;padding:0;list-style:none;
+  display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:0 12px;
+  margin:0;padding:0;list-style:none;
   font-family:var(--mono);font-size:11px;line-height:1.5;color:var(--soluk);
 }
-.mini-liste li{break-inside:avoid;overflow-wrap:anywhere}
+.mini-liste li{overflow-wrap:anywhere}
+/* Kartın boyu herkeste aynı: casusun uzun mekan listesi kartı büyütmesin,
+   yoksa ekranın uzunluğu casusu ele verir. Liste kartın içinde kayar. */
+.liste-alani{flex:1 1 auto;min-height:0;display:flex;flex-direction:column}
+.liste-alani .mini-liste{
+  flex:1 1 auto;min-height:0;overflow-y:auto;overscroll-behavior:contain;
+  touch-action:pan-y;-webkit-overflow-scrolling:touch;padding-right:6px;
+}
+.kart-not{margin-top:auto}
 
 /* --- tur ekranı --- */
 .sayac{
@@ -203,6 +217,23 @@ hr.ince{border:0;border-top:1px solid var(--cizgi);margin:22px 0}
 .sayac.az{color:var(--damga)}
 .sayac.durdu{color:var(--soluk)}
 .tur-bilgi{text-align:center;margin-bottom:18px}
+/* --- soru fikri kutusu --- */
+.soru-kutu{
+  border:1px solid var(--cizgi);border-left:3px solid var(--amber);
+  background:var(--panel);border-radius:var(--r);
+  padding:12px 14px;margin-bottom:10px;
+}
+.soru-ust{display:flex;justify-content:space-between;align-items:center;gap:10px}
+.soru-metin{
+  font-family:var(--mono);font-size:15px;line-height:1.5;color:var(--metin);
+  overflow-wrap:anywhere;margin:2px 0 6px;
+}
+.mini-btn{
+  -webkit-appearance:none;appearance:none;background:transparent;border:0;
+  color:var(--soluk);font-family:var(--mono);font-size:10.5px;letter-spacing:.16em;
+  cursor:pointer;min-height:44px;padding:0 2px;
+}
+.mini-btn:hover{color:var(--metin)}
 .baslayan{font-family:var(--kondens);font-size:22px;letter-spacing:.04em}
 .liste-kutu{max-height:0;overflow:hidden;transition:max-height .2s ease}
 .liste-kutu.acik{max-height:1600px}
@@ -318,6 +349,15 @@ hr.ince{border:0;border-top:1px solid var(--cizgi);margin:22px 0}
   </div>
 
   <div class="kutu">
+    <div class="kutu-baslik"><span class="etiket">Kart açma</span><span class="kutu-deger" id="acma-etiket">Dokunmalı</span></div>
+    <div class="cipler" id="acma-cipler">
+      <button class="cip" data-acma="dokun" aria-pressed="true">Dokununca açılsın</button>
+      <button class="cip" data-acma="tut" aria-pressed="false">Basılı tutunca</button>
+    </div>
+    <p class="not" id="acma-not">Kart açıkken listeyi rahatça kaydırırsın.</p>
+  </div>
+
+  <div class="kutu">
     <div class="kutu-baslik"><span class="etiket">Mekan paketleri</span><span class="kutu-deger" id="paket-etiket">42 mekan</span></div>
     <div class="cipler" id="paket-cipler">
       <button class="cip" data-paket="turkiye" aria-pressed="true">Türkiye</button>
@@ -349,9 +389,9 @@ hr.ince{border:0;border-top:1px solid var(--cizgi);margin:22px 0}
         <div class="kart-icerik" id="kart-icerik"></div>
         <div class="ortu" id="ortu">
           <span class="etiket">Sadece sen</span>
-          <span class="ortu-baslik">Basılı tut</span>
-          <span class="soluk kucuk">Parmağını çekince kart kapanır</span>
-          <div class="dolum"><i></i></div>
+          <span class="ortu-baslik" id="ortu-baslik">Dokun ve gör</span>
+          <span class="soluk kucuk" id="ortu-alt">Açıkken kaydırabilirsin, tekrar dokununca kapanır</span>
+          <div class="dolum" id="dolum" hidden><i></i></div>
         </div>
       </div>
     </div>
@@ -368,6 +408,15 @@ hr.ince{border:0;border-top:1px solid var(--cizgi);margin:22px 0}
     <p class="baslayan amber" id="baslayan">3. oyuncu</p>
   </div>
 
+  <div class="soru-kutu" id="soru-kutu" hidden>
+    <div class="soru-ust">
+      <span class="etiket" id="soru-tip">Isınma</span>
+      <button class="mini-btn" type="button" id="btn-soru-gizle">Gizle</button>
+    </div>
+    <p class="soru-metin" id="soru-metin" aria-live="polite"></p>
+    <span class="etiket" id="soru-no">Soru 001</span>
+  </div>
+  <button class="btn" id="btn-soru" style="margin-bottom:10px">Soru fikri ver</button>
   <button class="btn btn-hayalet" id="btn-duraklat" style="margin-bottom:10px">Duraklat</button>
   <div class="btn-satir" style="margin-bottom:10px">
     <button class="btn" id="btn-oyla">Şüpheliyi oyla</button>
@@ -472,7 +521,43 @@ const MEKANLAR = {
                "Kompartımanda sohbet açan yolcu", "Uyuyamayan yolcu", "Bilet kontrolörü", "Gitar çalan gezgin"] },
     { mekan: "Pazar yeri",
       roller: ["Manav", "Zeytinci", "Pazarlık yapan teyze", "Tezgah kuran çırak",
-               "Hepsi beş lira diye bağıran satıcı", "Poşet taşıyan çocuk", "Zabıta", "Turşucu"] }
+               "Hepsi beş lira diye bağıran satıcı", "Poşet taşıyan çocuk", "Zabıta", "Turşucu"] },
+    { mekan: "Metrobüs",
+      roller: ["Metrobüs şoförü", "Kapıya sıkışan yolcu", "Kulaklıkla dünyadan kopan öğrenci", "Oturacak yer kapan teyze",
+               "Ayakta uyuyan işçi", "Telefonda bağıra bağıra konuşan adam", "Kartını basmayı unutan yolcu", "Her durakta inecek gibi yapan yolcu"] },
+    { mekan: "Halı saha maçı",
+      roller: ["Kaleci", "Kendini golcü sanan orta saha", "Faul diye tartışan oyuncu", "Sakatlanıp kenara oturan oyuncu",
+               "Tesisin görevlisi", "Kenarda bekleyen yedek", "Maç sonrası çayı ısmarlayan kaptan", "Her pozisyonda ofsayt itirazı yapan"] },
+    { mekan: "Mahalle bakkalı",
+      roller: ["Bakkal amca", "Veresiye defterine yazdıran müşteri", "Ekmek almaya gönderilen çocuk", "Rafları dizen çırak",
+               "Dondurma seçemeyen çocuk", "Gazete okuyan müdavim", "Kedi besleyen komşu", "Her ürünün fiyatını soran müşteri"] },
+    { mekan: "Otogar",
+      roller: ["Otobüs muavini", "Bilet satan görevli", "Otobüsü kaçıran yolcu", "Peron anonsu yapan görevli",
+               "Valizini bulamayan yolcu", "Su ve simit satan seyyar", "Müşteri bekleyen taksici", "Uğurlamaya gelen aile"] },
+    { mekan: "Mahalle fırını",
+      roller: ["Fırıncı usta", "Ekmek sırası bekleyen komşu", "Börek tepsisi getiren teyze", "Poğaça dizen çırak",
+               "Sıcak ekmeğin ucunu koparan çocuk", "Kasadaki fırıncının eşi", "Sabahın altısında gelen ilk müşteri", "Un çuvalı taşıyan hamal"] },
+    { mekan: "Ocakbaşı kebapçı",
+      roller: ["Ocakbaşı ustası", "Şalgam ısmarlayan müşteri", "Servis yapan garson", "Lavaş açan usta",
+               "Acıya dayanamayan turist", "Hesabı kapmaya çalışan misafir", "Soğan doğrayan çırak", "Dumandan kaçıp masa değiştiren müşteri"] },
+    { mekan: "Kına gecesi",
+      roller: ["Gelin", "Kına yakan yenge", "Türkü söyleyen teyze", "Def çalan kuzen",
+               "Kına tepsisini taşıyan çocuk", "Video çeken kuzen", "Damat tarafından gelen misafir", "Oyun havasına dayanamayan dayı"] },
+    { mekan: "Piknik alanı",
+      roller: ["Mangalı bir türlü yakamayan baba", "Semaveri kuran amca", "Battaniyeyi seren anne", "Topu ormana kaçıran çocuk",
+               "Arı kovalayan misafir", "Odun toplayan genç", "Yer kapmak için erken gelen aile", "Müziği sonuna kadar açan komşu grup"] },
+    { mekan: "Sürücü kursu direksiyon dersi",
+      roller: ["Direksiyon hocası", "Debriyaj yakan kursiyer", "Arka koltuktaki sıradaki kursiyer", "Paralel park deneyen aday",
+               "Arkadan korna çalan sürücü", "Sınav görevlisi", "İlk kez otoyola çıkan kursiyer", "Karşıdan geçmeye çalışan yaya"] },
+    { mekan: "Nüfus müdürlüğü",
+      roller: ["Gişedeki memur", "Sıra numarası bekleyen vatandaş", "Evrakı eksik çıkan vatandaş", "Fotokopiye koşan kişi",
+               "Çay dağıtan görevli", "İlk kimliğini çıkartan genç", "Bebeğini kaydettiren baba", "Kapanmasına beş dakika kala gelen adam"] },
+    { mekan: "Kadın kuaförü",
+      roller: ["Kuaför", "Saç boyasının açmasını bekleyen müşteri", "Gelin başı yapılan müşteri", "Fön çeken çırak",
+               "Dedikodu anlatan müdavim", "Kaş alan uzman", "Randevusuz gelen müşteri", "Çay getiren çırak"] },
+    { mekan: "Öğrenci yurdu",
+      roller: ["Belletmen", "Gece yarısı makarna haşlayan öğrenci", "Sınava çalışan öğrenci", "Kulaklıkla uyuyan oda arkadaşı",
+               "Giriş saatini kaçıran öğrenci", "Kat sorumlusu", "Çamaşır makinesi sırası bekleyen", "Herkesin eşyasını ödünç alan öğrenci"] }
   ],
   dunya: [
     { mekan: "Hastane acil servisi",
@@ -534,7 +619,52 @@ const MEKANLAR = {
                "Vitrini düzenleyen görevli", "Diyetteyken gelen müşteri", "Sağlık denetçisi", "Kremayı parmağıyla tadan çırak"] },
     { mekan: "Buz pateni pisti",
       roller: ["Patinaj hocası", "İlk kez buza çıkan çocuk", "Buz temizleme aracının şoförü", "Paten kiralayan görevli",
-               "Yarışmaya hazırlanan sporcu", "Buzda düşüp kalkamayan müşteri", "Kafeteryada bekleyen anne", "Müzik seçen görevli"] }
+               "Yarışmaya hazırlanan sporcu", "Buzda düşüp kalkamayan müşteri", "Kafeteryada bekleyen anne", "Müzik seçen görevli"] },
+    { mekan: "Süpermarket",
+      roller: ["Kasiyer", "Reyon dizen görevli", "İndirim kovalayan müşteri", "Tekerleği dönmeyen arabayı iten müşteri",
+               "Tadım standındaki görevli", "Çocuğunu reyonlarda kaybeden ebeveyn", "Güvenlik görevlisi", "Sırada dergi karıştıran müşteri"] },
+    { mekan: "Sinema salonu",
+      roller: ["Bilet kontrol eden görevli", "Patlamış mısır satan görevli", "Filmi ilk kez izleyen seyirci", "Telefonunu susturmayan seyirci",
+               "Arka sırada oturan çift", "Projeksiyon operatörü", "Salonu temizleyen görevli", "Sonunu bilip anlatan arkadaş"] },
+    { mekan: "Spor salonu",
+      roller: ["Kişisel antrenör", "İlk gün gelen üye", "Aynanın önünden ayrılmayan üye", "Resepsiyondaki görevli",
+               "Ağırlığı kaldıramayan üye", "Koşu bandında telefonla konuşan üye", "Ekipmanları silen görevli", "Grup dersi eğitmeni"] },
+    { mekan: "Kafe",
+      roller: ["Barista", "Saatlerdir bilgisayarıyla oturan müşteri", "Garson", "Şifreyi tekrar soran müşteri",
+               "İlk buluşmasına gelen kişi", "Vitrini dizen görevli", "Bulaşıkçı", "Masada toplantı yapan iki iş insanı"] },
+    { mekan: "Fast food restoranı",
+      roller: ["Kasadaki görevli", "Patates kızartan görevli", "Oyuncaklı menü isteyen çocuk", "Siparişi yanlış gelen müşteri",
+               "Gece vardiyasındaki müdür", "Arabaya servis görevlisi", "Masaları silen görevli", "Beş paket sos isteyen müşteri"] },
+    { mekan: "Plaj",
+      roller: ["Cankurtaran", "Şezlong kiralayan görevli", "Kumdan kale yapan çocuk", "Güneşten yanmış turist",
+               "Mısır satan seyyar", "Voleybol oynayan grup", "Denize girmeye korkan misafir", "Şemsiyesi uçan tatilci"] },
+    { mekan: "Kamp alanı",
+      roller: ["Çadırını bir türlü kuramayan kampçı", "Ateşi yakan rehber", "Gitar çalan kampçı", "Doğa fotoğrafçısı",
+               "Ayı hikayesi anlatan kampçı", "Yemek pişiren gönüllü", "Uyku tulumunu evde unutan kampçı", "Böceklerden korkan arkadaş"] },
+    { mekan: "Müzik festivali",
+      roller: ["Sahnedeki solist", "Ses teknisyeni", "Kalabalıkta arkadaşını kaybeden seyirci", "Bileklik kontrol eden görevli",
+               "Su satan seyyar", "En önde bekleyen hayran", "Sahne arkası görevlisi", "Omuzda taşınan seyirci"] },
+    { mekan: "Eczane",
+      roller: ["Eczacı", "Reçetesiz ilaç isteyen müşteri", "Eczane kalfası", "Tansiyonunu ölçtüren emekli",
+               "Gece nöbetinde gelen hasta", "İnternetten kendine teşhis koyan müşteri", "Vitamin rafını dizen görevli", "İlaç getiren depo görevlisi"] },
+    { mekan: "Diş kliniği",
+      roller: ["Diş hekimi", "Koltuğa oturmaya korkan hasta", "Hekim asistanı", "Randevu veren resepsiyonist",
+               "Diş teli taktıran genç", "Ağzı uyuşmuş hasta", "Bekleme salonunda dergi karıştıran hasta", "Aletleri hazırlayan görevli"] },
+    { mekan: "Çocuk doğum günü partisi",
+      roller: ["Doğum günü çocuğu", "Palyaço", "Pastayı kesen anne", "Hediye almayı unutan misafir",
+               "Şişme oyun alanının görevlisi", "Balon şişiren baba", "Ağlayan küçük kardeş", "Herkesi fotoğrafa dizen teyze"] },
+    { mekan: "İlkokul sınıfı",
+      roller: ["Sınıf öğretmeni", "Tahtaya kalkan öğrenci", "Ödevini unutan öğrenci", "Sınıf başkanı",
+               "Camdan dışarı bakan öğrenci", "Silgi ödünç isteyen öğrenci", "Zil çalınca ilk fırlayan öğrenci", "Derse geç giren öğrenci"] },
+    { mekan: "Açık ofis",
+      roller: ["Toplantıya çağıran müdür", "Kulaklıkla kod yazan yazılımcı", "Kahve makinesinde takılan çalışan", "İnsan kaynakları uzmanı",
+               "Yeni başlayan stajyer", "Klimayı gizlice kapatan çalışan", "Sunum hazırlayan pazarlamacı", "Doğum günü pastasını dolaştıran çalışan"] },
+    { mekan: "Bowling salonu",
+      roller: ["Pist görevlisi", "Ayakkabı kiralayan görevli", "Sürekli oluğa atan oyuncu", "Skor tabelasını takip eden oyuncu",
+               "Büfedeki görevli", "Peş peşe strike yapan iddialı oyuncu", "İlk kez oynayan arkadaş", "En ağır topu seçen çocuk"] },
+    { mekan: "Su parkı",
+      roller: ["Cankurtaran", "Kaydıraktan korkan çocuk", "Gişedeki görevli", "Havuzu temizleyen görevli",
+               "Şezlonga havlu seren tatilci", "Dalga havuzundaki animatör", "Dondurma satan görevli", "Kaydırak sırasında bekleyen genç"] }
   ],
   fantastik: [
     { mekan: "Uzay istasyonu",
@@ -560,10 +690,181 @@ const MEKANLAR = {
                "Gelecekten gelen ziyaretçi", "Not tutan asistan", "Laboratuvar güvenliği", "Kendisiyle karşılaşan stajyer"] },
     { mekan: "Ejderha mağarası",
       roller: ["Ejderha", "Ejderhayı avlamaya gelen şövalye", "Hazine sayan cüce", "Kaçırılmış soylu",
-               "Yem olarak bırakılmış koyun", "Mağarayı haritalayan kaşif", "Yumurta çalan hırsız", "Barış görüşmesine gelen elçi"] }
+               "Yem olarak bırakılmış koyun", "Mağarayı haritalayan kaşif", "Yumurta çalan hırsız", "Barış görüşmesine gelen elçi"] },
+    { mekan: "Süper kahraman karargahı",
+      roller: ["Takım lideri", "Gücünü yeni keşfeden çaylak", "Teknoloji dehası", "Kostüm tasarımcısı",
+               "Telsizdeki koordinatör", "Gizli kimliğini saklamaya çalışan kahraman", "Antrenman salonundaki eğitmen", "Peşlerine düşmüş gazeteci"] },
+    { mekan: "Zombi sığınağı",
+      roller: ["Sığınak komutanı", "Konserveleri sayan görevli", "Isırıldığını saklayan hayatta kalan", "Telsizle yardım arayan kişi",
+               "Kapıyı tutan nöbetçi", "Sığınak doktoru", "Silah tamir eden usta", "Dışarı çıkmakta ısrar eden genç"] },
+    { mekan: "Vampir balosu",
+      roller: ["Ev sahibi kont", "İlk kez davet edilen ölümlü", "Orkestra şefi", "Kadehleri taşıyan garson",
+               "Aynada görünmediği için sinirlenen konuk", "Balo elbisesini diken terzi", "Şafağı kollayan uşak", "Kılık değiştirmiş vampir avcısı"] },
+    { mekan: "Robot fabrikası",
+      roller: ["Montaj hattı işçisi", "Kalite kontrol uzmanı", "Yeni bilinçlenen robot", "Yazılım mühendisi",
+               "Fabrika müdürü", "Bakım teknisyeni", "Fabrikayı gezen yatırımcı", "Hurdaya ayrılmayı bekleyen eski robot"] },
+    { mekan: "Uzaylı gemisi",
+      roller: ["Gemi kaptanı", "Kaçırılmış çiftçi", "İnsan inceleyen bilim görevlisi", "Işınlama odasının sorumlusu",
+               "Tercümanlık yapan uzaylı", "Gemiyi temizleyen görevli", "Dünyaya ilk kez gelen stajyer", "Yanlışlıkla kaçırılmış inek"] },
+    { mekan: "Noel Baba atölyesi",
+      roller: ["Noel Baba", "Oyuncak yapan elf", "Uslu çocuk listesini tutan elf", "Ren geyiği bakıcısı",
+               "Kızak tamircisi", "Mektupları okuyan elf", "Hediye paketleyen elf", "Fazla mesaiden bıkmış elf"] }
   ]
 };
 const PAKET_ADI = { turkiye: "Türkiye", dunya: "Dünya", fantastik: "Fantastik" };
+
+/* ============================================================
+   SORU FİKİRLERİ — tur ekranındaki "Soru fikri ver" düğmesi buradan çeker.
+   Hiçbiri mekanın adını vermez; her mekanda sorulabilir.
+   "{kisi}" yazarsan oyunda rastgele bir oyuncunun adıyla değişir.
+   Kendi sorularınızı eklemek için listelere yeni satır yazmanız yeterli.
+   ============================================================ */
+const SORULAR = {
+  "Isınma": [
+    "Buraya en son ne zaman geldin?",
+    "Buraya nasıl geldin, yürüyerek mi?",
+    "Şu an burada kaç kişi var, tahmin et.",
+    "Burayı sever misin?",
+    "Buraya tek başına mı geldin?",
+    "Bugün burada ne kadar kalacaksın?",
+    "Buraya girmek için para ödedin mi?",
+    "Burası hafta sonu daha mı kalabalık olur?",
+    "Buraya çocukken de gelir miydin?",
+    "Burada tanıdığın biri var mı?",
+    "Buraya yarın tekrar gelir miydin?",
+    "Burada olmak seni mutlu ediyor mu?",
+    "Buraya gelirken yolda bir şey aldın mı?",
+    "Burada telefonun çeker mi?",
+    "Kapıdan ilk girdiğinde ne hissettin?",
+    "Buraya arabayla mı geldin?",
+    "Şu an üşüyor musun?",
+    "Burası senin için iş mi, keyif mi?",
+    "Buraya birini getirsen kimi getirirdin?",
+    "Burada saatin kaç olduğunu bilmek önemli mi?"
+  ],
+  "Duyular": [
+    "Burası nasıl kokuyor?",
+    "Şu an duyduğun en yüksek ses ne?",
+    "Gözlerin kapalı olsa burayı sesinden tanır mıydın?",
+    "Ayağının altındaki zemin sert mi, yumuşak mı?",
+    "Burada ışık yeterli mi?",
+    "Burada müzik çalıyor mu? Çalıyorsa ne tarz?",
+    "Elini duvara sürsen ne hissederdin?",
+    "Burada bir yemek kokusu var mı?",
+    "Burası sıcak mı, serin mi?",
+    "Burada en çok hangi renk göze çarpıyor?",
+    "Bağırsan sesin yankılanır mı?",
+    "Ayakkabılarını çıkarsan rahatsız olur muydun?",
+    "Buranın havası temiz mi?",
+    "Gözüne ilk çarpan şey ne oldu?",
+    "Burada gürültüden mi, sessizlikten mi rahatsız olurdun?"
+  ],
+  "Rolün": [
+    "Buradaki işin ne kadar sürüyor?",
+    "Bunun için bir eğitim aldın mı?",
+    "Sen olmasan burada bir şey aksar mıydı?",
+    "Burada en çok kiminle konuşuyorsun?",
+    "Buradaki en sinir bozucu şey ne?",
+    "Burada elin kirleniyor mu?",
+    "Buradaki işini tek cümlede anlat.",
+    "Burada özel bir kıyafet giyiyor musun?",
+    "Bugün burada bir hata yaptın mı?",
+    "Burada sana emir veren biri var mı?",
+    "Senin yaptığını bir çocuk da yapabilir mi?",
+    "Bir şeyini unutsan geri gelir miydin?",
+    "Şu an oturuyor musun, ayakta mısın?",
+    "Bugün burada kaç kez elini yıkadın?",
+    "Buradaki en değerli şey sende mi?",
+    "Bugün burada terledin mi?",
+    "Biri seni çağırsa koşarak gider miydin?",
+    "Bugün gelmesen kim seni arardı?",
+    "Bugün burada birine yardım ettin mi?",
+    "Burada bir mola verebiliyor musun?"
+  ],
+  "Sinsi": [
+    "Burada bir çocuk kaybolsa ilk nereye bakardın?",
+    "Acil çıkış nerede?",
+    "Yangın çıksa ilk neyi kurtarırsın?",
+    "Buraya köpeğinle gelebilir miydin?",
+    "Burada saklanacak bir yer var mı?",
+    "Yüksek sesle şarkı söylesen kim kızardı?",
+    "Buranın en pahalı şeyi ne?",
+    "Tuvaleti var mı, temiz mi?",
+    "Burada sıra beklemek gerekir mi?",
+    "Burayı baştan aşağı temizlemek ne kadar sürer?",
+    "Biri burada uyuyakalsa fark edilir mi?",
+    "Burada bir şey çalınsa ne olurdu?",
+    "Buraya yeni biri gelse ona ilk neyi öğretirler?",
+    "Sence burada kamera var mıdır?",
+    "Buraya pijamayla gelsen tuhaf kaçar mıydı?",
+    "Burada birinin bağırması normal mi?",
+    "Buranın çatısı var mı?",
+    "Susasan su bulabilir misin?",
+    "Bebek arabasıyla girilir mi buraya?",
+    "Biri fotoğraf çekse rahatsız olan olur muydu?",
+    "Burayı yarın kapatsalar en çok kim üzülür?",
+    "Burada en çok hangi yaştan insan var?",
+    "Gece yarısı gelsen burada ne bulurdun?",
+    "Burada koşmak yasak mıdır?",
+    "Buraya ait olmayan biri hemen belli olur mu?"
+  ],
+  "Absürt": [
+    "Burada dans etsen kim sana bakardı?",
+    "Burayı bir hayvana benzetsen hangisi olurdu?",
+    "Buraya bir ejderha gelse sığar mıydı?",
+    "Burada birine evlenme teklif etsen olur muydu?",
+    "Burayı haritada birine nasıl tarif ederdin?",
+    "Buraya beş yıldız verir miydin?",
+    "Burada uyuyabilir misin?",
+    "Burayı tek bir emojiyle anlat.",
+    "Burası bir film sahnesi olsa hangi türden olurdu?",
+    "Müdürü sen olsan ilk neyi değiştirirdin?",
+    "Burada bir kedi olsa nerede yatardı?",
+    "Buraya balonla insen nereye konardın?",
+    "Burada olabilecek en komik şey ne?",
+    "Buranın sloganı ne olurdu?",
+    "Kapıya bir tabela assan ne yazardın?",
+    "Burada bir şey patlasa ne patlardı?",
+    "Çocukken burayı görsen korkar mıydın?",
+    "Buraya bir ünlü gelse kim gelirdi?",
+    "Gözün kapalı kaç dakika durabilirsin burada?",
+    "Burayı üç kelimeyle anlat."
+  ],
+  "Zor": [
+    "Buranın kaç kapısı var?",
+    "Girerken birine bir şey göstermek gerekir mi?",
+    "Buranın en tehlikeli yanı ne?",
+    "Burada yaşın bir önemi var mı?",
+    "Buradaki bir iş kaç saat sürer, sayı ver.",
+    "Buranın sahibi kim olabilir?",
+    "Burada eldiven takan biri var mı?",
+    "Buraya senden önce en son kim geldi?",
+    "Buranın bir kuralını say.",
+    "Burada para üstü alır mısın?",
+    "Burada bir alet ya da makine kullanıyor musun?",
+    "Yağmur yağsa burada ıslanır mısın?",
+    "Burada birine güvenmen gerekiyor mu?",
+    "Buranın en sessiz köşesi neresi?",
+    "Telefonunu çıkarsan ayıp olur mu?",
+    "Burada bir hafta yaşayabilir misin?",
+    "Buraya bir şey getirmen gerekti mi?",
+    "Burada beklemek mi zor, çalışmak mı?"
+  ],
+  "Kişiye özel": [
+    "{kisi}, sen tam olarak ne yapıyorsun burada?",
+    "{kisi} bugün burada olmasa fark eder miydi?",
+    "{kisi} ile burada karşılaşmak seni şaşırtır mıydı?",
+    "{kisi}, görevini tek cümlede anlat.",
+    "{kisi} burada çalışıyor mu, misafir mi?",
+    "{kisi}, buraya kaçıncı gelişin?",
+    "{kisi} sana burada yardım edebilir mi?",
+    "{kisi}, hemen çıkman gerekse nereden çıkardın?",
+    "{kisi} burada en çok kiminle konuşur sence?",
+    "{kisi}, işler ters gitse kimi ararsın?",
+    "{kisi} buraya senden önce mi geldi?",
+    "{kisi}, buradaki en sevmediğin şey ne?"
+  ]
+};
 
 /* ==================== yardımcılar ==================== */
 const $ = function(s){ return document.querySelector(s); };
@@ -620,13 +921,15 @@ function ekranGoster(id){
 }
 
 /* ==================== ayarlar ==================== */
-const VARSAYILAN = { oyuncu:5, dakika:8, casus:1, paketler:["turkiye","dunya","fantastik"], isimAcik:false };
+const VARSAYILAN = { oyuncu:5, dakika:8, casus:1, paketler:["turkiye","dunya","fantastik"],
+                     acmaModu:"dokun", isimAcik:false };
 const ANAHTAR = "casus.ayarlar.v1";
 let ayar = ayarYukle();
 
 function ayarYukle(){
   const a = { oyuncu:VARSAYILAN.oyuncu, dakika:VARSAYILAN.dakika, casus:VARSAYILAN.casus,
-              paketler:VARSAYILAN.paketler.slice(), isimAcik:VARSAYILAN.isimAcik, isimler:[] };
+              paketler:VARSAYILAN.paketler.slice(), acmaModu:VARSAYILAN.acmaModu,
+              isimAcik:VARSAYILAN.isimAcik, isimler:[] };
   try{
     const ham = localStorage.getItem(ANAHTAR);
     if(!ham) return a;
@@ -638,6 +941,7 @@ function ayarYukle(){
       const p = o.paketler.filter(function(x){ return Object.prototype.hasOwnProperty.call(MEKANLAR, x); });
       if(p.length) a.paketler = p;
     }
+    if(o.acmaModu === "dokun" || o.acmaModu === "tut") a.acmaModu = o.acmaModu;
     if(typeof o.isimAcik === "boolean") a.isimAcik = o.isimAcik;
     if(Array.isArray(o.isimler)){
       a.isimler = o.isimler.slice(0,12).map(function(x){ return typeof x === "string" ? x.slice(0,14) : ""; });
@@ -685,6 +989,7 @@ function anaYenile(){
   });
   const n = aktifHavuz().length;
   $("#paket-etiket").textContent = n + " mekan";
+  acmaYenile();
   isimAlanlariniYenile();
   ayarKaydet();
 }
@@ -708,6 +1013,20 @@ $("#sure-cipler").addEventListener("click", function(e){
 $("#casus-cipler").addEventListener("click", function(e){
   const c = e.target.closest(".cip"); if(!c || c.disabled) return;
   ayar.casus = Number(c.dataset.casus); anaYenile();
+});
+function acmaYenile(){
+  $("#acma-etiket").textContent = dokunModu() ? "Dokunmalı" : "Basılı tutmalı";
+  Array.prototype.forEach.call($("#acma-cipler").children, function(c){
+    c.setAttribute("aria-pressed", String(c.dataset.acma === ayar.acmaModu));
+  });
+  $("#acma-not").textContent = dokunModu()
+    ? "Kart açıkken listeyi rahatça kaydırırsın."
+    : "Kart yalnızca parmağını basılı tuttuğun sürece açık kalır.";
+  ortuYazisiniYenile();
+}
+$("#acma-cipler").addEventListener("click", function(e){
+  const c = e.target.closest(".cip"); if(!c) return;
+  ayar.acmaModu = c.dataset.acma; anaYenile();
 });
 $("#paket-cipler").addEventListener("click", function(e){
   const c = e.target.closest(".cip"); if(!c) return;
@@ -794,7 +1113,7 @@ function kartiHazirla(){
     ic += '<div class="damga">CASUS SENSİN</div>'
         + '<p class="soluk kucuk">Mekanı bilmiyorsun. Yakalanmadan neredesin, çöz.</p>';
     if(tur.casusSayisi === 2) ic += '<p class="kucuk amber mono">Bu turda 2 casus var.</p>';
-    ic += '<div class="kart-alan"><span class="etiket">Olası mekanlar</span><ul class="mini-liste">'
+    ic += '<div class="kart-alan liste-alani"><span class="etiket">Olası mekanlar</span><ul class="mini-liste">'
         + tur.havuz.map(function(m){ return "<li>" + m + "</li>"; }).join("")
         + '</ul></div>';
   } else {
@@ -802,45 +1121,79 @@ function kartiHazirla(){
         + '<p class="mekan-ad">' + tur.mekan.mekan + '</p></div>'
         + '<div class="kart-alan"><span class="etiket">Rolün</span>'
         + '<p class="rol-ad">' + veri.rol + '</p></div>'
-        + '<p class="soluk kucuk">Mekanı söyleme. Rolüne uygun cevap ver.</p>';
+        + '<p class="soluk kucuk kart-not">Mekanı söyleme. Rolüne uygun cevap ver.</p>';
   }
   $("#kart-icerik").innerHTML = ic;
   $("#devir-kutusu").hidden = true;
   $("#kart-kutusu").hidden = false;
   $("#kart").focus({preventScroll:true});
 }
+function dokunModu(){ return ayar.acmaModu === "dokun"; }
+function kartAcikMi(){ return $("#kart").classList.contains("acik"); }
 function kartiAc(){
-  $("#kart").classList.add("acik");
-  $("#kart").setAttribute("aria-label", "Kart açık");
+  const k = $("#kart");
+  k.classList.add("acik");
+  k.setAttribute("aria-label", dokunModu() ? "Kartı gizlemek için dokun" : "Kart açık");
   if(!acildiMi){ acildiMi = true; $("#btn-gordum").disabled = false; }
 }
 function kartiKapat(){
   const k = $("#kart");
   k.classList.remove("acik");
   k.classList.remove("basiliyor");
-  k.setAttribute("aria-label", "Kartı açmak için basılı tut");
+  k.setAttribute("aria-label", dokunModu() ? "Kartı açmak için dokun" : "Kartı açmak için basılı tut");
   if(basiliZaman){ clearTimeout(basiliZaman); basiliZaman = null; }
 }
+function ortuYazisiniYenile(){
+  $("#ortu-baslik").textContent = dokunModu() ? "Dokun ve gör" : "Basılı tut";
+  $("#ortu-alt").textContent = dokunModu()
+    ? "Açıkken kaydırabilirsin, tekrar dokununca kapanır"
+    : "Parmağını çekince kart kapanır";
+  $("#dolum").hidden = dokunModu();
+}
+
+/* Basılı tut modunda parmak 10px kayarsa basma iptal olur; böylece dikey
+   kaydırma tarayıcıya kalır ve uzun mekan listesi de gezilebilir. */
+let basmaX = 0, basmaY = 0;
 function basmaBasla(){
-  if(basiliZaman) return;
+  if(basiliZaman || dokunModu()) return;
   $("#kart").classList.add("basiliyor");
   basiliZaman = setTimeout(function(){ basiliZaman = null; kartiAc(); }, 320);
 }
-function basmaBitir(){ kartiKapat(); }
+function basmaBitir(){ if(!dokunModu()) kartiKapat(); }
 
 $("#btn-hazir").addEventListener("click", kartiHazirla);
-$("#kart").addEventListener("pointerdown", function(e){ e.preventDefault(); basmaBasla(); });
+$("#kart").addEventListener("pointerdown", function(e){
+  basmaX = e.clientX; basmaY = e.clientY;
+  basmaBasla();
+});
+$("#kart").addEventListener("pointermove", function(e){
+  if(dokunModu()) return;
+  if(Math.abs(e.clientX - basmaX) > 10 || Math.abs(e.clientY - basmaY) > 10) basmaBitir();
+});
 $("#kart").addEventListener("pointerup", basmaBitir);
 $("#kart").addEventListener("pointercancel", basmaBitir);
 $("#kart").addEventListener("pointerleave", basmaBitir);
 $("#kart").addEventListener("contextmenu", function(e){ e.preventDefault(); });
+/* Dokun modu: parmakla kaydırınca tarayıcı click üretmez, yani kaydırma kartı açmaz. */
+$("#kart").addEventListener("click", function(){
+  if(!dokunModu()) return;
+  if(kartAcikMi()) kartiKapat(); else kartiAc();
+});
 $("#kart").addEventListener("keydown", function(e){
-  if(e.key === " " || e.key === "Enter"){ e.preventDefault(); basmaBasla(); }
+  if(e.key !== " " && e.key !== "Enter") return;
+  e.preventDefault();
+  if(dokunModu()){ if(kartAcikMi()) kartiKapat(); else kartiAc(); }
+  else basmaBasla();
 });
 $("#kart").addEventListener("keyup", function(e){
+  if(dokunModu()) return;
   if(e.key === " " || e.key === "Enter"){ e.preventDefault(); basmaBitir(); }
 });
-$("#kart").addEventListener("blur", basmaBitir);
+$("#kart").addEventListener("blur", function(){ if(!dokunModu()) kartiKapat(); });
+/* Telefon kilitlenir ya da uygulama arkaya düşerse kart açık kalmasın. */
+document.addEventListener("visibilitychange", function(){
+  if(document.visibilityState !== "visible") kartiKapat();
+});
 
 $("#btn-gordum").addEventListener("click", function(){
   $("#kart-icerik").innerHTML = "";
@@ -920,12 +1273,43 @@ function turBaslat(){
   $("#liste-kutu").classList.remove("acik");
   $("#btn-liste").textContent = "Mekan listesini göster";
   $("#btn-liste").setAttribute("aria-expanded","false");
+  soruGizle();
   ekranGoster("ekran-tur");
   sureBaslat(tur.dakika * 60 * 1000);
 }
 $("#btn-duraklat").addEventListener("click", function(){
   if(sure.calisiyor) sureDurdur(); else sureBaslat();
 });
+
+/* ==================== soru fikirleri ==================== */
+const soruHavuzu = [];
+Object.keys(SORULAR).forEach(function(tip){
+  SORULAR[tip].forEach(function(metin){ soruHavuzu.push({ tip: tip, metin: metin }); });
+});
+let soruTorbasi = [];      /* torba: hepsi bitmeden aynı soru tekrar gelmez */
+let soruSayaci = 0;
+
+function ucHane(n){ return (n < 10 ? "00" : n < 100 ? "0" : "") + n; }
+function rastgeleOyuncu(){
+  const i = Math.floor(Math.random() * tur.oyuncu);
+  return adGoster(i, tur);
+}
+function soruGoster(){
+  if(!soruTorbasi.length) soruTorbasi = karistir(soruHavuzu);
+  const s = soruTorbasi.pop();
+  soruSayaci++;
+  $("#soru-tip").textContent = s.tip;
+  $("#soru-metin").textContent = s.metin.split("{kisi}").join(rastgeleOyuncu());
+  $("#soru-no").textContent = "Soru " + ucHane(soruSayaci);
+  $("#soru-kutu").hidden = false;
+  $("#btn-soru").textContent = "Başka soru";
+}
+function soruGizle(){
+  $("#soru-kutu").hidden = true;
+  $("#btn-soru").textContent = "Soru fikri ver";
+}
+$("#btn-soru").addEventListener("click", soruGoster);
+$("#btn-soru-gizle").addEventListener("click", soruGizle);
 $("#btn-liste").addEventListener("click", function(){
   const acik = $("#liste-kutu").classList.toggle("acik");
   this.textContent = acik ? "Mekan listesini gizle" : "Mekan listesini göster";
