@@ -1,0 +1,1119 @@
+<!doctype html>
+<html lang="tr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="color-scheme" content="dark">
+<meta name="theme-color" content="#070a10">
+<title>Casus — Gizli Dosya</title>
+<style>
+:root{
+  --zemin:#070a10;
+  --panel:#101825;
+  --panel-2:#16212f;
+  --cizgi:#22303f;
+  --cizgi-parlak:#35485e;
+  --metin:#e9e7e0;
+  --soluk:#8a97a8;
+  --amber:#f0a93c;
+  --amber-sis:rgba(240,169,60,.13);
+  --amber-koyu:#7a561d;
+  --damga:#cf4a33;
+  --yesil:#5fbf8a;
+  --r:3px;
+  --kondens:"Arial Narrow","Helvetica Neue",system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+  --mono:ui-monospace,SFMono-Regular,Menlo,Consolas,"DejaVu Sans Mono",monospace;
+  --govde:system-ui,-apple-system,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;
+}
+*{box-sizing:border-box}
+[hidden]{display:none !important}
+html,body{margin:0;padding:0;background:var(--zemin)}
+body{
+  color:var(--metin);
+  font-family:var(--govde);
+  font-size:16px;
+  line-height:1.45;
+  min-height:100dvh;
+  overflow-x:hidden;
+  -webkit-text-size-adjust:100%;
+  -webkit-tap-highlight-color:transparent;
+}
+body::before{
+  content:"";position:fixed;inset:0;z-index:0;pointer-events:none;
+  background:
+    radial-gradient(130% 70% at 50% -10%, rgba(240,169,60,.09), transparent 62%),
+    radial-gradient(90% 50% at 50% 110%, rgba(70,110,160,.07), transparent 60%),
+    repeating-linear-gradient(0deg, rgba(255,255,255,.017) 0 1px, transparent 1px 3px);
+}
+.kabuk{position:relative;z-index:1;width:100%;max-width:520px;margin:0 auto;padding:16px 16px 48px}
+h1,h2,h3{margin:0}
+p{margin:0}
+.baslik{font-family:var(--kondens);font-weight:700;letter-spacing:.06em;line-height:1.05}
+.dev{font-size:clamp(46px,17vw,72px);color:var(--metin);text-shadow:0 0 28px rgba(240,169,60,.18)}
+.orta{font-size:clamp(24px,7.5vw,32px)}
+.etiket{
+  font-family:var(--mono);font-size:10.5px;letter-spacing:.2em;color:var(--soluk);
+}
+.etiket-satir{display:flex;justify-content:space-between;align-items:center;gap:10px;
+  border-bottom:1px solid var(--cizgi);padding-bottom:8px;margin-bottom:18px}
+.amber{color:var(--amber)}
+.soluk{color:var(--soluk)}
+.kucuk{font-size:13px}
+.mono{font-family:var(--mono)}
+hr.ince{border:0;border-top:1px solid var(--cizgi);margin:22px 0}
+
+/* --- kutular --- */
+.kutu{
+  background:linear-gradient(180deg,var(--panel),var(--panel-2));
+  border:1px solid var(--cizgi);
+  border-radius:var(--r);
+  padding:14px;
+  margin-bottom:12px;
+}
+.kutu-baslik{display:flex;justify-content:space-between;align-items:baseline;gap:10px;margin-bottom:10px}
+.kutu-deger{font-family:var(--mono);font-size:14px;color:var(--amber)}
+
+/* --- butonlar --- */
+.btn{
+  -webkit-appearance:none;appearance:none;
+  display:inline-flex;align-items:center;justify-content:center;gap:8px;
+  width:100%;min-height:52px;padding:12px 16px;
+  font-family:var(--kondens);font-size:19px;font-weight:700;letter-spacing:.05em;
+  border-radius:var(--r);border:1px solid var(--cizgi-parlak);
+  background:var(--panel-2);color:var(--metin);
+  cursor:pointer;transition:transform .12s ease,background .12s ease,border-color .12s ease;
+  touch-action:manipulation;
+}
+.btn:active{transform:translateY(1px)}
+.btn-ana{background:var(--amber);border-color:var(--amber);color:#180f02;
+  box-shadow:0 0 0 1px rgba(240,169,60,.25),0 10px 30px -14px rgba(240,169,60,.8)}
+.btn-ana:disabled{background:#3a3021;border-color:#3a3021;color:#8a7c63;box-shadow:none;cursor:not-allowed}
+.btn-hayalet{background:transparent}
+.btn-sessiz{background:transparent;border-color:transparent;color:var(--soluk);font-size:15px;min-height:44px;letter-spacing:.12em;font-family:var(--mono);font-weight:400}
+.btn-sessiz:hover{color:var(--metin)}
+.btn-satir{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+:focus-visible{outline:2px solid var(--amber);outline-offset:3px}
+
+/* --- sayaç / stepper --- */
+.stepper{display:flex;align-items:center;gap:10px}
+.stepper .sayi{
+  flex:1;text-align:center;font-family:var(--mono);font-size:30px;color:var(--metin);
+  font-variant-numeric:tabular-nums;
+  border:1px solid var(--cizgi);border-radius:var(--r);padding:6px 0;background:rgba(0,0,0,.25);
+}
+.stepper .sayi small{display:block;font-size:10.5px;letter-spacing:.2em;color:var(--soluk)}
+.yuvarlak{
+  width:52px;height:52px;min-height:52px;flex:0 0 52px;padding:0;
+  font-size:26px;font-family:var(--govde);font-weight:400;line-height:1;
+}
+
+/* --- çipler --- */
+.cipler{display:flex;flex-wrap:wrap;gap:8px}
+.cip{
+  -webkit-appearance:none;appearance:none;
+  flex:1 1 auto;min-width:64px;min-height:46px;padding:8px 12px;
+  background:transparent;border:1px solid var(--cizgi);border-radius:var(--r);
+  color:var(--soluk);font-family:var(--mono);font-size:13px;letter-spacing:.06em;
+  cursor:pointer;transition:.12s ease;touch-action:manipulation;
+}
+.cip[aria-pressed="true"]{border-color:var(--amber);color:var(--amber);background:var(--amber-sis)}
+.cip:disabled{opacity:.35;cursor:not-allowed}
+.not{font-size:12px;color:var(--soluk);margin-top:8px;font-family:var(--mono)}
+.hata{
+  color:var(--damga);font-family:var(--mono);font-size:13px;margin:10px 0 0;
+  border-left:2px solid var(--damga);padding-left:10px;
+}
+
+/* --- nasıl oynanır --- */
+.nasil{list-style:none;margin:16px 0 0;padding:0;counter-reset:n}
+.nasil li{
+  counter-increment:n;position:relative;padding-left:28px;margin-bottom:6px;
+  font-size:14.5px;color:var(--soluk);
+}
+.nasil li::before{
+  content:counter(n,decimal-leading-zero);position:absolute;left:0;top:1px;
+  font-family:var(--mono);font-size:11px;color:var(--amber);letter-spacing:.1em;
+}
+
+/* --- kart (imza an) --- */
+.kart-yuva{position:relative;margin:10px 0 14px}
+.kart{
+  position:relative;
+  min-height:56vh;
+  padding:26px 20px;
+  border:1px solid var(--amber-koyu);
+  border-radius:var(--r);
+  background:
+    linear-gradient(180deg,#0f1622,#0a1017),
+    repeating-linear-gradient(0deg, rgba(255,255,255,.02) 0 1px, transparent 1px 4px);
+  overflow:hidden;
+  cursor:pointer;
+  user-select:none;-webkit-user-select:none;
+  touch-action:none;
+}
+.kart::before,.kart::after{
+  content:"";position:absolute;width:22px;height:22px;border:1px solid var(--amber);opacity:.75;pointer-events:none;
+}
+.kart::before{top:7px;left:7px;border-right:0;border-bottom:0}
+.kart::after{bottom:7px;right:7px;border-left:0;border-top:0}
+.kart-icerik{
+  position:relative;z-index:1;opacity:0;transition:opacity .16s ease;
+  display:flex;flex-direction:column;gap:14px;
+}
+.kart.acik .kart-icerik{opacity:1}
+.ortu{
+  position:absolute;inset:0;z-index:2;
+  display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;
+  padding:24px;text-align:center;
+  background:
+    repeating-linear-gradient(135deg, rgba(240,169,60,.05) 0 8px, transparent 8px 16px),
+    #0b1119;
+  transition:opacity .16s ease;
+}
+.kart.acik .ortu{opacity:0;pointer-events:none}
+.ortu-baslik{font-family:var(--kondens);font-size:34px;font-weight:700;letter-spacing:.1em;color:var(--amber)}
+.dolum{width:120px;height:3px;background:#22303f;border-radius:2px;overflow:hidden;margin-top:6px}
+.dolum i{display:block;width:0;height:100%;background:var(--amber)}
+.kart.basiliyor .dolum i{width:100%;transition:width .32s linear}
+.kart-ust{display:flex;justify-content:space-between;align-items:center;border-bottom:1px dashed var(--cizgi);padding-bottom:8px}
+.kart-alan .etiket{display:block;margin-bottom:4px}
+.mekan-ad{
+  font-family:var(--mono);font-size:clamp(24px,7.2vw,32px);line-height:1.15;color:var(--amber);
+  overflow-wrap:anywhere;
+}
+.rol-ad{font-family:var(--mono);font-size:clamp(19px,5.6vw,24px);line-height:1.2;color:var(--metin);overflow-wrap:anywhere}
+.damga{
+  align-self:flex-start;transform:rotate(-7deg);
+  font-family:var(--kondens);font-size:34px;font-weight:700;letter-spacing:.12em;
+  color:var(--damga);border:3px double var(--damga);border-radius:4px;
+  padding:4px 14px;opacity:.92;
+}
+.mini-liste{
+  columns:2;column-gap:12px;margin:0;padding:0;list-style:none;
+  font-family:var(--mono);font-size:11px;line-height:1.5;color:var(--soluk);
+}
+.mini-liste li{break-inside:avoid;overflow-wrap:anywhere}
+
+/* --- tur ekranı --- */
+.sayac{
+  font-family:var(--mono);font-variant-numeric:tabular-nums;
+  font-size:clamp(58px,23vw,96px);line-height:1;text-align:center;color:var(--metin);
+  letter-spacing:.02em;margin:6px 0 2px;
+}
+.sayac.az{color:var(--damga)}
+.sayac.durdu{color:var(--soluk)}
+.tur-bilgi{text-align:center;margin-bottom:18px}
+.baslayan{font-family:var(--kondens);font-size:22px;letter-spacing:.04em}
+.liste-kutu{max-height:0;overflow:hidden;transition:max-height .2s ease}
+.liste-kutu.acik{max-height:1600px}
+
+/* --- sonuç --- */
+.afis{
+  border:1px solid var(--cizgi);border-left:3px solid var(--amber);
+  background:var(--panel);border-radius:var(--r);padding:14px;margin-bottom:14px;
+}
+.afis.grup{border-left-color:var(--yesil)}
+.afis.casus{border-left-color:var(--damga)}
+.afis h2{font-family:var(--kondens);font-size:27px;letter-spacing:.04em}
+.rol-listesi{list-style:none;margin:0;padding:0}
+.rol-listesi li{
+  display:flex;align-items:center;gap:12px;padding:9px 0;border-bottom:1px solid var(--cizgi);
+  font-size:15px;
+}
+.rol-listesi li:last-child{border-bottom:0}
+.rol-listesi .no{
+  flex:0 0 30px;height:30px;display:grid;place-items:center;border:1px solid var(--cizgi);
+  border-radius:var(--r);font-family:var(--mono);font-size:13px;color:var(--soluk);
+}
+.rol-listesi li.casus .no{border-color:var(--damga);color:var(--damga)}
+.rol-listesi li.casus .ad{color:var(--damga);font-family:var(--kondens);font-size:19px;letter-spacing:.06em}
+.rol-listesi .ad{overflow-wrap:anywhere}
+
+/* --- seçim ızgarası --- */
+.izgara{display:grid;grid-template-columns:repeat(auto-fill,minmax(78px,1fr));gap:8px}
+.izgara .cip{min-height:54px;font-size:16px}
+.mekan-secim{display:grid;grid-template-columns:1fr;gap:8px}
+.mekan-secim .cip{text-align:left;min-height:48px;font-size:13.5px}
+
+@media (max-width:359px){
+  .btn-satir{grid-template-columns:1fr}
+}
+@media (prefers-reduced-motion:reduce){
+  *,*::before,*::after{transition-duration:.001ms !important;animation-duration:.001ms !important}
+  .kart.basiliyor .dolum i{width:100%}
+}
+
+/* --- oyuncu isimleri --- */
+#isim-alanlari{display:grid;gap:8px;margin-top:10px}
+.isim-satir{display:flex;align-items:center;gap:10px}
+.isim-no{
+  flex:0 0 30px;height:30px;display:grid;place-items:center;
+  border:1px solid var(--cizgi);border-radius:var(--r);
+  font-family:var(--mono);font-size:12px;color:var(--soluk);
+}
+.isim-giris{
+  flex:1 1 auto;min-width:0;min-height:46px;padding:10px 12px;
+  background:rgba(0,0,0,.28);border:1px solid var(--cizgi);border-radius:var(--r);
+  color:var(--metin);font-family:var(--govde);font-size:16px;
+}
+.isim-giris::placeholder{color:#5d6a7a}
+.isim-giris:focus{border-color:var(--amber)}
+.kisi{color:var(--amber);font-family:var(--mono);font-size:13px;margin-right:8px}
+.rol-listesi li.casus .kisi{color:var(--damga)}
+</style>
+</head>
+<body>
+<div class="kabuk">
+
+<!-- ================= ANA EKRAN ================= -->
+<section id="ekran-ana" class="ekran">
+  <div class="etiket-satir"><span class="etiket">Dosya 07-KS</span><span class="etiket">Gizlilik: Yüksek</span></div>
+  <h1 class="baslik dev" tabindex="-1">CASUS</h1>
+  <p class="soluk kucuk" style="margin-top:6px">Aranızdan biri buraya ait değil.</p>
+
+  <ol class="nasil">
+    <li>Telefon elden ele dolaşır, herkes kendi kartını gizlice görür.</li>
+    <li>Sırayla birbirinize tek soru sorarsınız; mekanı ağzınızdan kaçırmayın.</li>
+    <li>Casusu bulun; casussanız mekanı tahmin edip sıyrılın.</li>
+  </ol>
+
+  <hr class="ince">
+
+  <div class="kutu">
+    <div class="kutu-baslik"><span class="etiket">Oyuncu sayısı</span><span class="kutu-deger" id="oyuncu-etiket">5 oyuncu</span></div>
+    <div class="stepper">
+      <button class="btn yuvarlak" id="btn-eksi" aria-label="Oyuncu sayısını azalt">&minus;</button>
+      <div class="sayi" id="oyuncu-sayi" aria-live="polite">5<small>Kişi</small></div>
+      <button class="btn yuvarlak" id="btn-arti" aria-label="Oyuncu sayısını artır">+</button>
+    </div>
+  </div>
+
+  <div class="kutu">
+    <div class="kutu-baslik"><span class="etiket">Oyuncu isimleri</span><span class="kutu-deger" id="isim-etiket">Kapalı</span></div>
+    <div class="cipler" id="isim-cipler">
+      <button class="cip" data-isim="0" aria-pressed="true">Numarayla oyna</button>
+      <button class="cip" data-isim="1" aria-pressed="false">İsim gir</button>
+    </div>
+    <div id="isim-alanlari" hidden></div>
+    <p class="not" id="isim-not" hidden>Boş bıraktığın kişi &quot;3. oyuncu&quot; gibi numarayla geçer.</p>
+  </div>
+
+  <div class="kutu">
+    <div class="kutu-baslik"><span class="etiket">Tur süresi</span><span class="kutu-deger" id="sure-etiket">8 dakika</span></div>
+    <div class="cipler" id="sure-cipler">
+      <button class="cip" data-dakika="5" aria-pressed="false">5 dk</button>
+      <button class="cip" data-dakika="8" aria-pressed="true">8 dk</button>
+      <button class="cip" data-dakika="10" aria-pressed="false">10 dk</button>
+      <button class="cip" data-dakika="12" aria-pressed="false">12 dk</button>
+    </div>
+  </div>
+
+  <div class="kutu">
+    <div class="kutu-baslik"><span class="etiket">Casus sayısı</span><span class="kutu-deger" id="casus-etiket">1 casus</span></div>
+    <div class="cipler" id="casus-cipler">
+      <button class="cip" data-casus="1" aria-pressed="true">1 casus</button>
+      <button class="cip" data-casus="2" aria-pressed="false">2 casus</button>
+    </div>
+    <p class="not" id="casus-not">2 casus için en az 7 oyuncu gerekir.</p>
+  </div>
+
+  <div class="kutu">
+    <div class="kutu-baslik"><span class="etiket">Mekan paketleri</span><span class="kutu-deger" id="paket-etiket">42 mekan</span></div>
+    <div class="cipler" id="paket-cipler">
+      <button class="cip" data-paket="turkiye" aria-pressed="true">Türkiye</button>
+      <button class="cip" data-paket="dunya" aria-pressed="true">Dünya</button>
+      <button class="cip" data-paket="fantastik" aria-pressed="true">Fantastik</button>
+    </div>
+  </div>
+
+  <p class="hata" id="hata" role="alert" hidden></p>
+  <button class="btn btn-ana" id="btn-basla" style="margin-top:8px">Oyunu başlat</button>
+</section>
+
+<!-- ================= GİZLİ DAĞITIM ================= -->
+<section id="ekran-dagitim" class="ekran" hidden>
+  <div class="etiket-satir"><span class="etiket">Gizli dağıtım</span><span class="etiket" id="dagitim-sayac">01 / 05</span></div>
+
+  <div id="devir-kutusu">
+    <div style="min-height:44vh;display:flex;flex-direction:column;justify-content:center;gap:12px;text-align:center">
+      <span class="etiket">Sıradaki kişi</span>
+      <h2 class="baslik orta" id="devir-metin" tabindex="-1">Telefonu 1. oyuncuya ver</h2>
+      <p class="soluk kucuk">Kimse omzundan bakmasın. Hazır olunca aç.</p>
+    </div>
+    <button class="btn btn-ana" id="btn-hazir">Hazırım, kartımı aç</button>
+  </div>
+
+  <div id="kart-kutusu" hidden>
+    <div class="kart-yuva">
+      <div class="kart" id="kart" role="button" tabindex="0" aria-label="Kartı açmak için basılı tut">
+        <div class="kart-icerik" id="kart-icerik"></div>
+        <div class="ortu" id="ortu">
+          <span class="etiket">Sadece sen</span>
+          <span class="ortu-baslik">Basılı tut</span>
+          <span class="soluk kucuk">Parmağını çekince kart kapanır</span>
+          <div class="dolum"><i></i></div>
+        </div>
+      </div>
+    </div>
+    <button class="btn btn-ana" id="btn-gordum" disabled>Gördüm, sırayı geçir</button>
+  </div>
+</section>
+
+<!-- ================= TUR ================= -->
+<section id="ekran-tur" class="ekran" hidden>
+  <div class="etiket-satir"><span class="etiket">Tur sürüyor</span><span class="etiket" id="tur-bilgi-etiket">5 oyuncu · 1 casus</span></div>
+  <div class="sayac" id="sayac" tabindex="-1">08:00</div>
+  <div class="tur-bilgi">
+    <span class="etiket">İlk soruyu soracak</span>
+    <p class="baslayan amber" id="baslayan">3. oyuncu</p>
+  </div>
+
+  <button class="btn btn-hayalet" id="btn-duraklat" style="margin-bottom:10px">Duraklat</button>
+  <div class="btn-satir" style="margin-bottom:10px">
+    <button class="btn" id="btn-oyla">Şüpheliyi oyla</button>
+    <button class="btn" id="btn-tahmin">Casus tahmin ediyor</button>
+  </div>
+  <button class="btn btn-sessiz" id="btn-liste" aria-expanded="false">Mekan listesini göster</button>
+  <div class="liste-kutu" id="liste-kutu"><ul class="mini-liste" id="tur-mekan-listesi" style="padding:12px 0"></ul></div>
+  <button class="btn btn-sessiz" id="btn-bitir">Turu bitir</button>
+</section>
+
+<!-- ================= OYLAMA ================= -->
+<section id="ekran-oylama" class="ekran" hidden>
+  <div class="etiket-satir"><span class="etiket">Oylama</span><span class="etiket" id="oylama-durum">Süre devam ediyor</span></div>
+  <h2 class="baslik orta" id="oylama-baslik" tabindex="-1">Şüpheliyi seçin</h2>
+  <p class="soluk kucuk" id="oylama-alt" style="margin:8px 0 16px">Grupça karar verin, sonra seçin.</p>
+  <div class="izgara" id="oylama-izgara"></div>
+  <p class="hata" id="oylama-hata" role="alert" hidden></p>
+  <button class="btn btn-ana" id="btn-oy-onay" style="margin-top:16px" disabled>Oylamayı bitir</button>
+  <button class="btn btn-sessiz" id="btn-oy-vazgec">Vazgeç, tura dön</button>
+</section>
+
+<!-- ================= CASUS TAHMİNİ ================= -->
+<section id="ekran-tahmin" class="ekran" hidden>
+  <div class="etiket-satir"><span class="etiket">Casus tahmini</span><span class="etiket">Tek hak</span></div>
+  <h2 class="baslik orta" id="tahmin-baslik" tabindex="-1">Mekan neresi?</h2>
+  <p class="soluk kucuk" style="margin:8px 0 16px">Telefonu casus alsın. Doğru bilirse tur casusun.</p>
+  <div class="mekan-secim" id="tahmin-liste"></div>
+  <button class="btn btn-sessiz" id="btn-tahmin-vazgec" style="margin-top:14px">Vazgeç, tura dön</button>
+</section>
+
+<!-- ================= SONUÇ ================= -->
+<section id="ekran-sonuc" class="ekran" hidden>
+  <div class="etiket-satir"><span class="etiket">Dosya kapandı</span><span class="etiket" id="sonuc-etiket">Tur bitti</span></div>
+  <div class="afis" id="sonuc-afis">
+    <h2 id="sonuc-baslik" tabindex="-1">Tur bitti</h2>
+    <p class="soluk kucuk" id="sonuc-alt" style="margin-top:4px"></p>
+  </div>
+
+  <div class="kutu">
+    <span class="etiket">Mekan</span>
+    <p class="mekan-ad" id="sonuc-mekan" style="margin-top:6px">&mdash;</p>
+  </div>
+
+  <div class="kutu">
+    <div class="kutu-baslik"><span class="etiket">Kadro</span><span class="kutu-deger" id="sonuc-casus-etiket">Casus</span></div>
+    <ol class="rol-listesi" id="sonuc-roller"></ol>
+  </div>
+
+  <button class="btn btn-ana" id="btn-yeni-tur" style="margin-top:8px">Aynı ayarlarla yeni tur</button>
+  <button class="btn btn-hayalet" id="btn-ana-ekran" style="margin-top:10px">Ana ekrana dön</button>
+</section>
+
+</div>
+<script>
+"use strict";
+/* ============================================================
+   MEKANLAR — kendi mekanlarınızı buraya ekleyin.
+   Biçim: { mekan: "Ad", roller: ["Rol 1", "Rol 2", ...] }
+   7–8 rol önerilir; az olursa oyun otomatik "Ziyaretçi 2" üretir.
+   ============================================================ */
+const MEKANLAR = {
+  turkiye: [
+    { mekan: "Kapalıçarşı",
+      roller: ["Halı satıcısı", "Kuyumcu kalfası", "Pazarlık yapan turist", "Simitçi",
+               "Döviz bozduran esnaf", "Grubunu kaybeden rehber", "Yankesici", "Çay taşıyan çırak"] },
+    { mekan: "Türk hamamı",
+      roller: ["Tellak", "İlk kez gelen turist", "Kese yapan usta", "Ocakçı",
+               "Kasadaki kalfa", "Damat adayı", "Her gün gelen mahalleli", "Çay getiren çırak"] },
+    { mekan: "Kıraathane",
+      roller: ["Ocakçı", "Okey oynayan emekli", "Maç izleyen taraftar", "Fala bakan amca",
+               "Tavlada hile yapan müdavim", "Ödevini yapan üniversiteli", "Borç defterini tutan patron", "Kumandayı bırakmayan garson"] },
+    { mekan: "Boğaz vapuru",
+      roller: ["Kaptan", "Martı besleyen yolcu", "Çay servisi yapan garson", "Bilet kontrolörü",
+               "Sevgilisine sürpriz yapan yolcu", "Makine dairesindeki teknisyen", "Simit satan seyyar", "İlk kez vapura binen turist"] },
+    { mekan: "Kapadokya balon sahası",
+      roller: ["Balon pilotu", "Evlenme teklifi edecek turist", "Şafak fotoğrafçısı", "Şişirme ekibinden görevli",
+               "Yükseklik korkusu olan yolcu", "Takip aracının şoförü", "Drone çeken içerik üreticisi", "Meteoroloji görevlisi"] },
+    { mekan: "Halı dokuma atölyesi",
+      roller: ["Usta dokumacı", "Çırak", "Desen çizen tasarımcı", "İplik boyayan usta",
+               "Toptancı alıcı", "Fotoğraf çeken turist", "Atölyeyi denetleyen müfettiş", "Kediyi tezgahtan kovalayan bekçi"] },
+    { mekan: "Düğün salonu",
+      roller: ["Damat", "Gelinin annesi", "Takı takan davetli", "Orkestra solisti",
+               "Düğün fotoğrafçısı", "Halay çeken kuzen", "Pasta getiren garson", "Davetsiz gelen misafir"] },
+    { mekan: "Berber dükkanı",
+      roller: ["Berber ustası", "Sakal tıraşı olan müşteri", "Kolonya döken kalfa", "Sıra bekleyen mahalleli",
+               "İlk saç kesimine gelen çocuk", "Politikadan konuşan emekli", "Süpüren çırak", "Damat tıraşına gelen nişanlı"] }
+,
+    { mekan: "Dolmuş",
+      roller: ["Dolmuş şoförü", "Parayı arkadan uzatan yolcu", "Müsait bir yerde inecek yolcu", "Kapıya sıkışan öğrenci",
+               "Radyoyu açan muavin", "Ayakta giden yolcu", "Bozuk para arayan teyze", "Trafikte laf atan taksici"] },
+    { mekan: "Kadıköy balık pazarı",
+      roller: ["Balıkçı", "Pazarlık yapan müşteri", "Kedi besleyen esnaf", "Buz taşıyan çırak",
+               "Midye dolma satan seyyar", "Restoran için alım yapan şef", "Fotoğraf çeken turist", "Belediye denetçisi"] },
+    { mekan: "Nemrut Dağı kazı alanı",
+      roller: ["Kazı başkanı arkeolog", "Stajyer öğrenci", "Kazı işçisi", "Belgesel çeken gazeteci",
+               "Güvenlik görevlisi", "Restorasyon uzmanı", "Şafağı bekleyen turist", "Gizlice define arayan adam"] },
+    { mekan: "Çay bahçesi",
+      roller: ["Garson", "Tavla oynayan emekli", "Ders çalışan öğrenci", "Nargile hazırlayan görevli",
+               "Manzara fotoğrafı çeken turist", "Kedi besleyen müdavim", "Hesabı kapmaya çalışan misafir", "Semaver başındaki çaycı"] },
+    { mekan: "Doğu Ekspresi",
+      roller: ["Tren şefi", "Yataklı vagon görevlisi", "Kar manzarası çeken içerik üreticisi", "Yemekli vagonun aşçısı",
+               "Kompartımanda sohbet açan yolcu", "Uyuyamayan yolcu", "Bilet kontrolörü", "Gitar çalan gezgin"] },
+    { mekan: "Pazar yeri",
+      roller: ["Manav", "Zeytinci", "Pazarlık yapan teyze", "Tezgah kuran çırak",
+               "Hepsi beş lira diye bağıran satıcı", "Poşet taşıyan çocuk", "Zabıta", "Turşucu"] }
+  ],
+  dunya: [
+    { mekan: "Hastane acil servisi",
+      roller: ["Acil doktoru", "Nöbetçi hemşire", "Ambulans şoförü", "Sedyedeki hasta",
+               "Endişeli hasta yakını", "Triyaj görevlisi", "Nöbetçi güvenlik", "Stajyer tıp öğrencisi"] },
+    { mekan: "Kumarhane",
+      roller: ["Krupiye", "Yüksek bahisçi", "Güvenlik şefi", "Kokteyl garsonu",
+               "Kart sayan matematikçi", "Şansını deneyen turist", "Kasa görevlisi", "Slot makinesinden kalkmayan müdavim"] },
+    { mekan: "Sirk çadırı",
+      roller: ["Palyaço", "İp cambazı", "Aslan terbiyecisi", "Bilet satan görevli",
+               "Sahne arkası teknisyeni", "Ön sırada oturan çocuk", "Sunucu", "Patlamış mısır satıcısı"] },
+    { mekan: "Kutup araştırma üssü",
+      roller: ["İklim bilimci", "Üs aşçısı", "Telsiz operatörü", "Jeneratör teknisyeni",
+               "Kızak köpeklerinin bakıcısı", "Buz sondaj uzmanı", "İlk kışını geçiren stajyer", "Üs doktoru"] },
+    { mekan: "Yolcu uçağı",
+      roller: ["Kaptan pilot", "Kabin amiri", "Uçak korkusu olan yolcu", "İş sınıfındaki yolcu",
+               "Bebekli anne", "İkinci pilot", "Yemek servisi yapan görevli", "Sürekli tuvalete kalkan yolcu"] },
+    { mekan: "Kayak merkezi",
+      roller: ["Kayak hocası", "Teleferik görevlisi", "Acemi kayakçı", "Kurtarma ekibinden görevli",
+               "Otel resepsiyonisti", "Şömine başından kalkmayan misafir", "Pist bakım aracının şoförü", "Snowboard yapan genç"] },
+    { mekan: "Hayvanat bahçesi",
+      roller: ["Zoolog", "Hayvan bakıcısı", "Gişedeki görevli", "Okul gezisindeki öğretmen",
+               "Dondurma satıcısı", "Kaçan maymunu arayan görevli", "Fotoğraf çeken turist", "Nöbetçi veteriner"] },
+    { mekan: "Tiyatro kulisi",
+      roller: ["Başrol oyuncusu", "Suflör", "Kostümcü", "Makyöz",
+               "Işıkçı", "Sahne amiri", "İlk kez sahneye çıkan yedek oyuncu", "Çiçek getiren hayran"] },
+    { mekan: "Futbol stadyumu",
+      roller: ["Hakem", "Golü kaçıran forvet", "Maçı anlatan spiker", "Tribün lideri",
+               "Saha bakım görevlisi", "Kaleci", "Sahaya atlayan taraftar", "Simit satan seyyar"] },
+    { mekan: "Hapishane",
+      roller: ["Gardiyan", "Yıllardır yatan mahkum", "Yeni gelen mahkum", "Cezaevi müdürü",
+               "Ziyarete gelen avukat", "Mutfakta çalışan mahkum", "Revir hemşiresi", "Tünel kazan mahkum"] },
+    { mekan: "Banka şubesi",
+      roller: ["Şube müdürü", "Gişe görevlisi", "Kredi başvurusu yapan müşteri", "Güvenlik görevlisi",
+               "Sıra numarası bekleyen emekli", "Kasa sorumlusu", "Temizlik görevlisi", "Soygun planlayan müşteri"] },
+    { mekan: "Üniversite kütüphanesi",
+      roller: ["Kütüphaneci", "Finale çalışan öğrenci", "Masada uyuyakalan öğrenci", "Raf dizen görevli",
+               "Tez yazan doktora öğrencisi", "Gizlice yemek yiyen öğrenci", "Fısıldayanları susturan görevli", "Nadir eserler sorumlusu"] },
+    { mekan: "Kruvaziyer gemisi",
+      roller: ["Gemi kaptanı", "Animasyon ekibinden görevli", "Balayındaki yolcu", "Kabin görevlisi",
+               "Deniz tutan yolcu", "Havuz barmeni", "Gemi doktoru", "Kaçak binen yolcu"] },
+    { mekan: "Film platosu",
+      roller: ["Yönetmen", "Başrol oyuncusu", "Dublör", "Kamera asistanı",
+               "Set aşçısı", "Figüran", "Senarist", "Mikrofon tutan ses teknisyeni"] },
+    { mekan: "Bağ bozumu",
+      roller: ["Bağ sahibi", "Üzüm toplayan işçi", "Şarap ustası", "Tadım yapan misafir",
+               "Traktör şoförü", "Hasat aşçısı", "Kasa taşıyan çocuk", "Şenlikte çalan müzisyen"] },
+    { mekan: "İtfaiye istasyonu",
+      roller: ["İtfaiye amiri", "Direkten kayan itfaiyeci", "Yeni stajyer", "Aracın şoförü",
+               "İhbar alan telsiz görevlisi", "İstasyon aşçısı", "Kediyi ağaçtan indiren ekip üyesi", "Okul gezisindeki çocuk"] },
+    { mekan: "Veteriner kliniği",
+      roller: ["Veteriner", "Veteriner teknisyeni", "Kedisini getiren müşteri", "Havlamayı kesmeyen köpeğin sahibi",
+               "Resepsiyonist", "Papağanını getiren müşteri", "Klinik stajyeri", "Ameliyata hazırlanan hemşire"] },
+    { mekan: "Havalimanı gümrüğü",
+      roller: ["Gümrük memuru", "Köpekli arama görevlisi", "Valizi açılan yolcu", "Pasaport polisi",
+               "Beyanı olan iş insanı", "X-ray operatörü", "Kaçakçı", "Aktarma bekleyen transit yolcu"] },
+    { mekan: "Pastane",
+      roller: ["Pasta ustası", "Tezgahtar", "Doğum günü pastası sipariş eden müşteri", "Bulaşıkçı çırak",
+               "Vitrini düzenleyen görevli", "Diyetteyken gelen müşteri", "Sağlık denetçisi", "Kremayı parmağıyla tadan çırak"] },
+    { mekan: "Buz pateni pisti",
+      roller: ["Patinaj hocası", "İlk kez buza çıkan çocuk", "Buz temizleme aracının şoförü", "Paten kiralayan görevli",
+               "Yarışmaya hazırlanan sporcu", "Buzda düşüp kalkamayan müşteri", "Kafeteryada bekleyen anne", "Müzik seçen görevli"] }
+  ],
+  fantastik: [
+    { mekan: "Uzay istasyonu",
+      roller: ["İstasyon komutanı", "Yörünge mühendisi", "Bitki deneyi yapan biyolog", "Uzay yürüyüşüne çıkacak astronot",
+               "Yer kontrolle konuşan telsizci", "Uykusuz kalan istasyon doktoru", "Havada süzülen çayı kovalayan stajyer", "Bakım robotunu tamir eden teknisyen"] },
+    { mekan: "Denizaltı",
+      roller: ["Denizaltı kaptanı", "Sonar operatörü", "Torpido subayı", "Gemi aşçısı",
+               "Klostrofobisi tutan denizci", "Reaktör teknisyeni", "Telsizci", "Periskopu bırakmayan ikinci kaptan"] },
+    { mekan: "Korsan gemisi",
+      roller: ["Korsan kaptanı", "Dümenci", "Gemi aşçısı", "Direkteki gözcü",
+               "Esir alınmış tüccar", "İsyan planlayan tayfa", "Papağana bakan korsan", "Hazine haritasını çizen kaptan yardımcısı"] },
+    { mekan: "Antik tapınak harabesi",
+      roller: ["Kaşif", "Yerel rehber", "Tuzak çözen uzman", "Lanetten korkan taşıyıcı",
+               "Yazıtları okuyan dilbilimci", "Define avcısı", "Tapınağı bekleyen rahip", "Belgesel çeken kameraman"] },
+    { mekan: "Nükleer santral",
+      roller: ["Reaktör operatörü", "Güvenlik denetçisi", "Vardiya amiri", "Radyasyon ölçüm görevlisi",
+               "Kontrol odası stajyeri", "Soğutma sistemi teknisyeni", "Kantindeki aşçı", "Alarma yanlışlıkla basan teknisyen"] },
+    { mekan: "Cadı okulu",
+      roller: ["Simya hocası", "Birinci sınıf öğrencisi", "Süpürge uçuşu antrenörü", "Lanetli kitabın bekçisi",
+               "Okul müdürü", "Kazan patlatan öğrenci", "Baykuş bakıcısı", "Sınavda kopya çeken öğrenci"] },
+    { mekan: "Zaman makinesi laboratuvarı",
+      roller: ["Baş bilim insanı", "Gönüllü denek", "Paradoks danışmanı", "Enerji teknisyeni",
+               "Gelecekten gelen ziyaretçi", "Not tutan asistan", "Laboratuvar güvenliği", "Kendisiyle karşılaşan stajyer"] },
+    { mekan: "Ejderha mağarası",
+      roller: ["Ejderha", "Ejderhayı avlamaya gelen şövalye", "Hazine sayan cüce", "Kaçırılmış soylu",
+               "Yem olarak bırakılmış koyun", "Mağarayı haritalayan kaşif", "Yumurta çalan hırsız", "Barış görüşmesine gelen elçi"] }
+  ]
+};
+const PAKET_ADI = { turkiye: "Türkiye", dunya: "Dünya", fantastik: "Fantastik" };
+
+/* ==================== yardımcılar ==================== */
+const $ = function(s){ return document.querySelector(s); };
+const EKRANLAR = ["ekran-ana","ekran-dagitim","ekran-tur","ekran-oylama","ekran-tahmin","ekran-sonuc"];
+
+function karistir(dizi){
+  const d = dizi.slice();
+  for(let i=d.length-1;i>0;i--){
+    const j = Math.floor(Math.random()*(i+1));
+    const t = d[i]; d[i] = d[j]; d[j] = t;
+  }
+  return d;
+}
+function rastgele(dizi){ return dizi[Math.floor(Math.random()*dizi.length)]; }
+function ikiHane(n){ return (n<10 ? "0" : "") + n; }
+
+/* Oyuncu isimleri karta ve sonuç ekranına HTML olarak yazıldığı için kaçış şart. */
+function kacir(s){
+  return String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;")
+                  .replace(/>/g,"&gt;").replace(/"/g,"&quot;");
+}
+/* i: 0 tabanlı oyuncu sırası. kaynak verilmezse güncel ayarlara bakar. */
+function isimKaynagi(kaynak){
+  if(kaynak) return kaynak.isimAcik ? (kaynak.isimler || []) : [];
+  return ayar.isimAcik ? (ayar.isimler || []) : [];
+}
+function adVarMi(i, kaynak){ return (isimKaynagi(kaynak)[i] || "").trim() !== ""; }
+function adGoster(i, kaynak){
+  const ad = (isimKaynagi(kaynak)[i] || "").trim();
+  return ad ? ad : (i+1) + ". oyuncu";
+}
+/* Yönelme eki: "Mert" -> "Mert'e", "Ayşe" -> "Ayşe'ye", "Burak" -> "Burak'a" */
+function yonelmeEki(ad){
+  const kucuk = ad.toLocaleLowerCase("tr");
+  const sesli = "aeıioöuü";
+  let sonSesli = "";
+  for(let i=kucuk.length-1;i>=0;i--){
+    if(sesli.indexOf(kucuk.charAt(i)) !== -1){ sonSesli = kucuk.charAt(i); break; }
+  }
+  const kalin = "aıou".indexOf(sonSesli) !== -1;
+  const sonuSesli = sesli.indexOf(kucuk.charAt(kucuk.length-1)) !== -1;
+  return "'" + (sonuSesli ? "y" : "") + (kalin ? "a" : "e");
+}
+function adYonelme(i, kaynak){
+  const ad = (isimKaynagi(kaynak)[i] || "").trim();
+  return ad ? ad + yonelmeEki(ad) : (i+1) + ". oyuncuya";
+}
+
+function ekranGoster(id){
+  EKRANLAR.forEach(function(e){ $("#"+e).hidden = (e !== id); });
+  window.scrollTo(0,0);
+  const odak = $("#"+id).querySelector("[tabindex='-1']");
+  if(odak) odak.focus({preventScroll:true});
+}
+
+/* ==================== ayarlar ==================== */
+const VARSAYILAN = { oyuncu:5, dakika:8, casus:1, paketler:["turkiye","dunya","fantastik"], isimAcik:false };
+const ANAHTAR = "casus.ayarlar.v1";
+let ayar = ayarYukle();
+
+function ayarYukle(){
+  const a = { oyuncu:VARSAYILAN.oyuncu, dakika:VARSAYILAN.dakika, casus:VARSAYILAN.casus,
+              paketler:VARSAYILAN.paketler.slice(), isimAcik:VARSAYILAN.isimAcik, isimler:[] };
+  try{
+    const ham = localStorage.getItem(ANAHTAR);
+    if(!ham) return a;
+    const o = JSON.parse(ham);
+    if(typeof o.oyuncu === "number") a.oyuncu = Math.min(12, Math.max(3, Math.round(o.oyuncu)));
+    if([5,8,10,12].indexOf(o.dakika) !== -1) a.dakika = o.dakika;
+    if(o.casus === 2 || o.casus === 1) a.casus = o.casus;
+    if(Array.isArray(o.paketler)){
+      const p = o.paketler.filter(function(x){ return Object.prototype.hasOwnProperty.call(MEKANLAR, x); });
+      if(p.length) a.paketler = p;
+    }
+    if(typeof o.isimAcik === "boolean") a.isimAcik = o.isimAcik;
+    if(Array.isArray(o.isimler)){
+      a.isimler = o.isimler.slice(0,12).map(function(x){ return typeof x === "string" ? x.slice(0,14) : ""; });
+    }
+  }catch(e){}
+  if(a.oyuncu < 7) a.casus = 1;
+  return a;
+}
+function ayarKaydet(){
+  try{ localStorage.setItem(ANAHTAR, JSON.stringify(ayar)); }catch(e){}
+}
+
+function aktifHavuz(){
+  let havuz = [];
+  ayar.paketler.forEach(function(p){ havuz = havuz.concat(MEKANLAR[p] || []); });
+  return havuz;
+}
+
+/* ==================== ana ekran ==================== */
+function anaYenile(){
+  $("#oyuncu-sayi").firstChild.nodeValue = String(ayar.oyuncu);
+  $("#oyuncu-etiket").textContent = ayar.oyuncu + " oyuncu";
+  $("#btn-eksi").disabled = (ayar.oyuncu <= 3);
+  $("#btn-arti").disabled = (ayar.oyuncu >= 12);
+
+  $("#sure-etiket").textContent = ayar.dakika + " dakika";
+  Array.prototype.forEach.call($("#sure-cipler").children, function(c){
+    c.setAttribute("aria-pressed", String(Number(c.dataset.dakika) === ayar.dakika));
+  });
+
+  const ikiOlur = ayar.oyuncu >= 7;
+  if(!ikiOlur) ayar.casus = 1;
+  $("#casus-etiket").textContent = ayar.casus + " casus";
+  Array.prototype.forEach.call($("#casus-cipler").children, function(c){
+    const deger = Number(c.dataset.casus);
+    c.disabled = (deger === 2 && !ikiOlur);
+    c.setAttribute("aria-pressed", String(deger === ayar.casus));
+  });
+  $("#casus-not").textContent = ikiOlur
+    ? "7 oyuncu ve üzeri: 2 casus açık."
+    : "2 casus için en az 7 oyuncu gerekir.";
+
+  Array.prototype.forEach.call($("#paket-cipler").children, function(c){
+    c.setAttribute("aria-pressed", String(ayar.paketler.indexOf(c.dataset.paket) !== -1));
+  });
+  const n = aktifHavuz().length;
+  $("#paket-etiket").textContent = n + " mekan";
+  isimAlanlariniYenile();
+  ayarKaydet();
+}
+
+function hataGoster(mesaj){
+  const h = $("#hata");
+  if(!mesaj){ h.hidden = true; h.textContent = ""; return; }
+  h.hidden = false; h.textContent = mesaj;
+}
+
+$("#btn-eksi").addEventListener("click", function(){
+  ayar.oyuncu = Math.max(3, ayar.oyuncu - 1); hataGoster(""); anaYenile();
+});
+$("#btn-arti").addEventListener("click", function(){
+  ayar.oyuncu = Math.min(12, ayar.oyuncu + 1); hataGoster(""); anaYenile();
+});
+$("#sure-cipler").addEventListener("click", function(e){
+  const c = e.target.closest(".cip"); if(!c) return;
+  ayar.dakika = Number(c.dataset.dakika); anaYenile();
+});
+$("#casus-cipler").addEventListener("click", function(e){
+  const c = e.target.closest(".cip"); if(!c || c.disabled) return;
+  ayar.casus = Number(c.dataset.casus); anaYenile();
+});
+$("#paket-cipler").addEventListener("click", function(e){
+  const c = e.target.closest(".cip"); if(!c) return;
+  const p = c.dataset.paket;
+  const i = ayar.paketler.indexOf(p);
+  if(i === -1) ayar.paketler.push(p);
+  else if(ayar.paketler.length > 1) ayar.paketler.splice(i,1);
+  else { hataGoster("En az bir paket açık kalmalı."); return; }
+  hataGoster(""); anaYenile();
+});
+
+/* ==================== tur kurulumu ==================== */
+let tur = null;
+
+function rolleriUret(mekan, gerekli){
+  const havuz = karistir(mekan.roller);
+  const roller = [];
+  let ek = 1;
+  for(let i=0;i<gerekli;i++){
+    if(i < havuz.length){ roller.push(havuz[i]); continue; }
+    let ad;
+    do { ek++; ad = "Ziyaretçi " + ek; }
+    while(havuz.indexOf(ad) !== -1 || roller.indexOf(ad) !== -1);
+    roller.push(ad);
+  }
+  return roller;
+}
+
+function turKur(){
+  const havuz = aktifHavuz();
+  if(ayar.oyuncu < 3){ hataGoster("En az 3 oyuncu gerekir."); return false; }
+  if(!havuz.length){ hataGoster("En az bir paket açık olmalı."); return false; }
+  const casusSayisi = (ayar.oyuncu >= 7 && ayar.casus === 2) ? 2 : 1;
+
+  const mekan = rastgele(havuz);
+  const roller = rolleriUret(mekan, ayar.oyuncu - casusSayisi);
+  const sira = karistir(Array.from({length: ayar.oyuncu}, function(_,i){ return i; }));
+  const atama = new Array(ayar.oyuncu);
+  sira.slice(0, casusSayisi).forEach(function(i){ atama[i] = { casus:true, rol:null }; });
+  sira.slice(casusSayisi).forEach(function(i,k){ atama[i] = { casus:false, rol:roller[k] }; });
+
+  tur = {
+    mekan: mekan,
+    havuz: havuz.map(function(m){ return m.mekan; }).sort(function(a,b){ return a.localeCompare(b,"tr"); }),
+    atama: atama,
+    casusSayisi: casusSayisi,
+    oyuncu: ayar.oyuncu,
+    dakika: ayar.dakika,
+    baslayan: Math.floor(Math.random()*ayar.oyuncu) + 1,
+    isimAcik: ayar.isimAcik,
+    isimler: ayar.isimler.slice(0, ayar.oyuncu),
+    sonuc: null
+  };
+  hataGoster("");
+  return true;
+}
+
+/* ==================== gizli dağıtım ==================== */
+let dagitimSira = 0;
+let basiliZaman = null;
+let acildiMi = false;
+
+function dagitimBaslat(){
+  dagitimSira = 0;
+  devirGoster();
+  ekranGoster("ekran-dagitim");
+}
+function devirGoster(){
+  $("#dagitim-sayac").textContent = ikiHane(dagitimSira+1) + " / " + ikiHane(tur.oyuncu);
+  $("#devir-metin").textContent = "Telefonu " + adYonelme(dagitimSira, tur) + " ver";
+  $("#kart-icerik").innerHTML = "";
+  kartiKapat();
+  acildiMi = false;
+  $("#btn-gordum").disabled = true;
+  $("#kart-kutusu").hidden = true;
+  $("#devir-kutusu").hidden = false;
+  $("#devir-metin").focus({preventScroll:true});
+}
+function kartiHazirla(){
+  const veri = tur.atama[dagitimSira];
+  let ic = '<div class="kart-ust"><span class="etiket">' + kacir(adGoster(dagitimSira, tur)) + '</span>'
+         + '<span class="etiket">Dosya 07-KS</span></div>';
+  if(veri.casus){
+    ic += '<div class="damga">CASUS SENSİN</div>'
+        + '<p class="soluk kucuk">Mekanı bilmiyorsun. Yakalanmadan neredesin, çöz.</p>';
+    if(tur.casusSayisi === 2) ic += '<p class="kucuk amber mono">Bu turda 2 casus var.</p>';
+    ic += '<div class="kart-alan"><span class="etiket">Olası mekanlar</span><ul class="mini-liste">'
+        + tur.havuz.map(function(m){ return "<li>" + m + "</li>"; }).join("")
+        + '</ul></div>';
+  } else {
+    ic += '<div class="kart-alan"><span class="etiket">Mekan</span>'
+        + '<p class="mekan-ad">' + tur.mekan.mekan + '</p></div>'
+        + '<div class="kart-alan"><span class="etiket">Rolün</span>'
+        + '<p class="rol-ad">' + veri.rol + '</p></div>'
+        + '<p class="soluk kucuk">Mekanı söyleme. Rolüne uygun cevap ver.</p>';
+  }
+  $("#kart-icerik").innerHTML = ic;
+  $("#devir-kutusu").hidden = true;
+  $("#kart-kutusu").hidden = false;
+  $("#kart").focus({preventScroll:true});
+}
+function kartiAc(){
+  $("#kart").classList.add("acik");
+  $("#kart").setAttribute("aria-label", "Kart açık");
+  if(!acildiMi){ acildiMi = true; $("#btn-gordum").disabled = false; }
+}
+function kartiKapat(){
+  const k = $("#kart");
+  k.classList.remove("acik");
+  k.classList.remove("basiliyor");
+  k.setAttribute("aria-label", "Kartı açmak için basılı tut");
+  if(basiliZaman){ clearTimeout(basiliZaman); basiliZaman = null; }
+}
+function basmaBasla(){
+  if(basiliZaman) return;
+  $("#kart").classList.add("basiliyor");
+  basiliZaman = setTimeout(function(){ basiliZaman = null; kartiAc(); }, 320);
+}
+function basmaBitir(){ kartiKapat(); }
+
+$("#btn-hazir").addEventListener("click", kartiHazirla);
+$("#kart").addEventListener("pointerdown", function(e){ e.preventDefault(); basmaBasla(); });
+$("#kart").addEventListener("pointerup", basmaBitir);
+$("#kart").addEventListener("pointercancel", basmaBitir);
+$("#kart").addEventListener("pointerleave", basmaBitir);
+$("#kart").addEventListener("contextmenu", function(e){ e.preventDefault(); });
+$("#kart").addEventListener("keydown", function(e){
+  if(e.key === " " || e.key === "Enter"){ e.preventDefault(); basmaBasla(); }
+});
+$("#kart").addEventListener("keyup", function(e){
+  if(e.key === " " || e.key === "Enter"){ e.preventDefault(); basmaBitir(); }
+});
+$("#kart").addEventListener("blur", basmaBitir);
+
+$("#btn-gordum").addEventListener("click", function(){
+  $("#kart-icerik").innerHTML = "";
+  kartiKapat();
+  dagitimSira++;
+  if(dagitimSira >= tur.oyuncu) turBaslat();
+  else devirGoster();
+});
+
+/* ==================== süre (Date.now tabanlı) ==================== */
+const sure = { kalanMs:0, bitisTs:0, calisiyor:false, id:null };
+
+function sureYaz(){
+  const ms = Math.max(0, sure.kalanMs);
+  const toplam = Math.ceil(ms/1000);
+  const dk = Math.floor(toplam/60), sn = toplam % 60;
+  const el = $("#sayac");
+  el.textContent = ikiHane(dk) + ":" + ikiHane(sn);
+  el.classList.toggle("az", ms <= 30000 && ms > 0);
+  el.classList.toggle("durdu", !sure.calisiyor && ms > 0);
+}
+function sureTik(){
+  if(!sure.calisiyor) return;
+  const kalan = sure.bitisTs - Date.now();
+  if(kalan <= 0){
+    sure.kalanMs = 0; sure.calisiyor = false;
+    clearInterval(sure.id); sure.id = null;
+    sureYaz();
+    sureDoldu();
+  } else {
+    sure.kalanMs = kalan;
+    sureYaz();
+  }
+}
+function sureBaslat(ms){
+  if(typeof ms === "number") sure.kalanMs = ms;
+  sure.bitisTs = Date.now() + sure.kalanMs;
+  sure.calisiyor = true;
+  if(!sure.id) sure.id = setInterval(sureTik, 200);
+  sureYaz();
+  ekraniAcikTut();
+  $("#btn-duraklat").textContent = "Duraklat";
+}
+function sureDurdur(){
+  if(sure.calisiyor){
+    sure.kalanMs = Math.max(0, sure.bitisTs - Date.now());
+    sure.calisiyor = false;
+  }
+  if(sure.id){ clearInterval(sure.id); sure.id = null; }
+  sureYaz();
+  $("#btn-duraklat").textContent = "Devam et";
+  wakeBirak();
+}
+
+let wakeKilit = null;
+function ekraniAcikTut(){
+  try{
+    if("wakeLock" in navigator && !wakeKilit){
+      navigator.wakeLock.request("screen").then(function(k){ wakeKilit = k; }, function(){});
+    }
+  }catch(e){}
+}
+function wakeBirak(){
+  try{ if(wakeKilit){ wakeKilit.release(); wakeKilit = null; } }catch(e){}
+}
+document.addEventListener("visibilitychange", function(){
+  if(document.visibilityState === "visible"){
+    if(sure.calisiyor){ sureTik(); ekraniAcikTut(); }
+  }
+});
+
+/* ==================== tur ekranı ==================== */
+function turBaslat(){
+  $("#tur-bilgi-etiket").textContent = tur.oyuncu + " oyuncu · " + tur.casusSayisi + " casus";
+  $("#baslayan").textContent = adGoster(tur.baslayan - 1, tur);
+  $("#tur-mekan-listesi").innerHTML = tur.havuz.map(function(m){ return "<li>" + m + "</li>"; }).join("");
+  $("#liste-kutu").classList.remove("acik");
+  $("#btn-liste").textContent = "Mekan listesini göster";
+  $("#btn-liste").setAttribute("aria-expanded","false");
+  ekranGoster("ekran-tur");
+  sureBaslat(tur.dakika * 60 * 1000);
+}
+$("#btn-duraklat").addEventListener("click", function(){
+  if(sure.calisiyor) sureDurdur(); else sureBaslat();
+});
+$("#btn-liste").addEventListener("click", function(){
+  const acik = $("#liste-kutu").classList.toggle("acik");
+  this.textContent = acik ? "Mekan listesini gizle" : "Mekan listesini göster";
+  this.setAttribute("aria-expanded", String(acik));
+});
+$("#btn-bitir").addEventListener("click", function(){
+  sureDurdur();
+  sonucGoster("bitti");
+});
+function sureDoldu(){
+  wakeBirak();
+  oylamaAc(true);
+}
+
+/* ==================== oylama ==================== */
+let secilenler = [];
+let sureBittiMi = false;
+
+function oylamaAc(sureBitti){
+  sureBittiMi = !!sureBitti;
+  if(!sureBittiMi) sureDurdur();
+  secilenler = [];
+  const izgara = $("#oylama-izgara");
+  izgara.innerHTML = "";
+  for(let i=1;i<=tur.oyuncu;i++){
+    const b = document.createElement("button");
+    b.className = "cip";
+    b.type = "button";
+    b.dataset.oyuncu = String(i);
+    b.setAttribute("aria-pressed","false");
+    b.textContent = adGoster(i - 1, tur);
+    izgara.appendChild(b);
+  }
+  $("#oylama-durum").textContent = sureBittiMi ? "Süre bitti" : "Süre durduruldu";
+  $("#oylama-baslik").textContent = sureBittiMi ? "Süre bitti, oylayın" : "Şüpheliyi seçin";
+  $("#oylama-alt").textContent = tur.casusSayisi === 2
+    ? "Grupça karar verin ve 2 kişi seçin."
+    : "Grupça karar verin ve 1 kişi seçin.";
+  $("#btn-oy-vazgec").textContent = sureBittiMi ? "Oylamadan turu bitir" : "Vazgeç, tura dön";
+  $("#oylama-hata").hidden = true;
+  $("#btn-oy-onay").disabled = true;
+  ekranGoster("ekran-oylama");
+}
+$("#oylama-izgara").addEventListener("click", function(e){
+  const c = e.target.closest(".cip"); if(!c) return;
+  const no = Number(c.dataset.oyuncu);
+  const i = secilenler.indexOf(no);
+  if(i !== -1) secilenler.splice(i,1);
+  else{
+    if(secilenler.length >= tur.casusSayisi) secilenler.shift();
+    secilenler.push(no);
+  }
+  Array.prototype.forEach.call(this.children, function(b){
+    b.setAttribute("aria-pressed", String(secilenler.indexOf(Number(b.dataset.oyuncu)) !== -1));
+  });
+  $("#btn-oy-onay").disabled = (secilenler.length !== tur.casusSayisi);
+});
+$("#btn-oy-onay").addEventListener("click", function(){
+  if(secilenler.length !== tur.casusSayisi) return;
+  const dogru = secilenler.every(function(no){ return tur.atama[no-1].casus; });
+  sonucGoster(dogru ? "oy-dogru" : "oy-yanlis", secilenler.slice());
+});
+$("#btn-oy-vazgec").addEventListener("click", function(){
+  if(sureBittiMi) sonucGoster("bitti");
+  else { ekranGoster("ekran-tur"); sureBaslat(); }
+});
+
+/* ==================== casus tahmini ==================== */
+$("#btn-oyla").addEventListener("click", function(){ oylamaAc(false); });
+$("#btn-tahmin").addEventListener("click", function(){
+  sureDurdur();
+  const liste = $("#tahmin-liste");
+  liste.innerHTML = "";
+  tur.havuz.forEach(function(m){
+    const b = document.createElement("button");
+    b.className = "cip"; b.type = "button"; b.dataset.mekan = m; b.textContent = m;
+    liste.appendChild(b);
+  });
+  ekranGoster("ekran-tahmin");
+});
+$("#tahmin-liste").addEventListener("click", function(e){
+  const c = e.target.closest(".cip"); if(!c) return;
+  const secim = c.dataset.mekan;
+  sonucGoster(secim === tur.mekan.mekan ? "tahmin-dogru" : "tahmin-yanlis", null, secim);
+});
+$("#btn-tahmin-vazgec").addEventListener("click", function(){
+  ekranGoster("ekran-tur"); sureBaslat();
+});
+
+/* ==================== sonuç ==================== */
+function casusNolari(){
+  const n = [];
+  tur.atama.forEach(function(a,i){ if(a.casus) n.push(i+1); });
+  return n;
+}
+function sonucGoster(tip, oylar, tahmin){
+  sureDurdur();
+  wakeBirak();
+  const casuslar = casusNolari();
+  const casusMetni = casuslar.map(function(n){ return adGoster(n - 1, tur); }).join(" ve ");
+  let baslik = "Tur bitti", alt = "", sinif = "";
+
+  if(tip === "oy-dogru"){
+    baslik = casuslar.length > 1 ? "Casuslar yakalandı" : "Casus yakalandı";
+    alt = "Oylama doğru çıktı: " + casusMetni + ". Bu tur grubun.";
+    sinif = "grup";
+  } else if(tip === "oy-yanlis"){
+    baslik = "Yanlış kişi";
+    alt = "Oylanan kişi masumdu. Casus " + casusMetni + " idi ve turu kazandı.";
+    sinif = "casus";
+  } else if(tip === "tahmin-dogru"){
+    baslik = "Casus mekanı bildi";
+    alt = "Tahmin: " + tahmin + ". Doğru. Bu tur casusun.";
+    sinif = "casus";
+  } else if(tip === "tahmin-yanlis"){
+    baslik = "Casus tutturamadı";
+    alt = "Tahmin: " + tahmin + ". Yanlış. Bu tur grubun.";
+    sinif = "grup";
+  } else {
+    baslik = "Tur bitti";
+    alt = "Kazanan yok, dosya kapandı.";
+    sinif = "";
+  }
+
+  $("#sonuc-baslik").textContent = baslik;
+  $("#sonuc-alt").textContent = alt;
+  $("#sonuc-afis").className = "afis" + (sinif ? " " + sinif : "");
+  $("#sonuc-etiket").textContent = (tip === "bitti") ? "Tur bitti" : "Sonuç";
+  $("#sonuc-mekan").textContent = tur.mekan.mekan;
+  $("#sonuc-casus-etiket").textContent = casuslar.length > 1 ? "2 casus" : "1 casus";
+
+  $("#sonuc-roller").innerHTML = tur.atama.map(function(a,i){
+    const ad = a.casus ? "Casus" : a.rol;
+    const kisi = adVarMi(i, tur) ? '<span class="kisi">' + kacir(adGoster(i, tur)) + '</span>' : "";
+    return '<li class="' + (a.casus ? "casus" : "") + '">'
+         + '<span class="no">' + (i+1) + '</span><span class="ad">' + kisi + ad + '</span></li>';
+  }).join("");
+
+  ekranGoster("ekran-sonuc");
+}
+
+$("#btn-basla").addEventListener("click", function(){
+  if(turKur()) dagitimBaslat();
+});
+$("#btn-yeni-tur").addEventListener("click", function(){
+  if(turKur()) dagitimBaslat();
+});
+$("#btn-ana-ekran").addEventListener("click", function(){
+  sureDurdur();
+  anaYenile();
+  ekranGoster("ekran-ana");
+});
+
+/* ==================== oyuncu isimleri ==================== */
+function isimAlanlariniYenile(){
+  const kutu = $("#isim-alanlari");
+  $("#isim-etiket").textContent = ayar.isimAcik ? "Açık" : "Kapalı";
+  Array.prototype.forEach.call($("#isim-cipler").children, function(c){
+    c.setAttribute("aria-pressed", String((c.dataset.isim === "1") === ayar.isimAcik));
+  });
+  kutu.hidden = !ayar.isimAcik;
+  $("#isim-not").hidden = !ayar.isimAcik;
+  if(!ayar.isimAcik){ kutu.innerHTML = ""; return; }
+  let html = "";
+  for(let i=0;i<ayar.oyuncu;i++){
+    html += '<label class="isim-satir"><span class="isim-no">' + (i+1) + '</span>'
+          + '<input class="isim-giris" type="text" autocomplete="off" spellcheck="false" maxlength="14"'
+          + ' data-sira="' + i + '" value="' + kacir(ayar.isimler[i] || "") + '"'
+          + ' placeholder="' + (i+1) + '. oyuncu" aria-label="' + (i+1) + '. oyuncunun adı"></label>';
+  }
+  kutu.innerHTML = html;
+}
+$("#isim-cipler").addEventListener("click", function(e){
+  const c = e.target.closest(".cip"); if(!c) return;
+  ayar.isimAcik = (c.dataset.isim === "1");
+  anaYenile();
+  if(ayar.isimAcik){
+    const ilk = $("#isim-alanlari").querySelector(".isim-giris");
+    if(ilk) ilk.focus();
+  }
+});
+$("#isim-alanlari").addEventListener("input", function(e){
+  const g = e.target.closest(".isim-giris"); if(!g) return;
+  ayar.isimler[Number(g.dataset.sira)] = g.value;
+  ayarKaydet();
+});
+
+anaYenile();
+</script>
+</body>
+</html>
