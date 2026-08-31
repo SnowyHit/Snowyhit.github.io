@@ -3,13 +3,6 @@
 <title>Gambler Wizard</title>
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@600;800&family=Inter:wght@400;600;800&display=swap" rel="stylesheet" />
-<!--
-  ADSENSE SETUP — once your AdSense account is approved, replace ca-pub-XXXXXXXXXXXXXXXX
-  below with your real Publisher ID and uncomment this script tag. Also set ADSENSE_CLIENT_ID
-  and ADSENSE_DEATH_SLOT_ID near the top of the <script> block further down. Until both are
-  set, the death-screen ad slot stays fully inert — no requests, no layout change.
-<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-XXXXXXXXXXXXXXXX" crossorigin="anonymous"></script>
--->
 <style>
   :root {
     --gold: #ffd35c;
@@ -457,10 +450,6 @@
     background: linear-gradient(90deg,var(--gold),var(--pink),var(--neon)); -webkit-background-clip:text; background-clip:text; color:transparent; }
   .sheet h2 { font-family:var(--display); font-size: 26px; margin:0 0 6px; }
   .sheet p { color: var(--ink-dim); font-size: 13px; margin: 4px 0 16px; line-height:1.5; }
-  .ad-slot { margin: 14px 0 4px; padding: 8px; border-radius: 12px; border: 1px solid var(--panel-line);
-    background: rgba(255,255,255,.03); min-height: 90px; }
-  .ad-label { font-size: 9px; letter-spacing: 1.5px; text-transform: uppercase; color: var(--ink-dim);
-    text-align: center; margin-bottom: 6px; opacity: .6; }
   .upgrades { display:flex; flex-direction:column; gap:10px; margin: 12px 0; text-align:left; }
   .upg { display:flex; align-items:center; gap:10px; padding:11px 12px; border-radius:14px;
     background: rgba(255,255,255,.05); border:1px solid var(--panel-line); cursor:pointer; transition: border-color .15s, background .15s, transform .1s; }
@@ -694,15 +683,6 @@ const daySeed = s => { let h=0; for(const c of s) h=(h*31+c.charCodeAt(0))|0; re
 function pickNSeeded(arr, n, rng){ const pool=arr.slice(), out=[];
   for(let i=0;i<n && pool.length;i++) out.push(pool.splice(Math.floor(rng()*pool.length),1)[0]);
   return out; }
-
-/* =========================================================================
-   ADSENSE — set both to enable the death-screen ad slot. Leave null and
-   nothing renders, nothing is requested, no console noise. See the
-   commented-out loader <script> tag in <head> — uncomment it too.
-   ========================================================================= */
-const ADSENSE_CLIENT_ID = null;      // e.g. 'ca-pub-1234567890123456'
-const ADSENSE_DEATH_SLOT_ID = null;  // ad unit slot id from your AdSense dashboard
-const adsenseReady = () => ADSENSE_CLIENT_ID && ADSENSE_DEATH_SLOT_ID && window.adsbygoogle;
 
 /* =========================================================================
    BALANCE — one place for all the combat/progression math.
@@ -1686,11 +1666,6 @@ function death(){
 function showDeath(){
   const m=$('#modal'), sheet=$('#sheet');
   const rc=relicCount();
-  const adHtml = adsenseReady() ? `
-    <div class="ad-slot">
-      <div class="ad-label">Advertisement</div>
-      <ins class="adsbygoogle" style="display:block" data-ad-client="${ADSENSE_CLIENT_ID}" data-ad-slot="${ADSENSE_DEATH_SLOT_ID}" data-ad-format="auto" data-full-width-responsive="true"></ins>
-    </div>` : '';
   sheet.innerHTML=`
     <h2 style="color:var(--red)">You Fell on Floor ${G.floor}</h2>
     <p>Bosses cleared: <b>${G.bossesCleared}</b> · Gold banked: <b>${fmt(G.gold)}🪙</b> · Shards: <b>${G.shards}🔷</b><br>
@@ -1699,13 +1674,9 @@ function showDeath(){
       <div class="upg" style="cursor:default;border-color:var(--gold-2)"><div class="u-ic">🚩</div><div class="u-body"><div class="u-t" style="color:var(--gold)">Checkpoint: Floor ${G.checkpoint}</div><div class="u-d">Your next dive resumes here — cleared bosses stay cleared</div></div></div>
       <div class="upg" style="cursor:default"><div class="u-ic">🏰</div><div class="u-body"><div class="u-t">Upgrade in the Tower</div><div class="u-d">Spend gold & shards, then descend stronger</div></div></div>
     </div>
-    ${adHtml}
     <button class="btn" id="toTowerBtn">🏰 RETURN TO TOWER</button>`;
   $('#toTowerBtn').onclick=()=>{ m.classList.remove('on'); goToTower(); };
   m.classList.add('on');
-  if(adsenseReady()){
-    try{ (window.adsbygoogle=window.adsbygoogle||[]).push({}); }catch(e){}
-  }
 }
 
 function newRun(){
