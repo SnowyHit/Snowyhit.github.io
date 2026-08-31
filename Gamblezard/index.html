@@ -3,6 +3,13 @@
 <title>Gambler Wizard</title>
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@600;800&family=Inter:wght@400;600;800&display=swap" rel="stylesheet" />
+<!--
+  ADSENSE SETUP — once your AdSense account is approved, replace ca-pub-XXXXXXXXXXXXXXXX
+  below with your real Publisher ID and uncomment this script tag. Also set ADSENSE_CLIENT_ID
+  and ADSENSE_DEATH_SLOT_ID near the top of the <script> block further down. Until both are
+  set, the death-screen ad slot stays fully inert — no requests, no layout change.
+<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-XXXXXXXXXXXXXXXX" crossorigin="anonymous"></script>
+-->
 <style>
   :root {
     --gold: #ffd35c;
@@ -385,12 +392,6 @@
   .reel.win { box-shadow: 0 0 0 2px var(--gold), 0 0 22px var(--gold); animation: winpulse .5s ease infinite alternate; }
   @keyframes winpulse { from{filter:brightness(1)} to{filter:brightness(1.4)} }
 
-  /* Crash */
-  .crash-num { font-family: var(--display); font-weight:800; font-size: 56px; line-height:1;
-    text-shadow: 0 0 24px rgba(75,225,255,.6); transition: color .1s; }
-  .crash-graph { width:100%; height: 90px; margin-top:8px; }
-  .crash-msg { text-align:center; margin-top:6px; font-weight:800; min-height:18px; }
-
   /* Dice */
   .dice-tray { display:flex; gap:16px; }
   .die { width: 72px; height:72px; border-radius:14px; background: linear-gradient(160deg,#fff,#d9d4ea);
@@ -428,22 +429,6 @@
   .crate.done .rr { opacity:1; animation: pop .3s ease; }
   .crate.done .cover { opacity:0; }
 
-  /* Blackjack */
-  .bj-area { width:100%; }
-  .bj-row { margin-bottom:10px; }
-  .bj-row .who { font-size:11px; color:var(--ink-dim); font-weight:800; letter-spacing:1px; margin-bottom:4px; }
-  .cards { display:flex; gap:8px; min-height:78px; }
-  .card { width:52px; height:74px; border-radius:8px; background: linear-gradient(160deg,#fff,#e8e4f2); color:#1a0f38;
-    display:flex; flex-direction:column; justify-content:space-between; padding:5px 6px; font-weight:800; font-size:14px;
-    box-shadow: 0 6px 14px rgba(0,0,0,.4); animation: deal .3s ease; }
-  .card.red { color: #d3243b; }
-  .card.back { background: repeating-linear-gradient(45deg,#5a3fa0,#5a3fa0 6px,#3a2570 6px,#3a2570 12px); }
-  .card .b { align-self:flex-end; transform: rotate(180deg); }
-  @keyframes deal { from{transform: translateY(-20px) rotate(-8deg); opacity:0} to{transform:none;opacity:1} }
-  .bj-total { font-size:12px; color:var(--ink-dim); font-weight:800; margin-top:2px; }
-  .bj-actions { display:flex; gap:8px; }
-  .bj-actions .btn { flex:1; }
-
   /* Damage numbers + fx layer */
   #fx { position:absolute; inset:0; z-index:15; pointer-events:none; overflow:hidden; }
   .dmg { position:absolute; font-family:var(--display); font-weight:800; font-size: 30px;
@@ -472,17 +457,21 @@
     background: linear-gradient(90deg,var(--gold),var(--pink),var(--neon)); -webkit-background-clip:text; background-clip:text; color:transparent; }
   .sheet h2 { font-family:var(--display); font-size: 26px; margin:0 0 6px; }
   .sheet p { color: var(--ink-dim); font-size: 13px; margin: 4px 0 16px; line-height:1.5; }
+  .ad-slot { margin: 14px 0 4px; padding: 8px; border-radius: 12px; border: 1px solid var(--panel-line);
+    background: rgba(255,255,255,.03); min-height: 90px; }
+  .ad-label { font-size: 9px; letter-spacing: 1.5px; text-transform: uppercase; color: var(--ink-dim);
+    text-align: center; margin-bottom: 6px; opacity: .6; }
   .upgrades { display:flex; flex-direction:column; gap:10px; margin: 12px 0; text-align:left; }
   .upg { display:flex; align-items:center; gap:10px; padding:11px 12px; border-radius:14px;
-    background: rgba(255,255,255,.05); border:1px solid var(--panel-line); cursor:pointer; transition: border-color .2s, transform .1s; }
-  .upg:hover { border-color: var(--purple-2); }
+    background: rgba(255,255,255,.05); border:1px solid var(--panel-line); cursor:pointer; transition: border-color .15s, background .15s, transform .1s; }
+  .upg:hover { border-color: var(--purple-2); background: rgba(255,255,255,.08); }
   .upg:active { transform: scale(.98); }
-  .upg .u-ic { font-size:24px; }
-  .upg .u-body { flex:1; }
-  .upg .u-t { font-weight:800; font-size:14px; }
-  .upg .u-d { font-size:11px; color: var(--ink-dim); }
-  .upg .u-cost { font-weight:800; color: var(--gold); font-size:13px; white-space:nowrap; }
-  .upg.cant { opacity:.5; pointer-events:none; }
+  .upg .u-ic { font-size:22px; width:26px; text-align:center; flex-shrink:0; }
+  .upg .u-body { flex:1; min-width:0; }
+  .upg .u-t { font-weight:700; font-size:13.5px; }
+  .upg .u-d { font-size:11px; color: var(--ink-dim); margin-top:1px; }
+  .upg .u-cost { font-weight:800; color: var(--gold); font-size:12.5px; white-space:nowrap; }
+  .upg.cant { opacity:.45; pointer-events:none; }
 
   /* daily quest progress bar */
   .qbar { height:5px; border-radius:3px; background:rgba(255,255,255,.08); margin:4px 0 2px; overflow:hidden; }
@@ -491,8 +480,8 @@
   /* dodge timing challenge */
   .dodge-track { position:relative; height:26px; border-radius:13px; margin:10px auto 12px; max-width:340px;
     background:rgba(0,0,0,.45); border:1px solid var(--panel-line); overflow:hidden; }
-  .dodge-track .dz.safe { position:absolute; left:34%; width:32%; top:0; bottom:0; background:rgba(77,255,161,.22); }
-  .dodge-track .dz.perfect { position:absolute; left:46%; width:8%; top:0; bottom:0;
+  .dodge-track .dz.safe { position:absolute; left:28%; width:44%; top:0; bottom:0; background:rgba(77,255,161,.22); }
+  .dodge-track .dz.perfect { position:absolute; left:44%; width:12%; top:0; bottom:0;
     background:rgba(77,255,161,.55); box-shadow:0 0 12px rgba(77,255,161,.5); }
   .dodge-marker { position:absolute; top:-2px; bottom:-2px; width:4px; left:0;
     background:#fff; box-shadow:0 0 10px var(--neon); border-radius:2px; }
@@ -520,29 +509,40 @@
   #app.at-tower .settings-btn { display:block; }
 
   /* ---------- Tower ---------- */
-  .tower-stage { position:relative; height:34%; min-height:168px; margin:4px 12px 0; border-radius:18px; overflow:hidden;
+  .tower-stage { position:relative; height:30%; min-height:150px; margin:4px 12px 0; border-radius:18px; overflow:hidden;
     border:1px solid var(--panel-line);
     background: radial-gradient(120% 120% at 50% 120%, rgba(123,75,255,.22), transparent 60%), linear-gradient(180deg, rgba(20,12,42,.7), rgba(8,5,18,.7)); }
   #tdCanvas { position:absolute; inset:0; width:100%; height:100%; }
-  .tower-label { position:absolute; top:8px; left:12px; font-family:var(--display); font-size:13px; letter-spacing:1px; color:var(--ink-dim); }
-  .tower-idle-badge { position:absolute; top:8px; right:12px; font-weight:800; font-size:11px; color:var(--green);
-    background: rgba(0,0,0,.45); padding:4px 9px; border-radius:999px; border:1px solid var(--panel-line); }
+  .tower-label { position:absolute; top:8px; left:12px; font-family:var(--display); font-size:12px; letter-spacing:1px; color:var(--ink-dim); }
+  .tower-fate-btn { position:absolute; bottom:8px; right:8px; font-weight:800; font-size:11.5px; line-height:1; cursor:pointer;
+    display:flex; align-items:center; gap:5px;
+    background: rgba(10,7,19,.65); color:var(--gold); border:1px solid var(--gold-2); border-radius:999px; padding:7px 12px;
+    transition: transform .12s, background .15s; }
+  .tower-fate-btn:hover { background: rgba(10,7,19,.85); }
+  .tower-fate-btn:active { transform: scale(0.94); }
+  .fate-stakes { display:flex; gap:8px; margin:12px 0 4px; }
+  .fate-stakes .btn { flex:1; padding:10px 6px; font-size:12px; }
+  .fate-spin { text-align:center; font-size:44px; margin:18px 0; min-height:52px; letter-spacing:6px; }
+  .fate-result { text-align:center; font-weight:800; font-size:15px; min-height:20px; margin-bottom:2px; }
+  .fate-flavor { text-align:center; font-size:12px; color:var(--ink-dim); margin-bottom:14px; min-height:16px; }
 
-  .tower-tabs { display:flex; gap:5px; padding:10px 12px 4px; }
-  .ttab { flex:1; cursor:pointer; font-weight:800; font-size:10.5px; padding:9px 1px; border-radius:11px; color:var(--ink-dim);
-    background:var(--panel); border:1px solid var(--panel-line); transition:all .15s; text-align:center; white-space:nowrap; }
-  .ttab:hover { color:var(--ink); }
-  .ttab.on { color:var(--ink); border-color:var(--purple-2); box-shadow: inset 0 0 16px rgba(123,75,255,.28); }
+  .tower-tabs { display:grid; grid-template-columns:repeat(3,1fr); gap:6px; padding:10px 12px 4px; }
+  .ttab { cursor:pointer; font-weight:700; font-size:12px; padding:10px 4px; border-radius:11px; color:var(--ink-dim);
+    background:transparent; border:1px solid transparent; transition:all .15s; text-align:center; white-space:nowrap; }
+  .ttab:hover { color:var(--ink); background:rgba(255,255,255,.04); }
+  .ttab.on { color:#201200; background:linear-gradient(180deg,var(--gold),var(--gold-2)); border-color:transparent;
+    box-shadow:0 4px 14px rgba(255,176,46,.3); }
 
-  .tower-panel { flex:1; min-height:0; overflow-y:auto; padding:4px 12px 6px; display:flex; flex-direction:column; gap:8px; }
+  .tower-panel { flex:1; min-height:0; overflow-y:auto; padding:8px 12px 6px; display:flex; flex-direction:column; gap:7px; }
   .tower-panel::-webkit-scrollbar { width:6px; }
   .tower-panel::-webkit-scrollbar-thumb { background: rgba(178,139,255,.35); border-radius:99px; }
-  .panel-head { font-family:var(--display); font-size:12px; color:var(--ink-dim); letter-spacing:2px; margin:6px 2px 0; text-transform:uppercase; }
+  .panel-head { font-family:var(--display); font-size:12px; color:var(--ink-dim); letter-spacing:2px; margin:6px 2px 2px; text-transform:uppercase; }
   .tower-panel .upg { background:var(--panel); }
   .u-lvl { font-size:10px; font-weight:800; color:var(--purple-2); background:rgba(123,75,255,.18);
     border:1px solid var(--panel-line); border-radius:8px; padding:2px 6px; margin-left:6px; }
-  .u-cost.shard { color: var(--neon); }
-  .u-cost.max { color: var(--green); }
+  .u-cost { background:rgba(255,211,92,.12); border-radius:999px; padding:5px 10px; }
+  .u-cost.shard { color: var(--neon); background:rgba(75,225,255,.12); }
+  .u-cost.max { color: var(--green); background:rgba(77,255,161,.12); }
 
   .enter-btn { width:auto; margin:6px 12px calc(12px + env(safe-area-inset-bottom)); font-size:17px; }
 
@@ -641,7 +641,7 @@
     <div class="tower-stage" id="towerStage">
       <canvas id="tdCanvas"></canvas>
       <div class="tower-label">✦ WIZARD'S TOWER ✦</div>
-      <div class="tower-idle-badge" id="towerIdleBadge">+0/min</div>
+      <button class="tower-fate-btn" id="fateBtn" title="Tempt Fate">🎩 Tempt Fate</button>
     </div>
     <div class="tower-tabs" id="towerTabs">
       <button class="ttab on" data-tab="stats">📊 Stats</button>
@@ -674,6 +674,12 @@ const $ = s => document.querySelector(s);
 const rand = (a,b)=> a + Math.random()*(b-a);
 const randi = (a,b)=> Math.floor(rand(a,b+1));
 const pick = arr => arr[Math.floor(Math.random()*arr.length)];
+const pickWeighted = arr => {   // each item's `w` (default 10) is its relative spawn weight
+  const total = arr.reduce((s,x)=>s+(x.w||10), 0);
+  let r=Math.random()*total;
+  for(const x of arr){ const w=x.w||10; if(r<w) return x; r-=w; }
+  return arr[arr.length-1];
+};
 const clamp = (v,a,b)=> Math.max(a,Math.min(b,v));
 const fmt = n => n>=1000 ? (n/1000).toFixed(n>=10000?0:1)+'k' : Math.round(n).toString();
 
@@ -688,6 +694,15 @@ const daySeed = s => { let h=0; for(const c of s) h=(h*31+c.charCodeAt(0))|0; re
 function pickNSeeded(arr, n, rng){ const pool=arr.slice(), out=[];
   for(let i=0;i<n && pool.length;i++) out.push(pool.splice(Math.floor(rng()*pool.length),1)[0]);
   return out; }
+
+/* =========================================================================
+   ADSENSE — set both to enable the death-screen ad slot. Leave null and
+   nothing renders, nothing is requested, no console noise. See the
+   commented-out loader <script> tag in <head> — uncomment it too.
+   ========================================================================= */
+const ADSENSE_CLIENT_ID = null;      // e.g. 'ca-pub-1234567890123456'
+const ADSENSE_DEATH_SLOT_ID = null;  // ad unit slot id from your AdSense dashboard
+const adsenseReady = () => ADSENSE_CLIENT_ID && ADSENSE_DEATH_SLOT_ID && window.adsbygoogle;
 
 /* =========================================================================
    BALANCE — one place for all the combat/progression math.
@@ -755,6 +770,9 @@ const G = {
   // dungeon run modifiers (permanent, bought in tower)
   mods: { goldRush:0, ward:0, lucky:0, overcharge:0, bulwark:0, ignite:0, evade:0 },
   _shardFrac: 0,
+  // tower-defense side-progression: rare Token Goblin kills build toward the Outpost
+  outpostTokens: 0,
+  outpostUnlocked: false,
   // daily retention state (persisted)
   daily: { streak:0, lastClaimDate:null, questDate:null, quests:[], dungeonDoneDate:null, relicTokens:0 },
   // transients (not saved)
@@ -776,10 +794,8 @@ const SPELLS = {
   spark:  { key:'spark',  name:'Spark',    glyph:'✨', base: 1.6,  cost: 0,  unlocked:true },
   slots:  { key:'slots',  name:'Fireball', glyph:'🎰', base: 1.3,  cost: 0,  unlocked:true },
   dice:   { key:'dice',   name:'Chaos',    glyph:'🎲', base: 1.35, cost: 0,  unlocked:true },
-  crash:  { key:'crash',  name:'Overload', glyph:'📈', base: 1.25, cost: 6,  unlocked:false },
   wheel:  { key:'wheel',  name:'Roulette', glyph:'🎡', base: 0.95, cost: 8,  unlocked:false },
   crate:  { key:'crate',  name:'Crate',    glyph:'🎁', base: 0.95, cost: 10, unlocked:false },
-  jack:   { key:'jack',   name:'Necrojack',glyph:'🃏', base: 1.3,  cost: 14, unlocked:false },
 };
 Object.values(SPELLS).forEach(s=> s.lvl = 0);
 // effective base damage grows +12% per empower level
@@ -790,19 +806,19 @@ function spellBase(k){ return SPELLS[k].base * (1 + (SPELLS[k].lvl||0)*0.12); }
 // at least one starter spell (spark/slots/dice) so matchups matter from run one
 const ENEMY_TYPES = [
   { name:'Goblin Gambler', glyph:'👺', trait:'greedy',
-    weak:['dice','jack'],   resist:['spark'],
+    weak:['dice'],   resist:['spark'],
     traitDesc:'💰 Steals gold on hit — slay it to reclaim +50%' },
   { name:'Arcane Mimic',   glyph:'🪞', trait:'mimic',
     weak:['spark','crate'], resist:['wheel'],
     traitDesc:'🪞 Copies your last spell result every 3rd turn' },
   { name:'Shock Elemental',glyph:'⚡', trait:'shock',
-    weak:['slots','dice'],  resist:['spark','crash'],
+    weak:['slots','dice'],  resist:['spark'],
     traitDesc:'⚡ Its hits may jam one of your spells' },
   { name:'Cursed Knight',  glyph:'🗡️', trait:'curse',
-    weak:['spark','jack'],  resist:['slots'],
+    weak:['spark'],  resist:['slots'],
     traitDesc:'💀 Hits harder · may curse you' },
   { name:'Slime Croupier', glyph:'🟢', trait:'none',
-    weak:['slots','crash'], resist:['dice'], traitDesc:'' },
+    weak:['slots'], resist:['dice'], traitDesc:'' },
   { name:'Bat Swarm',      glyph:'🦇', trait:'none',
     weak:['spark','wheel'], resist:['crate'], traitDesc:'' },
 ];
@@ -865,7 +881,6 @@ const QUEST_POOL = [
   {id:'gold400', ev:'gold',    goal:400, t:'Earn 400 gold in the dungeon', g:0,   s:2},
   {id:'dodge5',  ev:'dodge',   goal:5,   t:'Dodge 5 attacks',              g:60,  s:1},
   {id:'weak6',   ev:'weakhit', goal:6,   t:'Exploit a weakness 6 times',   g:60,  s:1},
-  {id:'bj21',    ev:'bj21',    goal:1,   t:'Win Necrojack with 21',        g:100, s:2, needs:'jack'},
   {id:'jackpot1',ev:'jackpot', goal:1,   t:'Hit any jackpot',              g:100, s:2},
 ];
 const STREAK_REWARDS = [ // index = (streak-1) % 7 — the cycle repeats weekly
@@ -984,7 +999,7 @@ function renderAffinity(){
 
 function renderSpellbar(){
   const bar=$('#spellbar'); bar.innerHTML='';
-  const order=['spark','slots','dice','crash','wheel','crate','jack'];
+  const order=['spark','slots','dice','wheel','crate'];
   const list = order.slice();
   list.forEach((k,i)=>{
     const sp=SPELLS[k];
@@ -1196,7 +1211,7 @@ function dodgeChallenge(){
       <button class="btn" id="dodgeBtn">DODGE!</button>`;
     dock.classList.add('on');
     let done=false, pos=0;
-    const t0=performance.now(), DUR=1100;
+    const t0=performance.now(), DUR=1750;
     const finish=r=>{ if(done) return; done=true; closeMini(); res(r); };
     requestAnimationFrame(function sweep(t){
       if(done) return;
@@ -1206,8 +1221,8 @@ function dodgeChallenge(){
       requestAnimationFrame(sweep);
     });
     $('#dodgeBtn').onclick=()=>{
-      if(pos>=0.46 && pos<=0.54) finish('perfect');
-      else if(pos>=0.34 && pos<=0.66) finish('safe');
+      if(pos>=0.44 && pos<=0.56) finish('perfect');
+      else if(pos>=0.28 && pos<=0.72) finish('safe');
       else finish('miss');
     };
   });
@@ -1396,10 +1411,8 @@ const MINI = {
   spark: { render: renderSpark, auto: playSpark },
   slots: { render: renderSlots, auto: spinSlots },
   dice:  { render: renderDice,  auto: rollDice },
-  crash: { render: renderCrash },   // self-starts + you time the CASH OUT
   wheel: { render: renderWheel, auto: spinWheel },
   crate: { render: renderCrate },   // you pick a crate
-  jack:  { render: renderJack },    // you Hit / Stand vs the dealer
 };
 function openMini(key){
   const dock=$('#castDock'), mini=$('#mini');
@@ -1554,69 +1567,6 @@ function rollDice(){
 }
 
 /* =========================================================================
-   MINIGAME 4 — OVERLOAD SURGE (Crash)
-   ========================================================================= */
-function renderCrash(mini){
-  mini.innerHTML=`
-    <h3>📈 Overload Surge</h3>
-    <div class="sub">Charge climbs — cash out before it <b>crashes</b> to zero!</div>
-    <div class="mini-stage" style="flex-direction:column;">
-      <div class="crash-num" id="crashNum" style="color:var(--neon)">1.00×</div>
-      <canvas class="crash-graph" id="crashGraph" width="380" height="90"></canvas>
-      <div class="crash-msg" id="crashMsg"></div>
-    </div>
-    <button class="btn danger" id="cashBtn">CASH OUT</button>`;
-  startCrash();
-}
-function startCrash(){
-  const numEl=$('#crashNum'), msg=$('#crashMsg'), btn=$('#cashBtn');
-  const cv=$('#crashGraph'), ctx=cv.getContext('2d');
-  let mult=1.0, t0=performance.now(), crashed=false, done=false;
-  // crash point — exponential-ish distribution
-  const crashAt = 1.15 + Math.pow(Math.random(), 2.2)*5.5;
-  const pts=[];
-  function loop(t){
-    if(done) return;
-    const el=(t-t0)/1000;
-    mult = 1 + el*0.9 + el*el*0.25;
-    if(mult>=crashAt){ doCrash(); return; }
-    numEl.textContent = mult.toFixed(2)+'×';
-    const hot = clamp((mult-1)/5,0,1);
-    numEl.style.color = `rgb(${75+hot*180},${225-hot*180},${255-hot*200})`;
-    if(mult>2.2 && Math.random()<0.3) S.tick();
-    // graph
-    pts.push(mult);
-    ctx.clearRect(0,0,cv.width,cv.height);
-    ctx.strokeStyle='rgba(255,255,255,.08)'; ctx.lineWidth=1;
-    for(let y=0;y<90;y+=22){ctx.beginPath();ctx.moveTo(0,y);ctx.lineTo(380,y);ctx.stroke();}
-    ctx.beginPath(); ctx.lineWidth=3; ctx.strokeStyle=`rgb(${75+hot*180},${225-hot*140},255)`;
-    const maxM=Math.max(crashAt,mult);
-    pts.forEach((m,i)=>{ const x=i/Math.max(pts.length-1,1)*380; const y=90-((m-1)/(maxM-1))*84-3; i?ctx.lineTo(x,y):ctx.moveTo(x,y); });
-    ctx.stroke();
-    // glow dot
-    const lx=380, ly=90-((mult-1)/(maxM-1))*84-3;
-    ctx.fillStyle='#fff'; ctx.beginPath(); ctx.arc(lx-2,ly,4,0,7); ctx.fill();
-    requestAnimationFrame(loop);
-  }
-  function doCrash(){
-    done=true; crashed=true; btn.disabled=true;
-    numEl.textContent='💥 CRASH'; numEl.style.color='var(--red)';
-    msg.textContent='Overloaded — 0 damage'; msg.style.color='var(--red)';
-    S.fail(); resolve(0,{hold:700});
-  }
-  btn.onclick=()=>{
-    if(done) return; done=true; btn.disabled=true;
-    const m=mult; const capped=Math.min(m,6);
-    numEl.textContent=capped.toFixed(2)+'× ✓'; numEl.style.color='var(--green)';
-    msg.textContent='Cashed out at '+capped.toFixed(2)+'×'; msg.style.color='var(--green)';
-    const status = m>3? {shock:1}:null;
-    S.win(); if(m>=4){banner('OVERLOAD','linear-gradient(90deg,var(--neon),var(--gold))');}
-    resolve(capped, {status, crit:m>=4.5, hold:650});
-  };
-  requestAnimationFrame(loop);
-}
-
-/* =========================================================================
    MINIGAME 5 — ARCANE ROULETTE (Wheel)
    ========================================================================= */
 const WHEEL=[
@@ -1724,71 +1674,6 @@ function burstAt(el, color, n){
 }
 
 /* =========================================================================
-   MINIGAME 7 — NECROJACK (Blackjack)
-   ========================================================================= */
-const CARD_SUITS=['♠','♥','♦','♣'];
-const CARD_RANKS=[['A',11],['2',2],['3',3],['4',4],['5',5],['6',6],['7',7],['8',8],['9',9],['10',10],['J',10],['Q',10],['K',10]];
-function bjCard(){ const s=pick(CARD_SUITS), rk=pick(CARD_RANKS); return {r:rk[0], v:rk[1], s, red:(s==='♥'||s==='♦')}; }
-function bjValue(cards){ let sum=0, aces=0; for(const c of cards){ sum+=c.v; if(c.r==='A') aces++; } while(sum>21 && aces>0){ sum-=10; aces--; } return sum; }
-function renderJack(mini){
-  G._bj={ player:[bjCard(),bjCard()], dealer:[bjCard(),bjCard()], reveal:false, done:false, msg:'' };
-  drawJack(mini);
-}
-function drawJack(mini){
-  const st=G._bj, pv=bjValue(st.player);
-  const card=c=>`<div class="card ${c.red?'red':''}"><span>${c.r}</span><span class="b">${c.s}</span></div>`;
-  const dealerCards = st.reveal ? st.dealer.map(card).join('') : card(st.dealer[0])+`<div class="card back"></div>`;
-  const dv = st.reveal ? bjValue(st.dealer) : '?';
-  mini.className='mini docked';
-  mini.innerHTML=`
-    <h3>🃏 Necrojack</h3>
-    <div class="sub">Beat the dealer · 21 = massive + Curse · bust backfires</div>
-    <div class="bj-area">
-      <div class="bj-row"><div class="who">DEALER · ${dv}</div><div class="cards">${dealerCards}</div></div>
-      <div class="bj-row"><div class="who">YOU · ${pv}</div><div class="cards">${st.player.map(card).join('')}</div></div>
-    </div>
-    <div class="result-line" id="jackRes" style="color:${st.color||'var(--ink)'}">${st.msg||''}</div>
-    ${st.done?'':'<div class="bj-actions"><button class="btn" id="bjHit">HIT</button><button class="btn ghost" id="bjStand">STAND</button></div>'}`;
-  if(!st.done){ $('#bjHit').onclick=jackHit; $('#bjStand').onclick=jackStand; }
-}
-function jackHit(){
-  const st=G._bj; if(st.done) return;
-  st.player.push(bjCard());
-  const pv=bjValue(st.player);
-  if(pv>21){ st.reveal=true; resolveJack('bust'); }
-  else if(pv===21){ jackStand(); }
-  else drawJack($('#mini'));
-}
-function jackStand(){
-  const st=G._bj; if(st.done) return;
-  st.reveal=true;
-  while(bjValue(st.dealer)<17) st.dealer.push(bjCard());
-  const pv=bjValue(st.player), dv=bjValue(st.dealer);
-  let outcome;
-  if(st.player.length===2 && pv===21) outcome='blackjack';
-  else if(dv>21 || pv>dv) outcome='win';
-  else if(pv===dv) outcome='draw';
-  else outcome='lose';
-  resolveJack(outcome);
-}
-function resolveJack(outcome){
-  const st=G._bj; st.done=true;
-  const map={
-    blackjack:{mult:4.0, msg:'BLACKJACK! 💀', status:{curse:0.2}, crit:true, color:'var(--gold)'},
-    win:      {mult:2.2, msg:'You win!',       color:'var(--green)'},
-    draw:     {mult:0.4, msg:'Push — glancing hit', color:'var(--ink)'},
-    lose:     {mult:0,   msg:'Dealer wins — miss', color:'var(--ink-dim)'},
-    bust:     {mult:1.0, msg:'BUST — backfire!', self:true, color:'var(--red)'},
-  };
-  const o=map[outcome]; st.msg=o.msg; st.color=o.color;
-  drawJack($('#mini'));
-  if(outcome==='blackjack' || (outcome==='win' && bjValue(st.player)===21)) questEvent('bj21');
-  if(outcome==='blackjack'){ S.jackpot(); banner('BLACKJACK','linear-gradient(90deg,var(--gold),var(--pink))'); questEvent('jackpot'); }
-  else if(outcome==='win') S.win(); else S.fail();
-  resolve(o.mult, {status:o.status, self:o.self, crit:o.crit, hold: outcome==='blackjack'?950:800});
-}
-
-/* =========================================================================
    DEATH → SHOP → RESTART
    ========================================================================= */
 function death(){
@@ -1801,6 +1686,11 @@ function death(){
 function showDeath(){
   const m=$('#modal'), sheet=$('#sheet');
   const rc=relicCount();
+  const adHtml = adsenseReady() ? `
+    <div class="ad-slot">
+      <div class="ad-label">Advertisement</div>
+      <ins class="adsbygoogle" style="display:block" data-ad-client="${ADSENSE_CLIENT_ID}" data-ad-slot="${ADSENSE_DEATH_SLOT_ID}" data-ad-format="auto" data-full-width-responsive="true"></ins>
+    </div>` : '';
   sheet.innerHTML=`
     <h2 style="color:var(--red)">You Fell on Floor ${G.floor}</h2>
     <p>Bosses cleared: <b>${G.bossesCleared}</b> · Gold banked: <b>${fmt(G.gold)}🪙</b> · Shards: <b>${G.shards}🔷</b><br>
@@ -1809,9 +1699,13 @@ function showDeath(){
       <div class="upg" style="cursor:default;border-color:var(--gold-2)"><div class="u-ic">🚩</div><div class="u-body"><div class="u-t" style="color:var(--gold)">Checkpoint: Floor ${G.checkpoint}</div><div class="u-d">Your next dive resumes here — cleared bosses stay cleared</div></div></div>
       <div class="upg" style="cursor:default"><div class="u-ic">🏰</div><div class="u-body"><div class="u-t">Upgrade in the Tower</div><div class="u-d">Spend gold & shards, then descend stronger</div></div></div>
     </div>
+    ${adHtml}
     <button class="btn" id="toTowerBtn">🏰 RETURN TO TOWER</button>`;
   $('#toTowerBtn').onclick=()=>{ m.classList.remove('on'); goToTower(); };
   m.classList.add('on');
+  if(adsenseReady()){
+    try{ (window.adsbygoogle=window.adsbygoogle||[]).push({}); }catch(e){}
+  }
 }
 
 function newRun(){
@@ -1933,26 +1827,48 @@ function renderRest(){
 /* =========================================================================
    START SCREEN
    ========================================================================= */
-function showStart(offInfo){
+function showStart(offInfo, isNew){
   const m=$('#modal'), sheet=$('#sheet');
-  const offLine = offInfo ? `<div class="upg" style="cursor:default;border-color:var(--green)"><div class="u-ic">🔮</div><div class="u-body"><div class="u-t" style="color:var(--green)">Welcome back!</div><div class="u-d">Your tower earned <b>${fmt(offInfo.g)}🪙</b>${offInfo.sh?` and <b>${offInfo.sh}🔷</b>`:''} while you were away (${offInfo.label}).</div></div></div>` : '';
   const claimed = streakClaimedToday();
   const nextDay = claimed ? G.daily.streak : (G.daily.lastClaimDate===yesterdayStr() ? G.daily.streak+1 : 1);
   const streakLine = claimed
     ? `<div class="upg cant" style="cursor:default"><div class="u-ic">🔥</div><div class="u-body"><div class="u-t">Daily Reward — Day ${G.daily.streak}</div><div class="u-d">✓ Claimed — come back tomorrow to keep the streak!</div></div><div class="u-cost">✓</div></div>`
     : `<div class="upg" id="streakRow" style="border-color:var(--gold-2)"><div class="u-ic">🔥</div><div class="u-body"><div class="u-t" style="color:var(--gold)">Daily Reward — Day ${nextDay}</div><div class="u-d">${streakRewardText(nextDay)} · log in daily to grow the streak</div></div><div class="u-cost">CLAIM</div></div>`;
-  sheet.innerHTML=`
-    <h1>GAMBLER WIZARD</h1>
-    <p style="font-size:14px">Cast spells by <b>gambling</b>. Every spell is a risk-reward minigame. Rest in your <b>tower</b> — its arcane turret earns gold even while you're away — then descend into the <b>dungeon</b> to fight for shards and glory.</p>
-    <div class="upgrades" style="gap:6px">
-      ${streakLine}
-      ${offLine}
-      <div class="upg" style="cursor:default"><div class="u-ic">🏰</div><div class="u-body"><div class="u-t">Your Tower earns idle gold</div><div class="u-d">Upgrade the turret, your spells, wizard & run modifiers</div></div></div>
-      <div class="upg" style="cursor:default"><div class="u-ic">⚔️</div><div class="u-body"><div class="u-t">Dive the dungeon for shards</div><div class="u-d">Clearing bosses permanently boosts your idle income</div></div></div>
-    </div>
-    <button class="btn" id="startBtn">🏰 ENTER THE TOWER</button>`;
-  $('#startBtn').onclick=()=>{ ac(); m.classList.remove('on'); goToTower(); };
-  const sr=$('#streakRow'); if(sr) sr.onclick=()=>{ ac(); claimStreak(); showStart(offInfo); };
+
+  if(isNew){
+    // First-ever session: walk through the core loop instead of generic flavor text.
+    sheet.innerHTML=`
+      <h1>GAMBLER WIZARD</h1>
+      <p style="font-size:14px">Cast spells by <b>gambling</b> — every spell is a risk-reward minigame. The bigger the risk, the bigger the payout.</p>
+      <div class="upgrades" style="gap:6px">
+        ${streakLine}
+        <div class="upg" style="cursor:default"><div class="u-ic">1️⃣</div><div class="u-body"><div class="u-t">Dive the dungeon</div><div class="u-d">Tap a spell (or press its number key) to gamble against enemies for gold &amp; shards</div></div></div>
+        <div class="upg" style="cursor:default"><div class="u-ic">2️⃣</div><div class="u-body"><div class="u-t">Spend in your tower</div><div class="u-d">Gold buys Wizard &amp; Tower upgrades · shards buy new Spells &amp; run Mods</div></div></div>
+        <div class="upg" style="cursor:default"><div class="u-ic">3️⃣</div><div class="u-body"><div class="u-t">Rest &amp; repeat</div><div class="u-d">Your tower's turret earns gold even while you're away — dive again stronger</div></div></div>
+      </div>
+      <button class="btn" id="startBtn">🧙 START YOUR JOURNEY</button>`;
+    $('#startBtn').onclick=()=>{
+      ac(); m.classList.remove('on');
+      // land first-timers on an actual shop tab, not a wall of stats
+      G.towerTab='wizard';
+      document.querySelectorAll('.ttab').forEach(b=>b.classList.toggle('on', b.dataset.tab==='wizard'));
+      goToTower();
+    };
+  } else {
+    const offLine = offInfo ? `<div class="upg" style="cursor:default;border-color:var(--green)"><div class="u-ic">🔮</div><div class="u-body"><div class="u-t" style="color:var(--green)">Welcome back!</div><div class="u-d">Your tower earned <b>${fmt(offInfo.g)}🪙</b>${offInfo.sh?` and <b>${offInfo.sh}🔷</b>`:''} while you were away (${offInfo.label}).</div></div></div>` : '';
+    sheet.innerHTML=`
+      <h1>GAMBLER WIZARD</h1>
+      <p style="font-size:14px">Cast spells by <b>gambling</b>. Every spell is a risk-reward minigame. Rest in your <b>tower</b> — its arcane turret earns gold even while you're away — then descend into the <b>dungeon</b> to fight for shards and glory.</p>
+      <div class="upgrades" style="gap:6px">
+        ${streakLine}
+        ${offLine}
+        <div class="upg" style="cursor:default"><div class="u-ic">🏰</div><div class="u-body"><div class="u-t">Your Tower earns idle gold</div><div class="u-d">Upgrade the turret, your spells, wizard & run modifiers</div></div></div>
+        <div class="upg" style="cursor:default"><div class="u-ic">⚔️</div><div class="u-body"><div class="u-t">Dive the dungeon for shards</div><div class="u-d">Clearing bosses permanently boosts your idle income</div></div></div>
+      </div>
+      <button class="btn" id="startBtn">🏰 ENTER THE TOWER</button>`;
+    $('#startBtn').onclick=()=>{ ac(); m.classList.remove('on'); goToTower(); };
+  }
+  const sr=$('#streakRow'); if(sr) sr.onclick=()=>{ ac(); claimStreak(); showStart(offInfo, isNew); };
   m.classList.add('on');
 }
 
@@ -2011,7 +1927,8 @@ function idleRate(){   // gold per second
   return (0.8 + G.upg.towerRate*0.7)
        * (1 + G.bossesCleared*(0.3 + G.upg.bossBonus*0.1))   // Conqueror's Crown
        * (1 + G.upg.fireRate*0.12)
-       * (1 + G.upg.idleMult*0.08);                           // Golden Runes
+       * (1 + G.upg.idleMult*0.08)                            // Golden Runes
+       * (G.outpostUnlocked ? 1.12 : 1);                      // Watcher's Outpost
 }
 function shardRate(){  // shards per second
   return G.upg.towerShard>0 ? 0.0025*G.upg.towerShard*(1+G.bossesCleared*0.2) : 0;
@@ -2023,6 +1940,7 @@ function save(){
   try{ localStorage.setItem(SAVE_KEY, JSON.stringify({
     gold:G.gold, shards:G.shards, bossesCleared:G.bossesCleared, checkpoint:G.checkpoint,
     upg:G.upg, mods:G.mods, muted:G.muted,
+    outpostTokens:G.outpostTokens, outpostUnlocked:G.outpostUnlocked,
     spellLvls: Object.fromEntries(Object.keys(SPELLS).map(k=>[k, SPELLS[k].lvl||0])),
     unlocked: Object.keys(SPELLS).filter(k=>SPELLS[k].unlocked),
     daily: G.daily,
@@ -2035,6 +1953,7 @@ function load(){
     G.gold=s.gold||0; G.shards=s.shards||0; G.bossesCleared=s.bossesCleared||0;
     G.checkpoint=s.checkpoint||1;
     G.muted=!!s.muted;
+    G.outpostTokens=s.outpostTokens||0; G.outpostUnlocked=!!s.outpostUnlocked;
     Object.assign(G.upg, s.upg||{}); Object.assign(G.mods, s.mods||{});
     Object.keys(SPELLS).forEach(k=>{
       SPELLS[k].lvl = (s.spellLvls && s.spellLvls[k])||0;
@@ -2136,6 +2055,81 @@ function resetGame(){
 }
 
 /* =========================================================================
+   TEMPT FATE — a silly side-bet with the House. Pure gold sink/faucet,
+   no combat interaction. The joke is the flavor text, not the math.
+   ========================================================================= */
+const FATE_OUTCOMES = [
+  {w:35, mult:0,  t:'BUSTED',       c:'var(--red)',   f:'🐦 A pigeon swoops in, steals your coins, and cackles off into the night.'},
+  {w:25, mult:1,  t:'PUSH',         c:'var(--ink)',   f:'🤷 The house dealer shrugs. "Not today, wizard." Your gold slides back.'},
+  {w:22, mult:2,  t:'DOUBLE UP',    c:'var(--green)', f:'✨ Beginner\'s luck! Coins rain gently from the ceiling.'},
+  {w:12, mult:3,  t:'TRIPLE THREAT',c:'var(--green)', f:'🎩 The dealer\'s monocle pops clean off in shock.'},
+  {w:5,  mult:8,  t:'JACKPOT!',     c:'var(--gold)',  f:'🎉 THE HOUSE WEEPS. A casino owner cries into his cape somewhere.'},
+  {w:1,  mult:25, t:'THE HOUSE FOLDS',c:'var(--gold)',f:'👑 You are, as of this moment, legally a duke. Nobody knows why.'},
+];
+function rollFate(){
+  const total=FATE_OUTCOMES.reduce((s,o)=>s+o.w,0);
+  let r=Math.random()*total;
+  for(const o of FATE_OUTCOMES){ if(r<o.w) return o; r-=o.w; }
+  return FATE_OUTCOMES[0];
+}
+function showWishingWell(){
+  const m=$('#modal'), sheet=$('#sheet');
+  if(G.gold<10){
+    sheet.innerHTML=`
+      <h2>🎩 Tempt Fate</h2>
+      <p>The house dealer eyes your empty pockets. "Come back with at least 10🪙, wizard."</p>
+      <button class="btn ghost" id="fateClose">Close</button>`;
+    $('#fateClose').onclick=()=>{ S.click(); m.classList.remove('on'); };
+    m.classList.add('on');
+    return;
+  }
+  const stakes=[
+    {label:'Small Bet', pct:0.10, ic:'🪙'},
+    {label:'Big Bet',   pct:0.25, ic:'💰'},
+    {label:'ALL IN',    pct:1.00, ic:'😈'},
+  ];
+  sheet.innerHTML=`
+    <h2>🎩 Tempt Fate</h2>
+    <p style="font-size:13px">The house always wins... probably. Wager some gold for a spin of pure chaos.</p>
+    <div class="fate-stakes" id="fateStakes"></div>
+    <div class="fate-spin" id="fateSpin"></div>
+    <div class="fate-result" id="fateResult"></div>
+    <div class="fate-flavor" id="fateFlavor"></div>
+    <button class="btn ghost" id="fateClose">Close</button>`;
+  const stakesEl=$('#fateStakes');
+  stakes.forEach(s=>{
+    const wager=Math.max(10, Math.min(G.gold, Math.round(G.gold*s.pct)));
+    const b=document.createElement('button');
+    b.className='btn'; b.innerHTML=`${s.ic} ${s.label}<br><span style="font-weight:400;font-size:11px">${fmt(wager)}🪙</span>`;
+    b.onclick=()=>runFateSpin(wager);
+    stakesEl.appendChild(b);
+  });
+  $('#fateClose').onclick=()=>{ S.click(); m.classList.remove('on'); };
+  m.classList.add('on');
+}
+function runFateSpin(wager){
+  S.click();
+  G.gold-=wager; renderHUD(); save();
+  $('#fateStakes').querySelectorAll('.btn').forEach(b=>b.disabled=true);
+  const spinEl=$('#fateSpin'), resEl=$('#fateResult'), flavEl=$('#fateFlavor');
+  const glyphs=['🎰','🎲','🃏','🎡','🎁','🐦','💰'];
+  let n=0; const spin=setInterval(()=>{ spinEl.textContent=glyphs[n%glyphs.length]; n++; S.spin(); },80);
+  setTimeout(()=>{
+    clearInterval(spin);
+    const o=rollFate();
+    const payout=Math.round(wager*o.mult);
+    G.gold+=payout; renderHUD(); save();
+    spinEl.textContent = o.mult>=8 ? '🎉' : o.mult>=2 ? '✨' : o.mult===1 ? '🤷' : '🐦';
+    resEl.textContent=o.t; resEl.style.color=o.c;
+    flavEl.textContent=o.f+(payout>0?`  (+${fmt(payout)}🪙)`:'  (lost it all)');
+    if(o.mult>=8){ S.jackpot(); banner(o.t,'linear-gradient(90deg,var(--gold),var(--pink))'); }
+    else if(o.mult>1) S.win();
+    else if(o.mult===0) S.fail();
+    else S.tick();
+  }, 900);
+}
+
+/* =========================================================================
    TOWER UPGRADE PANELS
    ========================================================================= */
 const costOf = (base,growth,lvl)=> Math.round(base*Math.pow(growth,lvl));
@@ -2170,13 +2164,25 @@ const MOD_UPGRADES = [
 function towerRow({ic,title,desc,lvl,cost,cur,canBuy,maxed,onBuy}){
   const div=document.createElement('div');
   div.className='upg'+(canBuy||maxed?'':' cant');
+  if(!maxed){ div.dataset.cost=cost; div.dataset.cur=cur; }
   const costHtml = maxed ? `<div class="u-cost max">MAX</div>`
     : `<div class="u-cost ${cur}">${fmt(cost)}${cur==='shard'?'🔷':'🪙'}</div>`;
   div.innerHTML=`<div class="u-ic">${ic}</div>
     <div class="u-body"><div class="u-t">${title}<span class="u-lvl">Lv ${lvl}</span></div><div class="u-d">${desc}</div></div>
     ${costHtml}`;
-  if(canBuy && !maxed) div.onclick=onBuy;
+  // onBuy always guards on current affordability itself, so it's safe to attach
+  // even while greyed out — this lets a row light up mid-panel as gold trickles in
+  // (see refreshShopAfford) without needing a re-render to rebind the handler.
+  if(!maxed) div.onclick=onBuy;
   return div;
+}
+function refreshShopAfford(){
+  const panel=$('#towerPanel'); if(!panel) return;
+  panel.querySelectorAll('.upg[data-cost]').forEach(div=>{
+    const cost=+div.dataset.cost, cur=div.dataset.cur;
+    const can = cur==='shard' ? G.shards>=cost : G.gold>=cost;
+    div.classList.toggle('cant', !can);
+  });
 }
 function renderStats(panel){
   const line=(ic,t,v,sub,cls)=>`<div class="stat-line"><div class="sl-ic">${ic}</div><div class="sl-body"><div class="sl-t">${t}</div>${sub?`<div class="sl-sub">${sub}</div>`:''}</div><div class="sl-v ${cls||''}">${v}</div></div>`;
@@ -2203,6 +2209,8 @@ function renderStats(panel){
   h+=`<div class="stat-head">Tower</div>`;
   h+=line('⚡','Turret Level', 'Lv '+G.upg.fireRate, 'Tower fire rate & income');
   h+=line('🔋','Idle Cap', (2+G.upg.idleCap*2)+'h', 'Max offline earnings stored');
+  h+=line('🔭','Watcher\'s Outpost', G.outpostUnlocked?'Built · +12% idle gold':`${Math.min(G.outpostTokens,OUTPOST_TOKEN_GOAL)}/${OUTPOST_TOKEN_GOAL} tokens`,
+    G.outpostUnlocked?'A rare Token Goblin falling in the tower defense built this':'Defeat rare Token Goblins in the tower view to unlock', G.outpostUnlocked?'neon':'dim');
   h+=`<div class="stat-head">Dungeon</div>`;
   h+=line('🚩','Checkpoint', 'Floor '+G.checkpoint, 'Where your next dive begins', 'neon');
   h+=line('💀','Bosses Cleared', G.bossesCleared, 'Each one permanently boosts idle income');
@@ -2223,14 +2231,20 @@ function renderTowerPanel(){
     GOLD_UPGRADES[tab].forEach(u=>{
       const lvl=G.upg[u.k], cost=costOf(u.base,u.growth,lvl), can=G.gold>=cost;
       panel.appendChild(towerRow({ ic:u.ic, title:u.t, desc:u.d(lvl), lvl, cost, cur:'gold', canBuy:can,
-        onBuy:()=>{ if(G.gold<cost)return; G.gold-=cost; G.upg[u.k]++; recompute(); S.win(); towerPulse(); renderTowerPanel(); renderHUD(); save(); } }));
+        onBuy:()=>{
+          if(G.gold<cost)return;
+          const stageBefore=towerStage();
+          G.gold-=cost; G.upg[u.k]++; recompute(); S.win();
+          if(towerStage()>stageBefore) celebrateTowerUpgrade(towerStage()); else towerPulse();
+          renderTowerPanel(); renderHUD(); save();
+        } }));
     });
   }
 
   if(tab==='spells'){
     const head=document.createElement('div'); head.className='panel-head'; head.textContent='Spells · spend shards';
     panel.appendChild(head);
-    ['spark','slots','dice','crash','wheel','crate','jack'].forEach(k=>{
+    ['spark','slots','dice','wheel','crate'].forEach(k=>{
       const sp=SPELLS[k];
       if(!sp.unlocked){
         const can=G.shards>=sp.cost;
@@ -2325,20 +2339,61 @@ function enterDailyDungeon(){
    IDLE TOWER DEFENSE (canvas)
    ========================================================================= */
 let TD=null;
+// funny critter roster — the plain ones show up from the start, the silly
+// hat-wearing ones unlock as the tower grows (visual reward for investing).
+// `kind` decides what a kill grants beyond the usual idle-gold flush; `w` is
+// spawn weight (default 10) — the special-resource critters are deliberately rare.
 const TD_FOES=[
-  {c1:'#8dffb0',c2:'#1f9c52'}, {c1:'#c1a3ff',c2:'#5a2fb0'},
-  {c1:'#ff9fb0',c2:'#c22344'}, {c1:'#9bedff',c2:'#1f7fa8'},
-  {c1:'#ffe08a',c2:'#c98a12'},
+  {c1:'#8dffb0',c2:'#1f9c52', feature:'horns'},
+  {c1:'#c1a3ff',c2:'#5a2fb0', feature:'horns'},
+  {c1:'#ff9fb0',c2:'#c22344', feature:'horns'},
+  {c1:'#9bedff',c2:'#1f7fa8', feature:'horns'},
+  {c1:'#ffe08a',c2:'#c98a12', feature:'horns'},
+  {c1:'#ffb3ec',c2:'#a12a86', feature:'monocle',   minStage:1},
+  {c1:'#b0ffe0',c2:'#12946b', feature:'bowtie',    minStage:1},
+  {c1:'#ffd27a',c2:'#c96a12', feature:'propeller', minStage:2},
+  {c1:'#d0d0ff',c2:'#4a4ab0', feature:'halo',      minStage:3},
+  {c1:'#ff8a8a',c2:'#a01f1f', feature:'crown',     minStage:4},
+  // resource specials — same rules apply, they just also do something on death
+  {c1:'#9bf3ff',c2:'#0e8fb0', feature:'star', kind:'shard', w:3, name:'Shard Wisp'},
+  {c1:'#ffd98a',c2:'#d4820f', feature:'bolt', kind:'buff',  w:2, name:'Charge Imp'},
+  {c1:'#ffe9b0',c2:'#a8790f', feature:'coin', kind:'token', w:1, name:'Token Goblin'},
 ];
-const TOWER_H=66;              // keep in sync between draw + physics
+const FUNNY_POOFS=['POOF!','NOM\'D','YEET!','OOF','ZAP!','SPLAT','WHOMP'];
+const TOWER_STAGE_NAMES=['Humble Hut','Cozy Tower','Fortified Spire','Grand Citadel','Arcane Megastructure'];
+const TOWER_H_BASE=60;         // base height; grows with towerStage()
+const OUTPOST_TOKEN_GOAL=5;
+function celebrateOutpost(){
+  towerPulse(); S.jackpot();
+  banner('🔭 WATCHER\'S OUTPOST BUILT!','linear-gradient(90deg,var(--neon),var(--green))');
+}
+// total investment across the idle-econ upgrades drives the tower's look
+function towerLevel(){
+  const u=G.upg;
+  return (u.towerRate||0)+(u.fireRate||0)+(u.idleMult||0)+(u.bossBonus||0)+(u.towerShard||0)+(u.idleCap||0);
+}
+function towerStage(){
+  const lv=towerLevel();
+  if(lv>=26) return 4;
+  if(lv>=16) return 3;
+  if(lv>=9)  return 2;
+  if(lv>=4)  return 1;
+  return 0;
+}
+function towerHeight(){ return TOWER_H_BASE + towerStage()*12; }
 function towerPulse(){ if(TD) TD.pulseT=0.9; }   // ripple when an upgrade is bought
+function celebrateTowerUpgrade(stage){
+  towerPulse();
+  S.jackpot();
+  banner('🏰 '+TOWER_STAGE_NAMES[stage]+'!','linear-gradient(90deg,var(--gold),var(--purple-2))');
+}
 function startTowerLoop(){
   const cv=$('#tdCanvas'), stage=$('#towerStage'); if(!cv||!stage) return;
   const ctx=cv.getContext('2d');
   const fit=()=>{ const r=stage.getBoundingClientRect(); cv.width=r.width; cv.height=r.height; };
   fit();
   if(TD && TD.ro) TD.ro.disconnect();
-  TD={ mons:[], bolts:[], pops:[], last:performance.now(), spawnT:0.4, fireT:0, pending:0, run:true, t:0, pulseT:0, ro:new ResizeObserver(fit) };
+  TD={ mons:[], bolts:[], pops:[], last:performance.now(), spawnT:0.4, fireT:0, pending:0, run:true, t:0, pulseT:0, affordT:0, ro:new ResizeObserver(fit) };
   TD.ro.observe(stage);
 
   function rr(x,y,w,h,r){ ctx.beginPath(); ctx.moveTo(x+r,y); ctx.arcTo(x+w,y,x+w,y+h,r); ctx.arcTo(x+w,y+h,x,y+h,r); ctx.arcTo(x,y+h,x,y,r); ctx.arcTo(x,y,x+w,y,r); ctx.closePath(); }
@@ -2350,9 +2405,65 @@ function startTowerLoop(){
     grd.addColorStop(0,m.c1); grd.addColorStop(1,m.c2);
     ctx.fillStyle=grd; ctx.shadowColor=m.c2; ctx.shadowBlur=10;
     ctx.beginPath(); ctx.arc(0,0,r,0,7); ctx.fill(); ctx.shadowBlur=0;
-    ctx.fillStyle=m.c2;   // horns
-    ctx.beginPath(); ctx.moveTo(-r*0.6,-r*0.5); ctx.lineTo(-r*0.22,-r*0.95); ctx.lineTo(-r*0.05,-r*0.5); ctx.fill();
-    ctx.beginPath(); ctx.moveTo(r*0.6,-r*0.5); ctx.lineTo(r*0.22,-r*0.95); ctx.lineTo(r*0.05,-r*0.5); ctx.fill();
+
+    switch(m.feature){
+      case 'monocle':
+        ctx.strokeStyle='#fff'; ctx.lineWidth=1.4;
+        ctx.beginPath(); ctx.arc(r*0.32,0,r*0.28,0,7); ctx.stroke();
+        ctx.beginPath(); ctx.moveTo(r*0.58,r*0.1); ctx.lineTo(r*0.7,r*0.55); ctx.stroke();
+        break;
+      case 'bowtie':
+        ctx.fillStyle=m.c2;
+        ctx.beginPath(); ctx.moveTo(-r*0.18,r*0.62); ctx.lineTo(-r*0.5,r*0.46); ctx.lineTo(-r*0.5,r*0.82); ctx.fill();
+        ctx.beginPath(); ctx.moveTo(r*0.18,r*0.62); ctx.lineTo(r*0.5,r*0.46); ctx.lineTo(r*0.5,r*0.82); ctx.fill();
+        ctx.fillStyle='rgba(255,255,255,.5)'; ctx.beginPath(); ctx.arc(0,r*0.62,r*0.1,0,7); ctx.fill();
+        break;
+      case 'propeller':
+        ctx.strokeStyle=m.c2; ctx.lineWidth=2;
+        ctx.beginPath(); ctx.moveTo(0,-r*0.9); ctx.lineTo(0,-r*1.3); ctx.stroke();
+        ctx.save(); ctx.translate(0,-r*1.3); ctx.rotate(TD.t*10);
+        ctx.fillStyle=m.c1; ctx.beginPath(); ctx.ellipse(0,0,r*0.5,r*0.14,0,0,7); ctx.fill();
+        ctx.beginPath(); ctx.ellipse(0,0,r*0.14,r*0.5,0,0,7); ctx.fill();
+        ctx.restore();
+        break;
+      case 'halo':
+        ctx.strokeStyle='#fff9c4'; ctx.lineWidth=2; ctx.shadowColor='#fff9c4'; ctx.shadowBlur=8;
+        ctx.beginPath(); ctx.ellipse(0,-r*1.15,r*0.5,r*0.16,0,0,7); ctx.stroke(); ctx.shadowBlur=0;
+        break;
+      case 'crown':
+        ctx.fillStyle='#ffd35c'; ctx.shadowColor='#ffb02e'; ctx.shadowBlur=6;
+        ctx.beginPath();
+        ctx.moveTo(-r*0.5,-r*0.75); ctx.lineTo(-r*0.5,-r*1.05); ctx.lineTo(-r*0.28,-r*0.85);
+        ctx.lineTo(0,-r*1.15); ctx.lineTo(r*0.28,-r*0.85); ctx.lineTo(r*0.5,-r*1.05);
+        ctx.lineTo(r*0.5,-r*0.75); ctx.closePath(); ctx.fill(); ctx.shadowBlur=0;
+        break;
+      case 'star':   // Shard Wisp — a little sparkle marks it as worth chasing
+        ctx.save(); ctx.rotate(TD.t*2); ctx.fillStyle='#e6fbff'; ctx.shadowColor='#4be1ff'; ctx.shadowBlur=10;
+        for(let i=0;i<4;i++){ ctx.save(); ctx.rotate(i*Math.PI/2);
+          ctx.beginPath(); ctx.moveTo(0,-r*1.25); ctx.lineTo(r*0.08,-r*0.95); ctx.lineTo(0,-r*0.65); ctx.lineTo(-r*0.08,-r*0.95); ctx.fill();
+          ctx.restore(); }
+        ctx.restore(); ctx.shadowBlur=0;
+        break;
+      case 'bolt':   // Charge Imp — a crackle of stored energy
+        ctx.save(); ctx.translate(0,-r*1.0); ctx.fillStyle='#fff3c4'; ctx.shadowColor='#ffb02e'; ctx.shadowBlur=8;
+        ctx.beginPath(); ctx.moveTo(-r*0.12,0); ctx.lineTo(r*0.12,0); ctx.lineTo(-r*0.02,r*0.4);
+        ctx.lineTo(r*0.16,r*0.4); ctx.lineTo(-r*0.2,r*1.0); ctx.lineTo(-r*0.02,r*0.48); ctx.lineTo(-r*0.22,r*0.48); ctx.closePath(); ctx.fill();
+        ctx.restore(); ctx.shadowBlur=0;
+        break;
+      case 'coin':   // Token Goblin — carrying the outpost token
+        ctx.save(); ctx.translate(0,-r*1.05); ctx.fillStyle='#ffd35c'; ctx.strokeStyle='#a8790f'; ctx.lineWidth=1.2;
+        ctx.shadowColor='#ffb02e'; ctx.shadowBlur=8;
+        ctx.beginPath(); ctx.arc(0,0,r*0.28,0,7); ctx.fill(); ctx.stroke(); ctx.shadowBlur=0;
+        ctx.fillStyle='#a8790f'; ctx.font='700 '+(r*0.34)+'px Inter,sans-serif'; ctx.textAlign='center'; ctx.textBaseline='middle';
+        ctx.fillText('$',0,1);
+        ctx.restore();
+        break;
+      default:   // horns
+        ctx.fillStyle=m.c2;
+        ctx.beginPath(); ctx.moveTo(-r*0.6,-r*0.5); ctx.lineTo(-r*0.22,-r*0.95); ctx.lineTo(-r*0.05,-r*0.5); ctx.fill();
+        ctx.beginPath(); ctx.moveTo(r*0.6,-r*0.5); ctx.lineTo(r*0.22,-r*0.95); ctx.lineTo(r*0.05,-r*0.5); ctx.fill();
+    }
+
     ctx.fillStyle='#fff';   // eyes
     ctx.beginPath(); ctx.arc(-r*0.3,-r*0.05,r*0.24,0,7); ctx.arc(r*0.3,-r*0.05,r*0.24,0,7); ctx.fill();
     ctx.fillStyle='#170e2c';
@@ -2361,28 +2472,107 @@ function startTowerLoop(){
   }
 
   function drawTower(x, groundY){
-    const w=36, h=TOWER_H;
-    ctx.fillStyle='rgba(0,0,0,.45)'; ctx.beginPath(); ctx.ellipse(x, groundY+3, w*0.72, 7, 0,0,7); ctx.fill();
+    const stg=towerStage(), w=36+stg*4, h=towerHeight();
+    ctx.fillStyle='rgba(0,0,0,.45)'; ctx.beginPath(); ctx.ellipse(x, groundY+3, w*0.8, 7, 0,0,7); ctx.fill();
+
+    // a small satellite turret joins the main tower once it's grown enough
+    if(stg>=2){
+      const sx=x-w/2-14, sw=16, sh=h*0.62;
+      const sg=ctx.createLinearGradient(sx-sw/2,0,sx+sw/2,0);
+      sg.addColorStop(0,'#241650'); sg.addColorStop(.5,'#4a2f88'); sg.addColorStop(1,'#1c1140');
+      ctx.fillStyle=sg; ctx.strokeStyle='#8f6fd6'; ctx.lineWidth=1.5;
+      rr(sx-sw/2, groundY-sh, sw, sh, 5); ctx.fill(); ctx.stroke();
+      ctx.fillStyle='#3a2570';
+      ctx.beginPath(); ctx.moveTo(sx-sw/2-2,groundY-sh); ctx.lineTo(sx+sw/2+2,groundY-sh); ctx.lineTo(sx,groundY-sh-12); ctx.fill();
+      ctx.fillStyle='#ffd35c'; ctx.shadowColor='#ffd35c'; ctx.shadowBlur=8;
+      ctx.fillRect(sx-2.5,groundY-sh*0.55,5,7); ctx.shadowBlur=0;
+    }
+
+    // the Watcher's Outpost — a separate unlock track (Token Goblin kills), always on the right
+    if(G.outpostUnlocked){
+      const ox=x+w/2+16, ow=14, oh=h*0.5;
+      const og=ctx.createLinearGradient(ox-ow/2,0,ox+ow/2,0);
+      og.addColorStop(0,'#123a2e'); og.addColorStop(.5,'#1f6b52'); og.addColorStop(1,'#0e2e24');
+      ctx.fillStyle=og; ctx.strokeStyle='#4dffa1'; ctx.lineWidth=1.4;
+      rr(ox-ow/2, groundY-oh, ow, oh, 5); ctx.fill(); ctx.stroke();
+      // lantern roof, gently pulsing
+      const pulse=0.6+Math.sin(TD.t*2.2)*0.4;
+      ctx.fillStyle=`rgba(77,255,161,${0.5+pulse*0.4})`; ctx.shadowColor='#4dffa1'; ctx.shadowBlur=6+pulse*6;
+      ctx.beginPath(); ctx.arc(ox, groundY-oh-6, 5, 0, 7); ctx.fill(); ctx.shadowBlur=0;
+      ctx.strokeStyle='#4dffa1'; ctx.lineWidth=1.2;
+      ctx.beginPath(); ctx.moveTo(ox,groundY-oh); ctx.lineTo(ox,groundY-oh-6); ctx.stroke();
+      // spyglass, always aimed toward the falling foes
+      ctx.save(); ctx.translate(ox, groundY-oh*0.7); ctx.rotate(-0.6);
+      ctx.fillStyle='#0e2e24'; ctx.fillRect(0,-2,12,4);
+      ctx.restore();
+    }
+
     const bg=ctx.createLinearGradient(x-w/2,0,x+w/2,0);
     bg.addColorStop(0,'#2e1e5e'); bg.addColorStop(.5,'#5a3fa0'); bg.addColorStop(1,'#241650');
     ctx.fillStyle=bg; ctx.strokeStyle='#b28bff'; ctx.lineWidth=2;
     rr(x-w/2, groundY-h, w, h, 7); ctx.fill(); ctx.stroke();
-    ctx.fillStyle='#4a2f88';   // battlements
-    for(let i=-1;i<=1;i++) ctx.fillRect(x+i*12-4, groundY-h-7, 8, 9);
+
+    const crenN=3+stg;   // more merlons as the tower grows
+    ctx.fillStyle='#4a2f88';
+    for(let i=0;i<crenN;i++){ const cx=x-w/2+(i+0.5)*(w/crenN)-4; ctx.fillRect(cx, groundY-h-7, 8, 9); }
     ctx.fillStyle='rgba(255,255,255,.06)'; rr(x-w/2+3, groundY-h+4, w-6, 9, 4); ctx.fill();
+
     ctx.fillStyle='#140c28';   // door
     ctx.beginPath(); ctx.moveTo(x-7,groundY); ctx.lineTo(x-7,groundY-14); ctx.arc(x,groundY-14,7,Math.PI,0); ctx.lineTo(x+7,groundY); ctx.fill();
-    ctx.fillStyle='#ffd35c'; ctx.shadowColor='#ffd35c'; ctx.shadowBlur=12;   // window
+
+    ctx.fillStyle='#ffd35c'; ctx.shadowColor='#ffd35c'; ctx.shadowBlur=12;   // ground-floor window
     ctx.fillRect(x-4, groundY-h*0.60, 8, 10); ctx.shadowBlur=0;
+
+    if(stg>=1){   // second-floor window — the tower's tall enough now
+      ctx.fillStyle='#8ff0ff'; ctx.shadowColor='#8ff0ff'; ctx.shadowBlur=10;
+      ctx.fillRect(x-4, groundY-h*0.85, 8, 9); ctx.shadowBlur=0;
+    }
+
+    if(stg>=4){   // a cat, because the wizard has clearly made it
+      const cy=groundY-h*0.60-2;
+      ctx.fillStyle='#170e2c';
+      ctx.beginPath(); ctx.ellipse(x+10,cy,6,3.4,0,0,7); ctx.fill();
+      ctx.beginPath(); ctx.ellipse(x+15,cy-3,2.2,2.2,0,0,7); ctx.fill();
+      ctx.lineWidth=1.6; ctx.strokeStyle='#170e2c';
+      ctx.beginPath(); ctx.moveTo(x+4,cy); ctx.quadraticCurveTo(x-2,cy-8,x+2,cy-2); ctx.stroke();
+    }
+
+    if(stg>=1){   // waving pennant
+      const fx=x, fy=groundY-h-7, wob=Math.sin(TD.t*3)*3;
+      ctx.strokeStyle='#c9b8ff'; ctx.lineWidth=1.6;
+      ctx.beginPath(); ctx.moveTo(fx,fy); ctx.lineTo(fx,fy-16); ctx.stroke();
+      ctx.fillStyle='#ffd35c';
+      ctx.beginPath(); ctx.moveTo(fx,fy-16); ctx.lineTo(fx+12,fy-13+wob); ctx.lineTo(fx,fy-10); ctx.fill();
+    }
+
     if(G.upg.towerShard>0){   // shard crystal appears with the extractor
       ctx.save(); ctx.translate(x+w/2-1, groundY-h*0.42); ctx.rotate(Math.PI/4);
       ctx.fillStyle='#4be1ff'; ctx.shadowColor='#4be1ff'; ctx.shadowBlur=10;
       const s=4+Math.min(3,G.upg.towerShard*0.6); ctx.fillRect(-s,-s,s*2,s*2); ctx.restore(); ctx.shadowBlur=0;
+      if(stg>=4){   // a second shard orbits the fully-decked-out tower
+        const oa=TD.t*1.4, ox=x+Math.cos(oa)*(w*0.85), oy=groundY-h*0.75+Math.sin(oa)*8;
+        ctx.save(); ctx.translate(ox,oy); ctx.rotate(oa);
+        ctx.fillStyle='#4be1ff'; ctx.shadowColor='#4be1ff'; ctx.shadowBlur=8;
+        ctx.fillRect(-3,-3,6,6); ctx.restore(); ctx.shadowBlur=0;
+      }
     }
+
+    if(stg>=3){   // a slowly-turning rune circle etched into the ground
+      ctx.save(); ctx.strokeStyle='rgba(255,211,92,.4)'; ctx.lineWidth=1.4; ctx.setLineDash([3,4]);
+      ctx.beginPath(); ctx.ellipse(x, groundY+2, w*0.95, 8, 0, TD.t*0.6, TD.t*0.6+Math.PI*2*0.86); ctx.stroke();
+      ctx.restore();
+    }
+
     const orbY=groundY-h-24;   // orb — glow & size scale with Arcane Turret
     const orbR=6+Math.min(4, G.upg.towerRate*0.5);
     ctx.fillStyle='#8ff0ff'; ctx.shadowColor='#4be1ff'; ctx.shadowBlur=10+Math.min(22, G.upg.towerRate*2.2);
     ctx.beginPath(); ctx.arc(x,orbY,orbR,0,7); ctx.fill(); ctx.shadowBlur=0;
+
+    if(stg>=4){   // the tower has ascended — a halo forms above the orb
+      ctx.save(); ctx.strokeStyle='rgba(255,249,196,.5)'; ctx.lineWidth=1.6; ctx.shadowColor='#fff9c4'; ctx.shadowBlur=10;
+      ctx.beginPath(); ctx.ellipse(x, orbY-14, 15, 4.5, 0, 0, 7); ctx.stroke(); ctx.restore(); ctx.shadowBlur=0;
+    }
+
     const runes=Math.min(6, G.upg.fireRate);   // orbiting runes = Rapid Runes level
     for(let i=0;i<runes;i++){
       const a=TD.t*2 + i*(Math.PI*2/runes), rx=x+Math.cos(a)*16, ry=orbY+Math.sin(a)*9;
@@ -2396,7 +2586,7 @@ function startTowerLoop(){
   function frame(t){
     if(!TD||!TD.run) return;
     const dt=Math.min(0.05,(t-TD.last)/1000); TD.last=t; TD.t+=dt;
-    const W=cv.width, H=cv.height, tx=W/2, ty=H-16, orbY=ty-TOWER_H-24;
+    const W=cv.width, H=cv.height, tx=W/2, ty=H-16, orbY=ty-towerHeight()-24;
 
     const inc=idleRate()*dt; G.gold+=inc; TD.pending+=inc;
     G._shardFrac += shardRate()*dt;
@@ -2405,7 +2595,8 @@ function startTowerLoop(){
 
     TD.spawnT-=dt;
     if(TD.spawnT<=0){ TD.spawnT=rand(0.8,1.6);
-      TD.mons.push({ x:rand(W*0.14,W*0.86), y:-14, r:rand(11,15), spd:rand(11,18), phase:rand(0,6.28), ...pick(TD_FOES) }); }
+      const pool=TD_FOES.filter(f=>!f.minStage || f.minStage<=towerStage());
+      TD.mons.push({ x:rand(W*0.14,W*0.86), y:-14, r:rand(11,15), spd:rand(11,18), phase:rand(0,6.28), ...pickWeighted(pool) }); }
 
     TD.fireT-=dt;
     const fireEvery=clamp(0.8 - G.upg.fireRate*0.06, 0.22, 0.8);
@@ -2423,6 +2614,23 @@ function startTowerLoop(){
       const dx=m.x-b.x, dy=m.y-b.y, d=Math.hypot(dx,dy), step=b.spd*dt;
       if(d<=step){ b.done=true; m.dead=true;
         const pop=Math.floor(TD.pending); if(pop>=1){ TD.pending-=pop; TD.pops.push({x:m.x,y:m.y,txt:'+'+fmt(pop),c:'#ffd35c',life:.9,age:0}); }
+
+        if(m.kind==='shard'){
+          const n=randi(1,2); G.shards+=n;
+          TD.pops.push({x:m.x,y:m.y-16,txt:'+'+n+'🔷',c:'#4be1ff',life:1.1,age:0});
+        } else if(m.kind==='buff'){
+          const surge=Math.round(idleRate()*15); G.gold+=surge;
+          TD.pops.push({x:m.x,y:m.y-16,txt:'⚡ SURGE +'+fmt(surge),c:'#ffd35c',life:1.2,age:0});
+          TD.pulseT=0.9;
+        } else if(m.kind==='token'){
+          G.outpostTokens=(G.outpostTokens||0)+1;
+          const left=OUTPOST_TOKEN_GOAL-G.outpostTokens;
+          TD.pops.push({x:m.x,y:m.y-16,txt: left>0 ? '+1 🔭 ('+G.outpostTokens+'/'+OUTPOST_TOKEN_GOAL+')' : '+1 🔭',c:'#ffd98a',life:1.2,age:0});
+          if(!G.outpostUnlocked && G.outpostTokens>=OUTPOST_TOKEN_GOAL){ G.outpostUnlocked=true; celebrateOutpost(); }
+          save();
+        } else if(Math.random()<0.25){
+          TD.pops.push({x:m.x,y:m.y-14,txt:pick(FUNNY_POOFS),c:m.c1,life:.8,age:0});
+        }
         for(let i=0;i<10;i++) TD.pops.push({spark:true,x:m.x,y:m.y,vx:rand(-80,80),vy:rand(-100,10),life:.5,age:0,c:m.c1});
       } else { b.x+=dx/d*step; b.y+=dy/d*step; }
     }
@@ -2454,9 +2662,11 @@ function startTowerLoop(){
     TD.pops=TD.pops.filter(p=>p.age<p.life);
 
     const idleTxt='+'+fmt(idleRate()*60)+'/min';
-    const rb=$('#towerIdleBadge'); if(rb) rb.textContent=idleTxt;
     const ir=$('#idleRateTxt'); if(ir) ir.textContent=idleTxt;
     $('#gold').textContent=fmt(G.gold); $('#shard').textContent=G.shards;
+
+    TD.affordT+=dt;
+    if(TD.affordT>=0.25){ TD.affordT=0; refreshShopAfford(); }
 
     TD.raf=requestAnimationFrame(frame);
   }
@@ -2495,6 +2705,7 @@ function initDust(){
 window.addEventListener('load', ()=>{
   initDust();
   const saved=load();
+  const isNew=!saved;
   recompute();
   if(G.hp<=0 || !G.hp) G.hp=G.maxHp;
   const off = saved ? applyOffline(saved.lastSeen) : null;
@@ -2509,6 +2720,7 @@ window.addEventListener('load', ()=>{
   });
   $('#enterBtn').onclick=()=>{ S.click(); enterDungeon(); };
   $('#settingsBtn').onclick=()=>{ ac(); S.click(); showSettings(); };
+  $('#fateBtn').onclick=()=>{ ac(); S.click(); showWishingWell(); };
   $('#retreatBtn').onclick=()=>{ if(G.busy) return; S.click(); closeMini(); goToTower(); };
 
   // persist on leave
@@ -2529,16 +2741,17 @@ window.addEventListener('load', ()=>{
       const b=$('#cashBtn')||$('#dodgeBtn'); if(b && !b.disabled){ e.preventDefault(); b.click(); }
       return;
     }
-    // number keys 1-7 = cast that spell
+    // number keys = cast that spell (bounded by however many are in the bar)
     const n=parseInt(e.key,10);
-    if(n>=1 && n<=7 && !G.busy && !docked){
-      const el=document.querySelectorAll('#spellbar .spell')[n-1];
+    const spellEls=document.querySelectorAll('#spellbar .spell');
+    if(n>=1 && n<=spellEls.length && !G.busy && !docked){
+      const el=spellEls[n-1];
       if(el) el.click();
     }
   });
 
   renderSpellbar();
   renderHUD();
-  showStart(off);
+  showStart(off, isNew);
 });
 </script>
