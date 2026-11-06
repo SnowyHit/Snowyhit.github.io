@@ -183,7 +183,7 @@
     {id:'kick',  name:'Kick',         notes:[36,35],       sound:'rock/kick',      color:'#ff8a65'},
   ];
   const COLOR = {}; PADS.forEach(p=>COLOR[p.id]=p.color);
-  const HATS = ['hhc','hho','hhp'];          // one physical hi-hat: any hat hit chokes the open hat
+  const HAT_CLOSERS = ['hhc','hhp'];         // closing the hi-hat chokes the open hat; re-hitting it open does not
   const MAX_VOICES = 4;                      // overlapping hits kept per pad
   const MAP_KEY = 'midi-drumkit-map-v1', SND_KEY = 'midi-drumkit-sounds-v2', KIT_KEY = 'midi-drumkit-kit-v1';
   let map = {};    // padId -> [notes]
@@ -271,23 +271,23 @@
 
   // ---------- Playback ----------
   const voices = {}; // padId -> [{src, g, synth}]
-  function fadeOut(v, t){
+  function fadeOut(v, t, dur){ // smooth exponential release instead of a hard cut
     try{ v.g.gain.cancelScheduledValues(t); v.g.gain.setValueAtTime(v.g.gain.value||0.0001, t);
-      v.g.gain.linearRampToValueAtTime(0, t+0.04); if(v.src) v.src.stop(t+0.05); }catch(e){}
+      v.g.gain.setTargetAtTime(0, t, dur/4); if(v.src) v.src.stop(t+dur*1.5); }catch(e){}
   }
   function addVoice(padId, v){
     const list = voices[padId] || (voices[padId]=[]);
     list.push(v);
     if(v.src) v.src.onended = ()=>{ const i=list.indexOf(v); if(i>=0) list.splice(i,1); };
-    while(list.length>MAX_VOICES) fadeOut(list.shift(), ctx.currentTime);
+    while(list.length>MAX_VOICES) fadeOut(list.shift(), ctx.currentTime, 0.3); // oldest ring fades gently
   }
-  function choke(padId, t){ (voices[padId]||[]).splice(0).forEach(v=>fadeOut(v,t)); }
+  function choke(padId, t){ (voices[padId]||[]).splice(0).forEach(v=>fadeOut(v, t, 0.09)); } // like a pedal closing
 
   function play(padId, vel){
     if(!ctx) return;
     flash(padId);
     const s = sounds[padId], t = ctx.currentTime;
-    if(HATS.includes(padId)) choke('hho', t);
+    if(HAT_CLOSERS.includes(padId)) choke('hho', t);
     let buf=null, peak=1;
     if(loaded[s.sound]){
       const L = loaded[s.sound], li = Math.min(L.length-1, Math.floor(vel/128*L.length));
