@@ -77,6 +77,14 @@
   .tabs button.active{background:var(--text);color:#111;border-color:var(--text)}
   main[hidden],#training[hidden]{display:none}
   #training{flex:1;padding:14px;display:flex;flex-direction:column;gap:12px}
+  #practice{flex:1;padding:14px;display:flex;flex-direction:column;gap:12px}
+  #practice[hidden]{display:none}
+  .prow{display:flex;flex-wrap:wrap;gap:10px 14px;align-items:center}
+  #prSel{max-width:100%}
+  #prStart.on{background:var(--accent);color:#111;border-color:var(--accent)}
+  #prStatus{font-size:18px;font-weight:650;min-height:26px;margin-bottom:8px}
+  #prStatus small{font-size:14px;color:var(--dim);font-weight:400}
+  #prInfo{margin-top:10px}
   .card{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:12px}
   #lastHit{font-size:20px;font-weight:650;min-height:28px;margin-bottom:8px}
   #lastHit small{font-size:14px;color:var(--dim);font-weight:400}
@@ -135,7 +143,7 @@
   <label class="lbl">Click <input type="range" id="clickVol" min="0" max="1.5" step="0.01"></label>
   <div id="beats"></div>
 </div>
-<div class="tabs"><button id="tabPads">Pads</button><button id="tabTrain">Training room</button></div>
+<div class="tabs"><button id="tabPads">Pads</button><button id="tabTrain">Training room</button><button id="tabPractice">Practice</button></div>
 
 <main id="pads"></main>
 
@@ -158,6 +166,32 @@
   </div>
   <div class="card" style="overflow-x:auto"><table class="stats" id="stats"></table></div>
   <div class="hint">Each hit is measured against the nearest grid line. <b>Calibrate</b> once per device: it measures the delay between the click you hear and your hits, so the numbers show your timing and not the phone's audio lag.</div>
+</section>
+
+<section id="practice" hidden>
+  <div class="card">
+    <div class="prow">
+      <label class="lbl">Exercise <select id="prSel"></select></label>
+      <button id="prStart">▶ Start</button>
+      <label class="lbl">Sound <select id="prMode">
+        <option value="click">Click only</option><option value="guide">Click + quiet guide</option><option value="demo">Demo (listen)</option></select></label>
+      <button id="prTempo">Suggested tempo</button>
+    </div>
+    <div id="prInfo" class="hint"></div>
+  </div>
+  <div class="card">
+    <div id="prStatus"></div>
+    <canvas id="prCanvas"></canvas>
+  </div>
+  <div class="card tcontrols">
+    <label class="lbl"><input type="checkbox" id="prTrainer"> Speed trainer:</label>
+    <label class="lbl">+<input type="number" id="prStep" min="1" max="20"> BPM after</label>
+    <label class="lbl"><input type="number" id="prLoops" min="1" max="16"> loops scoring</label>
+    <label class="lbl">≥ <input type="number" id="prNeed" min="50" max="100"> %, up to</label>
+    <label class="lbl"><input type="number" id="prMax" min="40" max="260"> BPM</label>
+  </div>
+  <div class="card" style="overflow-x:auto"><table class="stats" id="prStats"></table></div>
+  <div class="hint">Every note is scored: <span style="color:#4cc38a">green</span> perfect, <span style="color:#f2c14e">yellow</span> on time, <span style="color:#ef5b5b">red ✕</span> missed, red × an extra hit. A loop's score counts perfect hits fully, on-time hits 80%, and extra hits against you. Timing uses the Training room's strictness and latency fix. Rudiments can be played on any pad. Flams and drags aren't included, because the kit can't tell a grace note from a separate hit.</div>
 </section>
 
 <section class="monitor">
@@ -283,10 +317,10 @@
   }
   function choke(padId, t){ (voices[padId]||[]).splice(0).forEach(v=>fadeOut(v, t, 0.09)); } // like a pedal closing
 
-  function play(padId, vel){
+  function play(padId, vel, when, gainMul=1){ // when: optional audio time to schedule the hit at
     if(!ctx) return;
-    flash(padId);
-    const s = sounds[padId], t = ctx.currentTime;
+    const s = sounds[padId], t = Math.max(ctx.currentTime, when||0);
+    if(t > ctx.currentTime+0.01) setTimeout(()=>flash(padId), (t-ctx.currentTime)*1000); else flash(padId);
     if(HAT_CLOSERS.includes(padId)) choke('hho', t);
     let buf=null, peak=1;
     if(loaded[s.sound]){
@@ -294,12 +328,12 @@
       const key = s.sound+li; rr[key] = ((rr[key]||0)+1) % L[li].length;
       buf = L[li][rr[key]]; peak = byId[s.sound].peaks[li];
     }else if(s.sound!=='synth') loadSound(s.sound);
-    if(!buf){ synth(padId, vel, t, s.level); return; }
+    if(!buf){ synth(padId, vel, t, s.level*gainMul); return; }
     // the velocity layer gives the tone; this curve sets the loudness
     const loud = 0.9*(0.06+0.94*Math.pow(vel/127,1.4));
     const src = ctx.createBufferSource(); src.buffer = buf;
     src.playbackRate.value = Math.pow(2, (s.pitch||0)/12);
-    const g = ctx.createGain(); g.gain.value = loud/Math.max(peak,0.01)*s.level;
+    const g = ctx.createGain(); g.gain.value = loud/Math.max(peak,0.01)*s.level*gainMul;
     src.connect(g); g.connect(master); src.start(t);
     addVoice(padId, {src, g});
   }
@@ -574,6 +608,7 @@
 
   function registerHit(padId, ts){
     if(!ctx || !metro.on) return;
+    if(pr.on){ practiceHit(padId, ts); return; }
     const raw = hitTime(ts);
     if(cal){
       const g = gridOf(raw, 1); if(g.beat<0) return;
@@ -682,18 +717,20 @@
       while(metro.queue.length && metro.queue[0].t<=now){ const b=metro.queue.shift().b; if(b!==shownBeat){ shownBeat=b; showBeat(b); } }
     }
     if(!$('training').hidden){ drawMeter(); drawBar(); }
+    practiceFrame();
     requestAnimationFrame(frame);
   }
   function setTab(t){
     ms.tab=t; saveMetro();
-    $('pads').hidden = t!=='pads'; $('training').hidden = t!=='train';
+    $('pads').hidden = t!=='pads'; $('training').hidden = t!=='train'; $('practice').hidden = t!=='practice';
     $('tabPads').classList.toggle('active', t==='pads'); $('tabTrain').classList.toggle('active', t==='train');
+    $('tabPractice').classList.toggle('active', t==='practice');
   }
 
   // metronome + training controls
   for(let i=2;i<=7;i++) $('bpb').appendChild(new Option(i+' / 4', i));
   $('bpb').value=ms.bpb; $('clickVol').value=ms.click; $('grid').value=ms.grid; $('strict').value=ms.strict; $('comp').value=ms.comp;
-  setBpm(ms.bpm); buildBeats(); setTab(ms.tab==='train'?'train':'pads'); renderStats();
+  setBpm(ms.bpm); buildBeats(); setTab(['train','practice'].includes(ms.tab)?ms.tab:'pads'); renderStats();
   $('metroBtn').addEventListener('click', ()=>metro.on ? stopMetro() : startMetro());
   $('bpm').addEventListener('change', e=>setBpm(e.target.value));
   $('bpmSlider').addEventListener('input', e=>setBpm(e.target.value));
@@ -712,7 +749,325 @@
   $('resetStats').addEventListener('click', ()=>{ stats={}; hits=[]; renderStats(); $('lastHit').textContent='Stats cleared.'; });
   $('tabPads').addEventListener('click', ()=>setTab('pads'));
   $('tabTrain').addEventListener('click', ()=>setTab('train'));
+  $('tabPractice').addEventListener('click', ()=>setTab('practice'));
   requestAnimationFrame(frame);
+
+  // ---------- Practice: original grooves, fills & rudiments ----------
+  // Lanes are pad ids, one character per grid step (sub steps per beat, 4 beats per bar):
+  // x = note, X = accent, g = ghost note, - = rest. Spaces are ignored. Sticking is one letter per note.
+  function ladder(){ // quarter, 8ths, triplets, 16ths: 12 steps per beat
+    const a = Array(48).fill('-'); [0,12,18,24,28,32,36,39,42,45].forEach(i=>a[i]='x'); [0,12,24,36].forEach(i=>a[i]='X'); return a.join('');
+  }
+  const LIB = [
+    {cat:'Grooves', id:'rock8', name:'Rock beat (8ths)', bpm:90, sub:4, bars:1,
+     info:'The foundation: 8ths on the hi-hat, snare on 2 and 4, kick on 1 and 3.',
+     lanes:{hhc:'x-x-x-x- x-x-x-x-', snare:'----x--- ----x---', kick:'x------- x-------'}},
+    {cat:'Grooves', id:'rock8b', name:'Rock beat, busy kick', bpm:95, sub:4, bars:1,
+     info:'Same hands as the basic rock beat. The kick adds the "and" of 2 and 3.',
+     lanes:{hhc:'x-x-x-x- x-x-x-x-', snare:'----x--- ----x---', kick:'x-----x- x-x-----'}},
+    {cat:'Grooves', id:'rock16', name:'16th hi-hat rock', bpm:80, sub:4, bars:1,
+     info:'16ths on the hi-hat, accenting the 8ths. Keep the soft notes even.',
+     lanes:{hhc:'XxXxXxXx XxXxXxXx', snare:'----x--- ----x---', kick:'x------- x-x-----'}},
+    {cat:'Grooves', id:'half', name:'Half-time', bpm:75, sub:4, bars:1,
+     info:'Snare only on beat 3 makes the groove feel half as fast.',
+     lanes:{hhc:'x-x-x-x- x-x-x-x-', snare:'-------- X-------', kick:'x-----x- --x-----'}},
+    {cat:'Grooves', id:'disco', name:'Four on the floor', bpm:115, sub:4, bars:1,
+     info:'Kick on every beat, open hi-hat on the off-beats.',
+     lanes:{hhc:'x---x--- x---x---', hho:'--x---x- --x---x-', snare:'----x--- ----x---', kick:'x---x--- x---x---'}},
+    {cat:'Grooves', id:'motown', name:'Motown backbeat', bpm:110, sub:4, bars:1,
+     info:'Snare on every beat, leaning on 2 and 4.',
+     lanes:{hhc:'x-x-x-x- x-x-x-x-', snare:'x---X--- x---X---', kick:'x------- x-------'}},
+    {cat:'Grooves', id:'funk', name:'Funk with ghost notes', bpm:85, sub:4, bars:1,
+     info:'Ghost notes are barely-there snare taps between the backbeats. Keep them quiet.',
+     lanes:{hhc:'x-x-x-x- x-x-x-x-', snare:'----X--g -g--X--g', kick:'x-x----- --x--x--'}},
+    {cat:'Grooves', id:'shuffle', name:'Shuffle', bpm:100, sub:3, bars:1,
+     info:'Triplet feel: the hi-hat plays the first and third note of each triplet.',
+     lanes:{hhc:'x-xx-xx-xx-x', snare:'---X-----X--', kick:'x-----x-----'}},
+    {cat:'Grooves', id:'boombap', name:'Boom bap', bpm:88, sub:4, bars:1,
+     info:'Laid-back hip-hop. Let the kick on the "a" of 2 fall right in the pocket.',
+     lanes:{hhc:'x-x-x-x- x-x-x-x-', snare:'----X--- ----X---', kick:'x------x --x-----'}},
+    {cat:'Grooves', id:'onedrop', name:'One drop', bpm:76, sub:4, bars:1,
+     info:'Reggae: nothing on beat 1. Kick and side-stick land together on 3.',
+     lanes:{hhc:'x-x-x-x- x-x-x-x-', snare:'-------- X-------', kick:'-------- x-------'}},
+    {cat:'Grooves', id:'bossa', name:'Bossa nova', bpm:120, sub:4, bars:2,
+     info:'Two-bar side-stick pattern over a steady bossa kick.',
+     lanes:{hhc:'x-x-x-x-x-x-x-x- x-x-x-x-x-x-x-x-', snare:'x--x--x---x--x-- --x--x---x--x---',
+            kick:'x--xx--xx--xx--x x--xx--xx--xx--x'}},
+    {cat:'Grooves', id:'linear', name:'Linear groove', bpm:80, sub:4, bars:1,
+     info:'No two limbs ever play together. Each note gets its own slot.',
+     lanes:{hhc:'--xx---- x--x--xx', snare:'----X--g ----X---', kick:'x-----x- --x-----'}},
+    {cat:'Grooves', id:'ride', name:'Ride groove with crash', bpm:100, sub:4, bars:1,
+     info:'Crash on 1, then 8ths on the ride.',
+     lanes:{crash:'x------- --------', ride:'--x-x-x- x-x-x-x-', snare:'----x--- ----x---', kick:'x------- x-x-----'}},
+    {cat:'Fills', id:'fill16', name:'16th-note tom fill', bpm:85, sub:4, bars:2,
+     info:'One bar of groove, then 16ths down the kit: snare, tom 1, tom 2, floor tom.',
+     lanes:{crash:'x---------------  ----------------', hhc:'--x-x-x-x-x-x-x- ----------------',
+            snare:'----x-------x--- Xxxx------------', tom1:'---------------- ----Xxxx--------',
+            tom2:'---------------- --------Xxxx----', tom3:'---------------- ------------Xxxx',
+            kick:'x-------x-x----- x---x---x---x---'}},
+    {cat:'Fills', id:'fill8', name:'8th-note fill', bpm:95, sub:4, bars:2,
+     info:'A simple 8th-note fill. Land the crash on the next 1.',
+     lanes:{crash:'x--------------- ----------------', hhc:'--x-x-x-x-x-x-x- ----------------',
+            snare:'----x-------x--- X-x-X-x---------', tom1:'---------------- --------X-x-----',
+            tom3:'---------------- ------------X-x-', kick:'x-------x------- x---x---x---x---'}},
+    {cat:'Fills', id:'filltrip', name:'Triplet fill', bpm:80, sub:3, bars:2,
+     info:'Triplets around the toms: three even notes per beat.',
+     lanes:{crash:'x----------- ------------', hhc:'---x--x--x-- ------------', snare:'---X-----X-- Xxx---------',
+            tom1:'------------ ---Xxx------', tom3:'------------ ------XxxXxx', kick:'x-----x----- x--x--x--x--'}},
+    {cat:'Rudiments', id:'single', name:'Single stroke roll', bpm:70, sub:4, bars:1, any:true,
+     info:'Alternate hands evenly. Both hands should sound the same.',
+     lanes:{snare:'xxxxxxxx xxxxxxxx'}, stick:'RLRLRLRL RLRLRLRL'},
+    {cat:'Rudiments', id:'double', name:'Double stroke roll', bpm:70, sub:4, bars:1, any:true,
+     info:'Two strokes per hand. Make the second stroke as loud as the first.',
+     lanes:{snare:'xxxxxxxx xxxxxxxx'}, stick:'RRLLRRLL RRLLRRLL'},
+    {cat:'Rudiments', id:'para', name:'Single paradiddle', bpm:70, sub:4, bars:1, any:true,
+     info:'RLRR LRLL. Accent the first note of each group.',
+     lanes:{snare:'XxxxXxxx XxxxXxxx'}, stick:'RLRRLRLL RLRRLRLL'},
+    {cat:'Rudiments', id:'dpara', name:'Double paradiddle', bpm:70, sub:6, bars:1, any:true,
+     info:'RLRLRR LRLRLL, in sextuplets (6 notes per beat).',
+     lanes:{snare:'Xxxxxx Xxxxxx Xxxxxx Xxxxxx'}, stick:'RLRLRR LRLRLL RLRLRR LRLRLL'},
+    {cat:'Rudiments', id:'tpara', name:'Triple paradiddle', bpm:65, sub:4, bars:1, any:true,
+     info:'RLRLRLRR LRLRLRLL. The accent moves to the other hand every two beats.',
+     lanes:{snare:'Xxxxxxxx Xxxxxxxx'}, stick:'RLRLRLRR LRLRLRLL'},
+    {cat:'Rudiments', id:'pdd', name:'Paradiddle-diddle', bpm:70, sub:6, bars:1, any:true,
+     info:'RLRRLL in sextuplets. It always starts on the right hand.',
+     lanes:{snare:'Xxxxxx Xxxxxx Xxxxxx Xxxxxx'}, stick:'RLRRLL RLRRLL RLRRLL RLRRLL'},
+    {cat:'Rudiments', id:'five', name:'Five stroke roll', bpm:65, sub:4, bars:1, any:true,
+     info:'Two doubles and an accented single, then switch hands.',
+     lanes:{snare:'xxxxX--- xxxxX---'}, stick:'RRLLR LLRRL'},
+    {cat:'Rudiments', id:'six', name:'Six stroke roll', bpm:65, sub:6, bars:1, any:true,
+     info:'R LL RR L: accented singles around two doubles.',
+     lanes:{snare:'XxxxxX XxxxxX XxxxxX XxxxxX'}, stick:'RLLRRL RLLRRL RLLRRL RLLRRL'},
+    {cat:'Rudiments', id:'accent', name:'Accents in 16ths', bpm:80, sub:4, bars:1, any:true,
+     info:'Accent every fifth note so the accent moves around the beat. Keep the unaccented notes low.',
+     lanes:{snare:'XxxxxXxx xxXxxxxX'}, stick:'RLRLRLRL RLRLRLRL'},
+    {cat:'Rudiments', id:'trip', name:'Single stroke triplets', bpm:80, sub:3, bars:1, any:true,
+     info:'RLR LRL. The beat lands on a different hand each time.',
+     lanes:{snare:'Xxx Xxx Xxx Xxx'}, stick:'RLR LRL RLR LRL'},
+    {cat:'Rudiments', id:'ladder', name:'Subdivision ladder', bpm:70, sub:12, bars:1, any:true,
+     info:'Quarter, 8ths, triplets, 16ths: one beat each. Feel the space change.',
+     lanes:{snare:ladder()}, stick:'R LR LRL RLRL'},
+  ];
+  const COUNTS = {2:['','&'], 3:['','&','a'], 4:['','e','&','a']};
+  const VEL = {accent:122, normal:92, ghost:38};
+  const nospace = s=>s.replace(/\s/g,'');
+
+  function parsePattern(p){
+    const total = p.bars*4*p.sub, notes = [];
+    PADS.forEach(pad=>{
+      const str = p.lanes[pad.id] && nospace(p.lanes[pad.id]);
+      if(!str) return;
+      if(str.length!==total) throw new Error(`${p.id}/${pad.id}: ${str.length} steps, expected ${total}`);
+      [...str].forEach((c,i)=>{ if(c!=='-') notes.push({lane:pad.id, step:i, beat:i/p.sub, kind:c==='X'?'accent':c==='g'?'ghost':'normal'}); });
+    });
+    notes.sort((a,b)=>a.step-b.step);
+    if(p.stick){ const st = nospace(p.stick); notes.forEach((n,i)=>n.stick = st[i]||''); }
+    return notes;
+  }
+
+  ms.pr = Object.assign({sel:'rock8', mode:'guide', trainer:false, step:5, loops:2, need:90, max:160}, ms.pr||{});
+  const pr = {on:false, pat:null, notes:[], loopBeats:4, startBeat:4, loops:{}, done:-1, schedBeat:0, timer:null, good:0, history:[], msg:''};
+  const prPat = ()=>LIB.find(p=>p.id===ms.pr.sel) || LIB[0];
+  const beatAt = t=>metro.anchorBeat + (t-metro.anchorTime)/beatDur();
+  const timeAt = b=>metro.anchorTime + (b-metro.anchorBeat)*beatDur();
+  const winBeats = ()=>Math.min(0.12, 0.45*beatDur()/pr.pat.sub)/beatDur(); // hit window around each note
+
+  function selectExercise(id){
+    const was = pr.on; if(was) stopPractice();
+    ms.pr.sel = id; saveMetro();
+    const p = prPat(); pr.pat = p; pr.notes = parsePattern(p); pr.loopBeats = p.bars*4;
+    $('prSel').value = p.id;
+    $('prInfo').innerHTML = `${p.info} <b>Suggested tempo: ${p.bpm} BPM.</b> ${pr.notes.length} notes per loop.`;
+    if(was) startPractice();
+  }
+  function startPractice(){
+    if(!ctx){ showBanner('Tap "Tap to start" first.'); return; }
+    if(metro.on) stopMetro();
+    if(ms.bpb!==4){ ms.bpb=4; $('bpb').value=4; buildBeats(); saveMetro(); }
+    pr.loops={}; pr.done=-1; pr.good=0; pr.history=[]; pr.msg=''; renderPrStats();
+    pr.on = true;
+    startMetro();
+    pr.startBeat = metro.anchorBeat + 4;       // one bar of count-in
+    pr.schedBeat = -1e-6;
+    pr.timer = setInterval(prSchedule, 25); prSchedule();
+    $('prStart').textContent='■ Stop'; $('prStart').classList.add('on');
+  }
+  function stopPractice(){
+    pr.on = false; clearInterval(pr.timer);
+    if(metro.on) stopMetro();
+    $('prStart').textContent='▶ Start'; $('prStart').classList.remove('on');
+  }
+  // schedule the pattern's own sounds (guide / demo) slightly ahead on the audio clock
+  function prSchedule(){
+    if(!pr.on || !metro.on) return;
+    const horizon = beatAt(ctx.currentTime+0.12) - pr.startBeat;
+    if(horizon <= pr.schedBeat) return;
+    if(ms.pr.mode!=='click'){
+      const LB = pr.loopBeats, gain = ms.pr.mode==='guide' ? 0.3 : 1;
+      for(let L=Math.max(0,Math.floor(pr.schedBeat/LB)); L<=Math.floor(horizon/LB); L++)
+        pr.notes.forEach(n=>{ const b=L*LB+n.beat; if(b>pr.schedBeat && b<=horizon) play(n.lane, VEL[n.kind], timeAt(pr.startBeat+b), gain); });
+    }
+    pr.schedBeat = horizon;
+  }
+  function accepts(lane, pad){
+    if(pr.pat.any) return pad!=='kick' && pad!=='hhp';
+    if(lane==='hhc' || lane==='hho') return pad==='hhc' || pad==='hho';
+    return lane===pad;
+  }
+  function loopRec(L){ return pr.loops[L] || (pr.loops[L] = {hit:{}, extras:[]}); }
+  function practiceHit(padId, ts){
+    if(ms.pr.mode==='demo') return;
+    const rel = beatAt(hitTime(ts) - ms.comp/1000) - pr.startBeat, win = winBeats(), LB = pr.loopBeats;
+    if(rel < -win) return; // count-in
+    const k = Math.floor(rel/LB);
+    let best = null;
+    for(let L=Math.max(0,k-1); L<=k+1; L++){
+      const rec = pr.loops[L];
+      pr.notes.forEach((n,i)=>{
+        if(!accepts(n.lane, padId) || (rec && i in rec.hit)) return;
+        const d = rel-(L*LB+n.beat);
+        if(Math.abs(d)<=win && (!best || Math.abs(d)<Math.abs(best.d))) best = {L, i, d};
+      });
+    }
+    if(best && best.L>pr.done) loopRec(best.L).hit[best.i] = best.d*beatDur()*1000;
+    else if(!best){ const L=Math.max(0,k); if(L>pr.done) loopRec(L).extras.push({pad:padId, pos:rel-L*LB}); }
+  }
+  function finalizeLoop(L){
+    pr.done = L;
+    if(ms.pr.mode==='demo'){ delete pr.loops[L]; return; } // listening, not scored
+    const rec = pr.loops[L] || {hit:{}, extras:[]}, n = pr.notes.length;
+    const offs = Object.values(rec.hit), hitsN = offs.length, extras = rec.extras.length;
+    const [p1,p2] = STRICT[ms.strict];
+    const credit = offs.reduce((a,o)=>a+(Math.abs(o)<=p1?1:Math.abs(o)<=p2?0.8:0.5), 0);
+    const score = Math.round(100*credit/(n+extras));
+    const avg = hitsN ? offs.reduce((a,b)=>a+b,0)/hitsN : 0;
+    const sd = hitsN ? Math.sqrt(offs.reduce((a,b)=>a+(b-avg)**2,0)/hitsN) : 0;
+    pr.history.unshift({loop:L+1, bpm:ms.bpm, hitsN, n, missed:n-hitsN, extras, avg, sd, score});
+    if(pr.history.length>30) pr.history.pop();
+    if(ms.pr.trainer && ms.pr.mode!=='demo'){
+      if(score>=ms.pr.need){
+        if(++pr.good>=ms.pr.loops){
+          pr.good = 0;
+          const nb = Math.min(ms.pr.max, ms.bpm+ms.pr.step);
+          if(nb!==ms.bpm){ setBpm(nb); pr.msg = `Tempo up → ${nb} BPM`; }
+        }
+      }else pr.good = 0;
+    }
+    delete pr.loops[L-2];
+    renderPrStats();
+  }
+  function renderPrStats(){
+    const t = $('prStats');
+    if(!pr.history.length){ t.innerHTML = '<tr><td style="color:var(--dim)">Press Start, play along after the count-in, and each loop is scored here.</td></tr>'; return; }
+    t.innerHTML = '<tr><th>Loop</th><th>BPM</th><th>Score</th><th>Hit</th><th>Missed</th><th>Extra</th><th>Average</th><th>Spread</th></tr>' +
+      pr.history.map(h=>`<tr><td>${h.loop}</td><td>${h.bpm}</td>`+
+        `<td style="color:${h.score>=90?GRADE.perfect:h.score>=70?GRADE.good:GRADE.off}">${h.score}%</td>`+
+        `<td>${h.hitsN}/${h.n}</td><td>${h.missed}</td><td>${h.extras}</td><td>${h.hitsN?fmt(h.avg)+' ms':'–'}</td><td>${h.hitsN?'±'+Math.round(h.sd)+' ms':'–'}</td></tr>`).join('');
+  }
+
+  function practiceFrame(){
+    if(!pr.pat) return;
+    let rel = -Infinity;
+    if(pr.on){
+      if(!metro.on || ms.bpb!==4){ stopPractice(); }
+      else{
+        rel = beatAt(hitTime(performance.now())) - pr.startBeat;
+        while(rel > (pr.done+2)*pr.loopBeats + winBeats()) finalizeLoop(pr.done+1);
+      }
+    }
+    const visible = !$('practice').hidden;
+    if(!visible) return;
+    // status line
+    const st = $('prStatus');
+    let html;
+    if(!pr.on) html = `${pr.pat.name} <small>· press Start</small>`;
+    else if(rel<0) html = `Count-in… ${Math.min(4, Math.floor(rel+4)+1)} <small>· ${ms.bpm} BPM</small>`;
+    else{
+      const last = pr.history[0];
+      html = `Loop ${Math.floor(rel/pr.loopBeats)+1} <small>· ${ms.bpm} BPM`+
+        (last ? ` · last loop <b style="color:${last.score>=90?GRADE.perfect:last.score>=70?GRADE.good:GRADE.off}">${last.score}%</b>` : '')+
+        (ms.pr.trainer && ms.pr.mode!=='demo' ? ` · speed trainer ${pr.good}/${ms.pr.loops}` : '')+
+        (pr.msg ? ` · ${pr.msg}` : '')+'</small>';
+    }
+    if(st.innerHTML!==html) st.innerHTML = html;
+    drawPractice(rel);
+  }
+  function drawPractice(rel){
+    const p = pr.pat, lanes = PADS.filter(x=>p.lanes[x.id]);
+    const rowH=30, head=22, stickH=p.stick?20:0, h=head+lanes.length*rowH+stickH+6;
+    const [x,w] = sizeCanvas($('prCanvas'), h); if(!w) return;
+    const L=96, W=w-L-14, total=p.bars*4*p.sub, X=s=>L+(s/total)*W, colW=W/total;
+    x.font='12px system-ui,sans-serif'; x.textBaseline='middle';
+    lanes.forEach((pad,i)=>{
+      const y=head+i*rowH;
+      if(i%2===0){ x.fillStyle='#1f2328'; x.fillRect(L,y,W,rowH); }
+      x.fillStyle=pad.color; x.beginPath(); x.arc(8,y+rowH/2,5,0,7); x.fill();
+      x.fillStyle='#e8eaed'; x.textAlign='left'; x.fillText(p.any?'Any pad':pad.name, 18, y+rowH/2);
+    });
+    for(let s=0;s<=total;s++){
+      const beat=s%p.sub===0, bar=s%(4*p.sub)===0;
+      if(!beat && p.sub>4) continue;
+      x.fillStyle = bar?'#8b929c' : beat?'#4f5661':'#2c3138';
+      x.fillRect(Math.round(X(s))-(beat?1:0.5), head-4, beat?2:1, lanes.length*rowH+4);
+      if(s<total){
+        const lab = beat ? String((s/p.sub)%4+1) : (COUNTS[p.sub]||[])[s%p.sub];
+        if(lab){ x.fillStyle = beat?'#e8eaed':'#8b929c'; x.textAlign='center'; x.fillText(lab, X(s), 9); }
+      }
+    }
+    const LB = pr.loopBeats, cur = pr.on && rel>=0 ? Math.floor(rel/LB) : -1;
+    const rec = cur>=0 ? pr.loops[cur] : null, pos = cur>=0 ? rel-cur*LB : -1, win = pr.on ? winBeats() : 0;
+    pr.notes.forEach((n,i)=>{
+      const lane = lanes.findIndex(l=>l.id===n.lane), y=head+lane*rowH+rowH/2, xx=X(n.step);
+      const r = n.kind==='accent'?8 : n.kind==='ghost'?4.5 : 6.5, color = COLOR[n.lane];
+      const off = rec && i in rec.hit ? rec.hit[i] : null;
+      const missed = off===null && cur>=0 && pos > n.beat+win;
+      x.globalAlpha = 1;
+      if(missed){
+        x.strokeStyle=GRADE.off; x.lineWidth=2.5;
+        x.beginPath(); x.moveTo(xx-r,y-r); x.lineTo(xx+r,y+r); x.moveTo(xx+r,y-r); x.lineTo(xx-r,y+r); x.stroke();
+      }else{
+        x.beginPath(); x.arc(xx,y,r,0,7);
+        if(n.kind==='ghost' && off===null){ x.strokeStyle=color; x.lineWidth=1.5; x.stroke(); }
+        else{ x.fillStyle=color; x.globalAlpha = off===null ? 0.85 : 1; x.fill(); x.globalAlpha=1; }
+        if(off!==null){
+          x.lineWidth=3; x.strokeStyle=GRADE[gradeOf(off)]; x.stroke();
+          const ax = xx + off/1000/beatDur()*p.sub*colW; // where you actually hit
+          x.fillStyle='#e8eaed'; x.fillRect(ax-1, y+r+2, 2, 5);
+        }
+      }
+      if(n.kind==='accent'){ x.strokeStyle='#e8eaed'; x.lineWidth=1.5; x.beginPath(); x.moveTo(xx-4,y-r-7); x.lineTo(xx+1,y-r-4); x.lineTo(xx-4,y-r-1); x.stroke(); }
+      if(n.stick){ x.fillStyle = n.stick==='R'?'#e8eaed':'#8b929c'; x.textAlign='center'; x.fillText(n.stick, xx, head+lanes.length*rowH+stickH/2+2); }
+    });
+    if(rec) rec.extras.forEach(e=>{
+      let lane = lanes.findIndex(l=>l.id===e.pad); if(lane<0) lane = 0;
+      const y=head+lane*rowH+rowH/2, xx=X(e.pos*p.sub);
+      x.fillStyle=GRADE.off; x.textAlign='center'; x.font='bold 14px system-ui,sans-serif'; x.fillText('×', xx, y-11); x.font='12px system-ui,sans-serif';
+    });
+    if(pr.on){
+      if(rel<0){
+        x.fillStyle='rgba(18,20,23,.55)'; x.fillRect(L,head,W,lanes.length*rowH);
+        x.fillStyle='#f2a33a'; x.font='bold 22px system-ui,sans-serif'; x.textAlign='center';
+        x.fillText(String(Math.min(4, Math.floor(rel+4)+1)), L+W/2, head+lanes.length*rowH/2); x.font='12px system-ui,sans-serif';
+      }else{ x.fillStyle='rgba(242,163,58,.95)'; x.fillRect(X(pos*p.sub)-1, head-4, 2, lanes.length*rowH+4); }
+    }
+  }
+
+  // practice controls
+  ['Grooves','Fills','Rudiments'].forEach(cat=>{
+    const g = document.createElement('optgroup'); g.label = cat;
+    LIB.filter(p=>p.cat===cat).forEach(p=>g.appendChild(new Option(p.name, p.id)));
+    $('prSel').appendChild(g);
+  });
+  $('prMode').value=ms.pr.mode; $('prTrainer').checked=ms.pr.trainer;
+  $('prStep').value=ms.pr.step; $('prLoops').value=ms.pr.loops; $('prNeed').value=ms.pr.need; $('prMax').value=ms.pr.max;
+  selectExercise(ms.pr.sel); renderPrStats();
+  $('prSel').addEventListener('change', e=>selectExercise(e.target.value));
+  $('prStart').addEventListener('click', ()=>pr.on ? stopPractice() : startPractice());
+  $('prMode').addEventListener('change', e=>{ ms.pr.mode=e.target.value; saveMetro(); });
+  $('prTempo').addEventListener('click', ()=>setBpm(prPat().bpm));
+  $('prTrainer').addEventListener('change', e=>{ ms.pr.trainer=e.target.checked; pr.good=0; saveMetro(); });
+  [['prStep','step',1,20],['prLoops','loops',1,16],['prNeed','need',50,100],['prMax','max',40,260]].forEach(([id,key,lo,hi])=>
+    $(id).addEventListener('change', e=>{ ms.pr[key]=Math.max(lo,Math.min(hi,Math.round(+e.target.value||ms.pr[key]))); e.target.value=ms.pr[key]; saveMetro(); }));
 
   // ---------- Wire up ----------
   document.getElementById('startBtn').addEventListener('click', ()=>{
