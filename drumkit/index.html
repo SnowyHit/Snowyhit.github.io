@@ -18,21 +18,23 @@
   .status{display:flex;align-items:center;gap:8px;font-size:14px;color:var(--dim)}
   .dot{width:10px;height:10px;border-radius:50%;background:var(--bad);flex:none}
   .dot.on{background:var(--ok)}
+  #loadStatus{font-size:13px;color:var(--dim)}
   .spacer{flex:1}
   label.vol{display:flex;align-items:center;gap:8px;font-size:14px;color:var(--dim)}
   input[type=range]{width:120px;accent-color:var(--accent)}
-  button{font:inherit;color:var(--text);background:#262a31;border:1px solid var(--line);border-radius:8px;padding:8px 12px;cursor:pointer}
+  button,select{font:inherit;color:var(--text);background:#262a31;border:1px solid var(--line);border-radius:8px;padding:8px 12px;cursor:pointer}
   button:active{background:#30353d}
   main{flex:1;padding:14px;display:grid;gap:12px;
     grid-template-columns:repeat(auto-fill,minmax(160px,1fr));align-content:start}
   .pad{position:relative;background:var(--panel);border:1px solid var(--line);border-radius:14px;
-    min-height:150px;padding:12px;display:flex;flex-direction:column;justify-content:space-between;touch-action:manipulation;overflow:hidden}
+    min-height:160px;padding:12px;display:flex;flex-direction:column;justify-content:space-between;touch-action:manipulation;overflow:hidden}
   .pad .name{font-size:17px;font-weight:650}
-  .pad .notes{font-size:13px;color:var(--dim);margin-top:4px;min-height:18px}
+  .pad .snd{font-size:13px;color:var(--accent);margin-top:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .pad .notes{font-size:13px;color:var(--dim);margin-top:3px;min-height:18px}
   .pad .notes b{color:var(--text);font-weight:600}
-  .pad .row{display:flex;gap:6px}
-  .pad .row button{padding:6px 10px;font-size:13px}
-  .pad .hitzone{flex:1;margin:8px 0;border-radius:10px;background:#22262c;display:flex;align-items:center;justify-content:center;
+  .pad .row{display:flex;gap:6px;flex-wrap:wrap}
+  .pad .row button{padding:6px 9px;font-size:13px}
+  .pad .hitzone{flex:1;min-height:44px;margin:8px 0;border-radius:10px;background:#22262c;display:flex;align-items:center;justify-content:center;
     color:var(--dim);font-size:12px;letter-spacing:.5px;text-transform:uppercase}
   .pad.flash .hitzone{animation:flash .25s ease-out}
   @keyframes flash{0%{background:var(--accent);color:#111}100%{background:#22262c}}
@@ -45,6 +47,7 @@
   .ev{font-size:13px;padding:5px 9px;border-radius:999px;background:#262a31;border:1px solid var(--line);white-space:nowrap}
   .ev.unmapped{border-color:var(--bad);color:#ffb3b3}
   .hint{font-size:13px;color:var(--dim);margin-top:8px}
+  .hint a{color:var(--dim)}
   #banner{display:none;padding:10px 16px;background:#3a2a12;color:#ffd79a;font-size:14px;border-bottom:1px solid #5a4018}
   #banner.show{display:block}
   #overlay{position:fixed;inset:0;background:rgba(10,11,13,.92);display:flex;align-items:center;justify-content:center;z-index:10}
@@ -52,10 +55,15 @@
   #overlay .box{text-align:center;max-width:420px;padding:24px}
   #overlay button{font-size:20px;padding:16px 34px;background:var(--accent);color:#111;border:none;font-weight:700;border-radius:12px}
   #overlay p{color:var(--dim);font-size:14px;line-height:1.5}
-  #confirm{position:fixed;inset:0;background:rgba(0,0,0,.6);display:none;align-items:center;justify-content:center;z-index:11}
-  #confirm.show{display:flex}
-  #confirm .box{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:20px;max-width:340px}
-  #confirm .row{display:flex;gap:8px;justify-content:flex-end;margin-top:14px}
+  .modal{position:fixed;inset:0;background:rgba(0,0,0,.6);display:none;align-items:center;justify-content:center;z-index:11;padding:16px}
+  .modal.show{display:flex}
+  .modal .box{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:20px;width:100%;max-width:380px}
+  .modal .row{display:flex;gap:8px;justify-content:flex-end;margin-top:14px;flex-wrap:wrap}
+  .modal h3{margin:0 0 14px;font-size:17px}
+  .field{display:flex;flex-direction:column;gap:6px;margin-bottom:14px;font-size:14px;color:var(--dim)}
+  .field select{width:100%}
+  .field input[type=range]{width:100%}
+  .field .val{color:var(--text)}
 </style>
 </head>
 <body>
@@ -64,14 +72,29 @@
   <p>Android needs one tap before a page can play sound.<br>Plug in your e-drum kit over USB (OTG) first, or after starting.</p>
 </div></div>
 
-<div id="confirm"><div class="box">
+<div id="confirm" class="modal"><div class="box">
   <div>Reset all pads to the default note mapping?</div>
   <div class="row"><button id="cNo">Cancel</button><button id="cYes" style="background:var(--bad);border-color:var(--bad)">Reset</button></div>
+</div></div>
+
+<div id="soundDlg" class="modal"><div class="box">
+  <h3 id="sdTitle">Sound</h3>
+  <div class="field">Sample
+    <select id="sdSel"></select>
+  </div>
+  <div class="field" id="pitchField">Pitch <span class="val" id="sdPitchVal">0</span>
+    <input type="range" id="sdPitch" min="-12" max="12" step="1" value="0">
+  </div>
+  <div class="field">Volume <span class="val" id="sdLevelVal">100%</span>
+    <input type="range" id="sdLevel" min="0" max="2" step="0.01" value="1">
+  </div>
+  <div class="row"><button id="sdDefault">Default</button><button id="sdPreview">Preview</button><button id="sdDone" style="background:var(--accent);color:#111;border-color:var(--accent)">Done</button></div>
 </div></div>
 
 <header>
   <h1>MIDI Drum Kit</h1>
   <div class="status"><span class="dot" id="dot"></span><span id="midiStatus">MIDI: not connected</span></div>
+  <span id="loadStatus"></span>
   <div class="spacer"></div>
   <label class="vol">Volume <input type="range" id="vol" min="0" max="1.5" step="0.01" value="1"></label>
   <button id="resetBtn">Reset mapping</button>
@@ -83,37 +106,53 @@
 <section class="monitor">
   <h2>Incoming MIDI notes</h2>
   <div id="log"><span class="hint">Hit a drum and its note number shows up here.</span></div>
-  <div class="hint">To fix a pad that doesn't sound: tap <b>Learn</b> on that pad, then hit the drum. A red note above means no pad is assigned to it.</div>
+  <div class="hint">To fix a pad that doesn't sound: tap <b>Learn</b> on that pad, then hit the drum. A red note above means no pad is assigned to it. Tap <b>Sound</b> to change a pad's sample, pitch or volume.</div>
+  <div class="hint">Acoustic samples: <a href="https://github.com/sfzinstruments/virtuosity_drums" target="_blank" rel="noopener">Virtuosity Drums</a> by Versilian Studios &amp; Karoryfer Samples (CC0).</div>
 </section>
 
 <script>
 (() => {
-  // ---------- Pads and default (General MIDI + common e-kit) notes ----------
+  // ---------- Pads, default notes (General MIDI + common e-kit) and default sounds ----------
   const PADS = [
-    {id:'crash', name:'Crash',        notes:[49,57,55,52]},
-    {id:'hhc',   name:'Hi-Hat',       notes:[42,44,22]},
-    {id:'hho',   name:'Hi-Hat Open',  notes:[46,26]},
-    {id:'ride',  name:'Ride',         notes:[51,59,53]},
-    {id:'tom1',  name:'Tom 1',        notes:[48,50]},
-    {id:'tom2',  name:'Tom 2',        notes:[45,47]},
-    {id:'tom3',  name:'Floor Tom',    notes:[43,41,58]},
-    {id:'snare', name:'Snare',        notes:[38,40,37,39]},
-    {id:'kick',  name:'Kick',         notes:[36,35]},
+    {id:'crash', name:'Crash',        notes:[49,57,55,52], sound:'crash'},
+    {id:'hhc',   name:'Hi-Hat',       notes:[42,22],       sound:'hh_closed'},
+    {id:'hho',   name:'Hi-Hat Open',  notes:[46,26],       sound:'hh_open'},
+    {id:'hhp',   name:'Hi-Hat Pedal', notes:[44],          sound:'hh_pedal'},
+    {id:'ride',  name:'Ride',         notes:[51,59,53],    sound:'ride'},
+    {id:'tom1',  name:'Tom 1',        notes:[48,50],       sound:'htom'},
+    {id:'tom2',  name:'Tom 2',        notes:[45,47],       sound:'ltom', pitch:4},
+    {id:'tom3',  name:'Floor Tom',    notes:[43,41,58],    sound:'ltom'},
+    {id:'snare', name:'Snare',        notes:[38,40,37,39], sound:'snare'},
+    {id:'kick',  name:'Kick',         notes:[36,35],       sound:'kick'},
   ];
-  const STORE_KEY = 'midi-drumkit-map-v1';
-  let map = {}; // padId -> [notes]
+  const HATS = ['hhc','hho','hhp'];          // one physical hi-hat: any hat hit chokes the open hat
+  const MAX_VOICES = 4;                      // overlapping hits kept per pad
+  const MAP_KEY = 'midi-drumkit-map-v1', SND_KEY = 'midi-drumkit-sounds-v1';
+  let map = {};    // padId -> [notes]
+  let sounds = {}; // padId -> {sound, pitch, level}; sound = manifest id | 'synth'
 
-  function defaults(){ const m={}; PADS.forEach(p=>m[p.id]=p.notes.slice()); return m; }
+  function store(k, v){ try{ localStorage.setItem(k, JSON.stringify(v)); }catch(e){} }
+  function restore(k){ try{ const s=localStorage.getItem(k); const v=s&&JSON.parse(s); return v&&typeof v==='object'?v:null; }catch(e){ return null; } }
+
+  function defaultMap(){ const m={}; PADS.forEach(p=>m[p.id]=p.notes.slice()); return m; }
+  function defaultSound(p){ return {sound:p.sound, pitch:p.pitch||0, level:1}; }
   function load(){
-    try{ const s = localStorage.getItem(STORE_KEY); if(s){ const m=JSON.parse(s); if(m && typeof m==='object'){ map = Object.assign(defaults(), m); return; } } }catch(e){}
-    map = defaults();
+    const m = restore(MAP_KEY);
+    map = defaultMap();
+    if(m){
+      // pads added after the mapping was saved keep their default notes; take those notes off older pads
+      const added = PADS.filter(p=>!(p.id in m)).flatMap(p=>p.notes);
+      for(const id in map) if(Array.isArray(m[id])) map[id] = m[id].filter(n=>!added.includes(n));
+    }
+    const s = restore(SND_KEY) || {};
+    PADS.forEach(p=>{ sounds[p.id] = Object.assign(defaultSound(p), s[p.id]||{}); });
   }
-  function save(){ try{ localStorage.setItem(STORE_KEY, JSON.stringify(map)); }catch(e){} }
+  const saveMap = ()=>store(MAP_KEY, map), saveSounds = ()=>store(SND_KEY, sounds);
   function padForNote(n){ for(const id in map){ if(map[id].includes(n)) return id; } return null; }
   function padName(id){ const p=PADS.find(p=>p.id===id); return p?p.name:id; }
 
   // ---------- Audio ----------
-  let ctx=null, master=null, noiseBuf=null, openHat=null;
+  let ctx=null, master=null, noiseBuf=null;
   function initAudio(){
     if(ctx) return;
     ctx = new (window.AudioContext||window.webkitAudioContext)({latencyHint:'interactive'});
@@ -124,6 +163,71 @@
     noiseBuf = ctx.createBuffer(1, ctx.sampleRate*2, ctx.sampleRate);
     const d = noiseBuf.getChannelData(0); for(let i=0;i<d.length;i++) d[i]=Math.random()*2-1;
   }
+
+  // ---------- Samples ----------
+  let manifest = {sounds:[]}, byId = {};
+  const loaded = {}, loading = {};
+  const rr = {}; // round-robin counters
+  const manifestReady = fetch('samples/manifest.json').then(r=>r.json()).then(m=>{
+    manifest=m; m.sounds.forEach(s=>byId[s.id]=s);
+  }).catch(()=>showBanner('Could not load the sample list. The pads fall back to synth sounds.'));
+
+  function decode(ab){ return new Promise((res,rej)=>ctx.decodeAudioData(ab, res, rej)); }
+
+  function loadSound(id){
+    const def = byId[id];
+    if(!def || !ctx) return Promise.resolve();
+    if(!loading[id]) loading[id] = Promise.all(def.layers.map(files=>Promise.all(files.map(f=>
+        fetch('samples/'+f).then(r=>{ if(!r.ok) throw new Error(r.status); return r.arrayBuffer(); }).then(decode)))))
+      .then(L=>{ loaded[id]=L; })
+      .catch(()=>{ delete loading[id]; showBanner('Could not load "'+def.name+'". That pad plays a synth sound until it loads.'); });
+    return loading[id];
+  }
+  async function preload(){
+    await manifestReady;
+    const ids = [...new Set(PADS.map(p=>sounds[p.id].sound).filter(id=>byId[id]))];
+    let done = 0; const ls = document.getElementById('loadStatus');
+    ls.textContent = 'Loading sounds…';
+    await Promise.all(ids.map(id=>loadSound(id).then(()=>{ ls.textContent = 'Loading sounds '+(++done)+'/'+ids.length; })));
+    ls.textContent = '';
+  }
+
+  // ---------- Playback ----------
+  const voices = {}; // padId -> [{src, g, synth}]
+  function fadeOut(v, t){
+    try{ v.g.gain.cancelScheduledValues(t); v.g.gain.setValueAtTime(v.g.gain.value||0.0001, t);
+      v.g.gain.linearRampToValueAtTime(0, t+0.04); if(v.src) v.src.stop(t+0.05); }catch(e){}
+  }
+  function addVoice(padId, v){
+    const list = voices[padId] || (voices[padId]=[]);
+    list.push(v);
+    if(v.src) v.src.onended = ()=>{ const i=list.indexOf(v); if(i>=0) list.splice(i,1); };
+    while(list.length>MAX_VOICES) fadeOut(list.shift(), ctx.currentTime);
+  }
+  function choke(padId, t){ (voices[padId]||[]).splice(0).forEach(v=>fadeOut(v,t)); }
+
+  function play(padId, vel){
+    if(!ctx) return;
+    flash(padId);
+    const s = sounds[padId], t = ctx.currentTime;
+    if(HATS.includes(padId)) choke('hho', t);
+    let buf=null, peak=1;
+    if(loaded[s.sound]){
+      const L = loaded[s.sound], li = Math.min(L.length-1, Math.floor(vel/128*L.length));
+      const key = s.sound+li; rr[key] = ((rr[key]||0)+1) % L[li].length;
+      buf = L[li][rr[key]]; peak = byId[s.sound].peaks[li];
+    }else if(s.sound!=='synth') loadSound(s.sound);
+    if(!buf){ synth(padId, vel, t, s.level); return; }
+    // the velocity layer gives the tone; this curve sets the loudness
+    const loud = 0.9*(0.06+0.94*Math.pow(vel/127,1.4));
+    const src = ctx.createBufferSource(); src.buffer = buf;
+    src.playbackRate.value = Math.pow(2, (s.pitch||0)/12);
+    const g = ctx.createGain(); g.gain.value = loud/Math.max(peak,0.01)*s.level;
+    src.connect(g); g.connect(master); src.start(t);
+    addVoice(padId, {src, g});
+  }
+
+  // ---------- Synth fallback (the original sounds) ----------
   function gainEnv(t, peak, decay, dest){
     const g = ctx.createGain();
     g.gain.setValueAtTime(Math.max(peak,0.0001), t);
@@ -140,7 +244,6 @@
     const ratios=[2,3,4.16,5.43,6.79,8.21], base=40;
     ratios.forEach(r=>{ const o=ctx.createOscillator(); o.type='square'; o.frequency.value=base*r; o.connect(dest); o.start(t); o.stop(t+dur+0.05); });
   }
-
   const SYNTH = {
     kick(v,t){
       const o=ctx.createOscillator(); o.type='sine';
@@ -154,18 +257,14 @@
       o.frequency.setValueAtTime(200,t); o.frequency.exponentialRampToValueAtTime(160,t+0.1);
       o.connect(gainEnv(t,0.6*v,0.12)); o.start(t); o.stop(t+0.2);
     },
-    hat(v,t,open){
-      if(openHat){ // choke the open hat
-        try{ openHat.gain.cancelScheduledValues(t); openHat.gain.setValueAtTime(openHat.gain.value||0.0001,t); openHat.gain.exponentialRampToValueAtTime(0.0001,t+0.03);}catch(e){}
-        openHat=null;
-      }
+    hat(v,t,open){ // returns the output gain so an open hat can be choked
       const dur = open?0.6:0.07;
       const g = gainEnv(t,(open?0.35:0.4)*v,dur);
       const bp=filt('bandpass',10000,0.8), hp=filt('highpass',7000);
       bp.connect(hp); hp.connect(g);
       metal(t,dur,bp);
-      const n=noise(t,dur); n.connect(bp);
-      if(open) openHat=g;
+      noise(t,dur).connect(bp);
+      return g;
     },
     tom(v,t,base,dec){
       const o=ctx.createOscillator(); o.type='sine';
@@ -185,22 +284,20 @@
       const hp=filt('highpass',7000); hp.connect(gainEnv(t,0.12*v,0.6)); noise(t,0.6).connect(hp);
     }
   };
-  function play(padId, vel){
-    if(!ctx) return;
-    const v = Math.max(0.04, Math.pow(vel/127, 1.5));
-    const t = ctx.currentTime + 0.001;
+  function synth(padId, vel, t, level){
+    const v = Math.max(0.04, Math.pow(vel/127, 1.5))*level;
     switch(padId){
       case 'kick': SYNTH.kick(v,t); break;
       case 'snare': SYNTH.snare(v,t); break;
       case 'hhc': SYNTH.hat(v,t,false); break;
-      case 'hho': SYNTH.hat(v,t,true); break;
+      case 'hhp': SYNTH.hat(v*0.6,t,false); break;
+      case 'hho': addVoice('hho', {g:SYNTH.hat(v,t,true)}); break;
       case 'tom1': SYNTH.tom(v,t,210,0.45); break;
       case 'tom2': SYNTH.tom(v,t,155,0.5); break;
       case 'tom3': SYNTH.tom(v,t,105,0.7); break;
       case 'crash': SYNTH.crash(v,t); break;
       case 'ride': SYNTH.ride(v,t); break;
     }
-    flash(padId);
   }
 
   // ---------- UI ----------
@@ -208,16 +305,23 @@
   const els = {};
   let learning = null;
 
+  function soundLabel(padId){
+    const s = sounds[padId];
+    let name = s.sound==='synth' ? 'Synth' : (byId[s.sound]?byId[s.sound].name:s.sound);
+    if(s.pitch && s.sound!=='synth') name += ' · '+(s.pitch>0?'+':'')+s.pitch;
+    return name;
+  }
   function render(){
     padsEl.innerHTML='';
     PADS.forEach(p=>{
       const el=document.createElement('div'); el.className='pad';
-      el.innerHTML = `<div><div class="name">${p.name}</div><div class="notes"></div></div>
+      el.innerHTML = `<div><div class="name">${p.name}</div><div class="snd"></div><div class="notes"></div></div>
         <div class="hitzone">tap to play</div>
-        <div class="row"><button data-a="learn">Learn</button><button data-a="clear">Clear</button></div>`;
+        <div class="row"><button data-a="learn">Learn</button><button data-a="clear">Clear</button><button data-a="sound">Sound</button></div>`;
       el.querySelector('.hitzone').addEventListener('pointerdown', e=>{ e.preventDefault(); play(p.id, 100); });
       el.querySelector('[data-a=learn]').addEventListener('click', ()=>toggleLearn(p.id));
-      el.querySelector('[data-a=clear]').addEventListener('click', ()=>{ map[p.id]=[]; save(); refresh(); });
+      el.querySelector('[data-a=clear]').addEventListener('click', ()=>{ map[p.id]=[]; saveMap(); refresh(); });
+      el.querySelector('[data-a=sound]').addEventListener('click', ()=>openSound(p.id));
       padsEl.appendChild(el); els[p.id]=el;
     });
     refresh();
@@ -225,6 +329,7 @@
   function refresh(){
     PADS.forEach(p=>{
       const el=els[p.id], n=map[p.id]||[];
+      el.querySelector('.snd').textContent = soundLabel(p.id);
       el.querySelector('.notes').innerHTML = n.length ? 'Notes: '+n.map(x=>`<b>${x}</b>`).join(', ') : 'No notes assigned';
       el.classList.toggle('empty', !n.length);
       el.classList.toggle('learning', learning===p.id);
@@ -235,6 +340,48 @@
   function toggleLearn(id){ learning = (learning===id)?null:id; refresh(); }
   function flash(id){ const el=els[id]; if(!el) return; el.classList.remove('flash'); void el.offsetWidth; el.classList.add('flash'); }
 
+  // ---------- Sound dialog ----------
+  const dlg=document.getElementById('soundDlg'), sel=document.getElementById('sdSel'),
+        pitch=document.getElementById('sdPitch'), level=document.getElementById('sdLevel');
+  let editing = null;
+  function fillSelect(){
+    sel.innerHTML='';
+    const grp=document.createElement('optgroup'); grp.label='Acoustic kit';
+    manifest.sounds.forEach(s=>grp.appendChild(new Option(s.name, s.id)));
+    sel.appendChild(grp);
+    const other=document.createElement('optgroup'); other.label='Other';
+    other.appendChild(new Option('Synth (built-in)', 'synth'));
+    sel.appendChild(other);
+  }
+  function syncDlg(){
+    const s=sounds[editing];
+    sel.value=s.sound; pitch.value=s.pitch; level.value=s.level;
+    document.getElementById('sdPitchVal').textContent=(s.pitch>0?'+':'')+s.pitch+' semitones';
+    document.getElementById('sdLevelVal').textContent=Math.round(s.level*100)+'%';
+    document.getElementById('pitchField').style.display = s.sound==='synth'?'none':'';
+  }
+  async function openSound(padId){
+    await manifestReady;
+    editing=padId; fillSelect();
+    document.getElementById('sdTitle').textContent='Sound for '+padName(padId);
+    syncDlg(); dlg.classList.add('show');
+  }
+  function changed(){ saveSounds(); syncDlg(); refresh(); }
+  sel.addEventListener('change', ()=>{
+    const s=sounds[editing]; s.sound=sel.value;
+    if(byId[s.sound]) loadSound(s.sound).then(()=>play(editing, 100));
+    changed();
+  });
+  pitch.addEventListener('input', ()=>{ sounds[editing].pitch=+pitch.value; changed(); });
+  pitch.addEventListener('change', ()=>play(editing, 100));
+  level.addEventListener('input', ()=>{ sounds[editing].level=+level.value; changed(); });
+  document.getElementById('sdPreview').addEventListener('click', ()=>play(editing, 100));
+  document.getElementById('sdDefault').addEventListener('click', ()=>{
+    const p=PADS.find(p=>p.id===editing); sounds[editing]=defaultSound(p); loadSound(p.sound); changed();
+  });
+  document.getElementById('sdDone').addEventListener('click', ()=>{ dlg.classList.remove('show'); editing=null; });
+
+  // ---------- Monitor ----------
   const logEl=document.getElementById('log'); let logStarted=false;
   function log(note, vel, padId){
     if(!logStarted){ logEl.innerHTML=''; logStarted=true; }
@@ -251,7 +398,7 @@
     if(cmd===0x90 && d2>0){
       if(learning){
         for(const id in map) map[id]=map[id].filter(n=>n!==d1);
-        map[learning].push(d1); const id=learning; learning=null; save(); refresh();
+        map[learning].push(d1); const id=learning; learning=null; saveMap(); refresh();
         log(d1,d2,id); play(id,d2); return;
       }
       const id=padForNote(d1); log(d1,d2,id); if(id) play(id,d2);
@@ -282,15 +429,17 @@
     initAudio(); try{ ctx.resume(); }catch(e){}
     document.getElementById('overlay').classList.add('hide');
     initMidi();
+    preload().then(refresh);
   });
   document.getElementById('vol').addEventListener('input', e=>{ if(master) master.gain.value=+e.target.value; });
   const confirmEl=document.getElementById('confirm');
   document.getElementById('resetBtn').addEventListener('click', ()=>confirmEl.classList.add('show'));
   document.getElementById('cNo').addEventListener('click', ()=>confirmEl.classList.remove('show'));
-  document.getElementById('cYes').addEventListener('click', ()=>{ map=defaults(); learning=null; save(); refresh(); confirmEl.classList.remove('show'); });
+  document.getElementById('cYes').addEventListener('click', ()=>{ map=defaultMap(); learning=null; saveMap(); refresh(); confirmEl.classList.remove('show'); });
   document.addEventListener('visibilitychange', ()=>{ if(!document.hidden && ctx) try{ ctx.resume(); }catch(e){} });
 
   load(); render();
+  manifestReady.then(refresh);
 })();
 </script>
 </body>
