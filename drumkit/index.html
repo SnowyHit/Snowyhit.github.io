@@ -64,6 +64,31 @@
   .field select{width:100%}
   .field input[type=range]{width:100%}
   .field .val{color:var(--text)}
+  .lbl{font-size:14px;color:var(--dim);display:flex;align-items:center;gap:8px}
+  input[type=number]{width:66px;font:inherit;color:var(--text);background:#262a31;border:1px solid var(--line);border-radius:8px;padding:7px 8px;text-align:center}
+  .metro{display:flex;flex-wrap:wrap;align-items:center;gap:10px 14px;padding:10px 16px;border-bottom:1px solid var(--line);background:#16191d}
+  .metro .bpm{display:flex;align-items:center;gap:6px}
+  #metroBtn.on{background:var(--accent);color:#111;border-color:var(--accent)}
+  #beats{display:flex;gap:6px}
+  #beats span{width:14px;height:14px;border-radius:50%;background:#2c3139}
+  #beats span.first{box-shadow:0 0 0 2px #555c66 inset}
+  #beats span.on{background:var(--accent);box-shadow:none}
+  .tabs{display:flex;gap:6px;padding:12px 16px 0}
+  .tabs button.active{background:var(--text);color:#111;border-color:var(--text)}
+  main[hidden],#training[hidden]{display:none}
+  #training{flex:1;padding:14px;display:flex;flex-direction:column;gap:12px}
+  .card{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:12px}
+  #lastHit{font-size:20px;font-weight:650;min-height:28px;margin-bottom:8px}
+  #lastHit small{font-size:14px;color:var(--dim);font-weight:400}
+  canvas{display:block;width:100%}
+  .tcontrols{display:flex;flex-wrap:wrap;gap:10px 14px;align-items:center}
+  table.stats{width:100%;border-collapse:collapse;font-size:14px}
+  table.stats th{color:var(--dim);font-weight:600;text-align:right;padding:6px 8px;border-bottom:1px solid var(--line);white-space:nowrap}
+  table.stats td{text-align:right;padding:6px 8px;border-bottom:1px solid #22262c;font-variant-numeric:tabular-nums;white-space:nowrap}
+  table.stats th:first-child,table.stats td:first-child{text-align:left}
+  table.stats small{color:var(--dim)}
+  .sw{display:inline-block;width:10px;height:10px;border-radius:50%;margin-right:8px}
+  .pad{border-left:4px solid var(--pc,var(--line))}
 </style>
 </head>
 <body>
@@ -101,7 +126,38 @@
 </header>
 <div id="banner"></div>
 
+<div class="metro">
+  <button id="metroBtn">▶ Metronome</button>
+  <div class="bpm"><button id="bpmDown">−</button><input type="number" id="bpm" min="30" max="260"><button id="bpmUp">+</button><span class="lbl">BPM</span></div>
+  <input type="range" id="bpmSlider" min="30" max="260">
+  <label class="lbl">Beats <select id="bpb"></select></label>
+  <label class="lbl">Click <input type="range" id="clickVol" min="0" max="1.5" step="0.01"></label>
+  <div id="beats"></div>
+</div>
+<div class="tabs"><button id="tabPads">Pads</button><button id="tabTrain">Training room</button></div>
+
 <main id="pads"></main>
+
+<section id="training" hidden>
+  <div class="card">
+    <div id="lastHit">Start the metronome and play along.</div>
+    <canvas id="meter"></canvas>
+  </div>
+  <div class="card"><canvas id="barView"></canvas></div>
+  <div class="card tcontrols">
+    <label class="lbl">Grid <select id="grid">
+      <option value="1">Quarter notes</option><option value="2">8th notes</option>
+      <option value="3">8th triplets</option><option value="4">16th notes</option></select></label>
+    <label class="lbl">Strictness <select id="strict">
+      <option value="easy">Easy (±25 / ±50 ms)</option><option value="normal">Normal (±15 / ±35 ms)</option>
+      <option value="hard">Hard (±8 / ±20 ms)</option></select></label>
+    <label class="lbl">Latency fix <input type="number" id="comp" step="1"> ms</label>
+    <button id="calBtn">Calibrate</button>
+    <button id="resetStats">Reset stats</button>
+  </div>
+  <div class="card" style="overflow-x:auto"><table class="stats" id="stats"></table></div>
+  <div class="hint">Each hit is measured against the nearest grid line. <b>Calibrate</b> once per device: it measures the delay between the click you hear and your hits, so the numbers show your timing and not the phone's audio lag.</div>
+</section>
 
 <section class="monitor">
   <h2>Incoming MIDI notes</h2>
@@ -114,17 +170,18 @@
 (() => {
   // ---------- Pads, default notes (General MIDI + common e-kit) and default sounds ----------
   const PADS = [
-    {id:'crash', name:'Crash',        notes:[49,57,55,52], sound:'crash'},
-    {id:'hhc',   name:'Hi-Hat',       notes:[42,22],       sound:'hh_closed'},
-    {id:'hho',   name:'Hi-Hat Open',  notes:[46,26],       sound:'hh_open'},
-    {id:'hhp',   name:'Hi-Hat Pedal', notes:[44],          sound:'hh_pedal'},
-    {id:'ride',  name:'Ride',         notes:[51,59,53],    sound:'ride'},
-    {id:'tom1',  name:'Tom 1',        notes:[48,50],       sound:'htom'},
-    {id:'tom2',  name:'Tom 2',        notes:[45,47],       sound:'ltom', pitch:4},
-    {id:'tom3',  name:'Floor Tom',    notes:[43,41,58],    sound:'ltom'},
-    {id:'snare', name:'Snare',        notes:[38,40,37,39], sound:'snare'},
-    {id:'kick',  name:'Kick',         notes:[36,35],       sound:'kick'},
+    {id:'crash', name:'Crash',        notes:[49,57,55,52], sound:'crash',     color:'#ffd54f'},
+    {id:'hhc',   name:'Hi-Hat',       notes:[42,22],       sound:'hh_closed', color:'#4dd0e1'},
+    {id:'hho',   name:'Hi-Hat Open',  notes:[46,26],       sound:'hh_open',   color:'#0097a7'},
+    {id:'hhp',   name:'Hi-Hat Pedal', notes:[44],          sound:'hh_pedal',  color:'#80cbc4'},
+    {id:'ride',  name:'Ride',         notes:[51,59,53],    sound:'ride',      color:'#b39ddb'},
+    {id:'tom1',  name:'Tom 1',        notes:[48,50],       sound:'htom',      color:'#f48fb1'},
+    {id:'tom2',  name:'Tom 2',        notes:[45,47],       sound:'ltom', pitch:4, color:'#ce93d8'},
+    {id:'tom3',  name:'Floor Tom',    notes:[43,41,58],    sound:'ltom',      color:'#bcaaa4'},
+    {id:'snare', name:'Snare',        notes:[38,40,37,39], sound:'snare',     color:'#64b5f6'},
+    {id:'kick',  name:'Kick',         notes:[36,35],       sound:'kick',      color:'#ff8a65'},
   ];
+  const COLOR = {}; PADS.forEach(p=>COLOR[p.id]=p.color);
   const HATS = ['hhc','hho','hhp'];          // one physical hi-hat: any hat hit chokes the open hat
   const MAX_VOICES = 4;                      // overlapping hits kept per pad
   const MAP_KEY = 'midi-drumkit-map-v1', SND_KEY = 'midi-drumkit-sounds-v1';
@@ -160,6 +217,7 @@
     comp.threshold.value=-10; comp.ratio.value=4; comp.attack.value=0.002; comp.release.value=0.15;
     master = ctx.createGain(); master.gain.value = +document.getElementById('vol').value;
     master.connect(comp); comp.connect(ctx.destination);
+    clickGain = ctx.createGain(); clickGain.gain.value = ms.click; clickGain.connect(ctx.destination);
     noiseBuf = ctx.createBuffer(1, ctx.sampleRate*2, ctx.sampleRate);
     const d = noiseBuf.getChannelData(0); for(let i=0;i<d.length;i++) d[i]=Math.random()*2-1;
   }
@@ -314,11 +372,11 @@
   function render(){
     padsEl.innerHTML='';
     PADS.forEach(p=>{
-      const el=document.createElement('div'); el.className='pad';
+      const el=document.createElement('div'); el.className='pad'; el.style.setProperty('--pc', p.color);
       el.innerHTML = `<div><div class="name">${p.name}</div><div class="snd"></div><div class="notes"></div></div>
         <div class="hitzone">tap to play</div>
         <div class="row"><button data-a="learn">Learn</button><button data-a="clear">Clear</button><button data-a="sound">Sound</button></div>`;
-      el.querySelector('.hitzone').addEventListener('pointerdown', e=>{ e.preventDefault(); play(p.id, 100); });
+      el.querySelector('.hitzone').addEventListener('pointerdown', e=>{ e.preventDefault(); play(p.id, 100); registerHit(p.id, e.timeStamp); });
       el.querySelector('[data-a=learn]').addEventListener('click', ()=>toggleLearn(p.id));
       el.querySelector('[data-a=clear]').addEventListener('click', ()=>{ map[p.id]=[]; saveMap(); refresh(); });
       el.querySelector('[data-a=sound]').addEventListener('click', ()=>openSound(p.id));
@@ -401,7 +459,7 @@
         map[learning].push(d1); const id=learning; learning=null; saveMap(); refresh();
         log(d1,d2,id); play(id,d2); return;
       }
-      const id=padForNote(d1); log(d1,d2,id); if(id) play(id,d2);
+      const id=padForNote(d1); log(d1,d2,id); if(id){ play(id,d2); registerHit(id, e.timeStamp); }
     }
   }
   const dot=document.getElementById('dot'), statusEl=document.getElementById('midiStatus'), banner=document.getElementById('banner');
@@ -423,6 +481,217 @@
       showBanner('MIDI access was blocked ('+(err&&err.name||'error')+'). If this page is shown inside another app or page, open it directly in Chrome, or host the file on an https site (e.g. GitHub Pages).');
     });
   }
+
+  // ---------- Metronome ----------
+  const $ = id=>document.getElementById(id);
+  const METRO_KEY = 'midi-drumkit-metro-v1';
+  const ms = Object.assign({bpm:100, bpb:4, click:0.8, grid:2, strict:'normal', comp:0, tab:'pads'}, restore(METRO_KEY)||{});
+  const saveMetro = ()=>store(METRO_KEY, ms);
+  // anchor = a beat whose time and index are known; the grid is computed from it (moved on tempo changes)
+  const metro = {on:false, timer:null, next:0, beat:0, anchorTime:0, anchorBeat:0, queue:[]};
+  let clickGain = null, shownBeat = -1;
+  const beatDur = ()=>60/ms.bpm;
+  const outLat = ()=>(ctx.outputLatency||0)+(ctx.baseLatency||0);
+
+  function clickAt(t, accent){
+    const o=ctx.createOscillator(); o.type='triangle'; o.frequency.value = accent?1760:1175;
+    const g=ctx.createGain();
+    g.gain.setValueAtTime(0.0001,t); g.gain.exponentialRampToValueAtTime(accent?0.9:0.55,t+0.002);
+    g.gain.exponentialRampToValueAtTime(0.0001,t+0.05);
+    o.connect(g); g.connect(clickGain); o.start(t); o.stop(t+0.06);
+  }
+  function schedule(){
+    while(metro.next < ctx.currentTime+0.12){
+      const b = metro.beat % ms.bpb;
+      clickAt(metro.next, b===0); metro.queue.push({t:metro.next, b});
+      metro.next += beatDur(); metro.beat++;
+    }
+  }
+  function startMetro(){
+    if(!ctx || metro.on) return;
+    metro.on=true; metro.beat=0; metro.next=ctx.currentTime+0.15; metro.queue=[];
+    metro.anchorTime=metro.next; metro.anchorBeat=0; hits=[];
+    schedule(); metro.timer=setInterval(schedule, 25);
+    $('metroBtn').textContent='■ Stop'; $('metroBtn').classList.add('on');
+  }
+  function stopMetro(){
+    metro.on=false; clearInterval(metro.timer); metro.queue=[]; shownBeat=-1; showBeat(-1);
+    $('metroBtn').textContent='▶ Metronome'; $('metroBtn').classList.remove('on');
+  }
+  function setBpm(v){
+    v = Math.max(30, Math.min(260, Math.round(+v || ms.bpm)));
+    if(metro.on){ metro.anchorTime=metro.next; metro.anchorBeat=metro.beat; }
+    ms.bpm=v; $('bpm').value=v; $('bpmSlider').value=v; saveMetro();
+  }
+  function buildBeats(){
+    $('beats').innerHTML = Array.from({length:ms.bpb}, (_,i)=>`<span class="${i?'':'first'}"></span>`).join('');
+  }
+  function showBeat(b){ [...$('beats').children].forEach((s,i)=>s.classList.toggle('on', i===b)); }
+
+  // ---------- Training room ----------
+  const STRICT = {easy:[25,50], normal:[15,35], hard:[8,20]};   // [perfect, on time] in ms
+  const GRADE = {perfect:'#4cc38a', good:'#f2c14e', off:'#ef5b5b'};
+  const GRADE_NAME = {perfect:'Perfect', good:'On time', off:'Off'};
+  let hits = [];   // hits drawn in the bar view (cleared when the metronome starts)
+  let stats = {};  // padId -> [offset ms]
+  let cal = null;  // calibration in progress: {offs:[]}
+
+  // When a hit happened, in audio-context time of what was audible at that moment
+  function hitTime(ts){
+    const now = performance.now(); if(!(ts>0) || ts>now+5) ts = now;
+    const o = ctx.getOutputTimestamp ? ctx.getOutputTimestamp() : null;
+    if(o && o.performanceTime>0 && o.contextTime>0) return o.contextTime + (ts-o.performanceTime)/1000;
+    return ctx.currentTime - (now-ts)/1000 - outLat();
+  }
+  function gridOf(t, div){
+    const bd = beatDur(), beatF = metro.anchorBeat + (t-metro.anchorTime)/bd;
+    const beat = Math.round(beatF*div)/div;
+    return {beat, off: t - (metro.anchorTime + (beat-metro.anchorBeat)*bd)};
+  }
+  const fmt = v=>(v>0?'+':'')+Math.round(v);
+  function gradeOf(off){ const [p1,p2]=STRICT[ms.strict], a=Math.abs(off); return a<=p1?'perfect':a<=p2?'good':'off'; }
+
+  function registerHit(padId, ts){
+    if(!ctx || !metro.on) return;
+    const raw = hitTime(ts);
+    if(cal){
+      const g = gridOf(raw, 1); if(g.beat<0) return;
+      cal.offs.push(g.off*1000);
+      if(cal.offs.length<12){ $('lastHit').innerHTML = `Calibrating… <small>${cal.offs.length}/12 hits</small>`; return; }
+      const s = cal.offs.sort((a,b)=>a-b); ms.comp = Math.round((s[5]+s[6])/2); cal = null;
+      $('comp').value = ms.comp; saveMetro();
+      $('lastHit').innerHTML = `Latency fix set to ${ms.comp} ms. <small>Hits are now measured against what you hear.</small>`;
+      return;
+    }
+    const g = gridOf(raw - ms.comp/1000, ms.grid);
+    if(g.beat < 0) return;
+    const off = g.off*1000, grade = gradeOf(off);
+    const bar = Math.floor(g.beat/ms.bpb + 1e-9);
+    hits.push({pad:padId, off, grade, bar, pos:(g.beat-bar*ms.bpb)/ms.bpb});
+    if(hits.length>400) hits.splice(0,100);
+    (stats[padId] || (stats[padId]=[])).push(off);
+    const word = Math.abs(off)<1 ? 'dead on' : (off<0?'early':'late');
+    $('lastHit').innerHTML = `<span style="color:${COLOR[padId]}">${padName(padId)}</span> `+
+      `<span style="color:${GRADE[grade]}">${fmt(off)} ms ${word}</span> <small>${GRADE_NAME[grade]}</small>`;
+    renderStats();
+  }
+
+  function renderStats(){
+    const table = $('stats'), all = [].concat(...Object.values(stats));
+    if(!all.length){ table.innerHTML = '<tr><td style="color:var(--dim)">No hits yet. Start the metronome and play along.</td></tr>'; return; }
+    const [p1,p2] = STRICT[ms.strict];
+    const row = (name, color, offs)=>{
+      const n=offs.length, avg=offs.reduce((a,b)=>a+b,0)/n;
+      const sd=Math.sqrt(offs.reduce((a,b)=>a+(b-avg)**2,0)/n);
+      const pct = lim=>Math.round(100*offs.filter(o=>Math.abs(o)<=lim).length/n)+'%';
+      const tend = avg < -p1/2 ? 'rushing' : avg > p1/2 ? 'dragging' : 'centered';
+      return `<tr><td><span class="sw" style="background:${color}"></span>${name}</td><td>${n}</td>`+
+        `<td>${fmt(avg)} ms <small>${tend}</small></td><td>±${Math.round(sd)} ms</td><td>${pct(p1)}</td><td>${pct(p2)}</td></tr>`;
+    };
+    table.innerHTML = '<tr><th>Drum</th><th>Hits</th><th>Average</th><th>Spread</th><th>Perfect</th><th>On time</th></tr>'+
+      row('All', '#e8eaed', all) + PADS.filter(p=>stats[p.id]).map(p=>row(p.name, p.color, stats[p.id])).join('');
+  }
+
+  function sizeCanvas(c, h){
+    const dpr = window.devicePixelRatio||1, w = c.clientWidth;
+    if(c.width!==Math.round(w*dpr) || c.height!==Math.round(h*dpr)){ c.width=Math.round(w*dpr); c.height=Math.round(h*dpr); c.style.height=h+'px'; }
+    const x = c.getContext('2d'); x.setTransform(dpr,0,0,dpr,0,0); x.clearRect(0,0,w,h); return [x,w];
+  }
+  function drawMeter(){
+    const h=84, [x,w] = sizeCanvas($('meter'), h); if(!w) return;
+    const [p1,p2] = STRICT[ms.strict], range = Math.max(p2*2, 60);
+    const X = off=>w/2 + Math.max(-range, Math.min(range, off))/range*(w/2-10);
+    const top=18, bh=h-40;
+    x.fillStyle='#22262c'; x.fillRect(0,top,w,bh);
+    x.fillStyle='rgba(242,193,78,.16)'; x.fillRect(X(-p2),top,X(p2)-X(-p2),bh);
+    x.fillStyle='rgba(76,195,138,.28)'; x.fillRect(X(-p1),top,X(p1)-X(-p1),bh);
+    x.fillStyle='#e8eaed'; x.fillRect(w/2-1,top-4,2,bh+8);
+    x.font='12px system-ui,sans-serif'; x.fillStyle='#8b929c'; x.textBaseline='alphabetic';
+    x.textAlign='left'; x.fillText('◀ EARLY', 2, 12); x.textAlign='right'; x.fillText('LATE ▶', w-2, 12);
+    x.textAlign='center';
+    [-range,-p2,-p1,p1,p2,range].forEach(v=>x.fillText(fmt(v), X(v), h-6));
+    const recent = hits.slice(-16);
+    recent.forEach((hh,i)=>{
+      const last = i===recent.length-1;
+      x.globalAlpha = last ? 1 : 0.2 + 0.6*(i+1)/recent.length;
+      x.fillStyle = COLOR[hh.pad];
+      x.fillRect(X(hh.off)-(last?3:1.5), top+(last?-2:bh*0.2), last?6:3, last?bh+4:bh*0.6);
+    });
+    x.globalAlpha = 1;
+  }
+  function drawBar(){
+    const rowH=24, head=20, h=head+PADS.length*rowH+4, [x,w] = sizeCanvas($('barView'), h); if(!w) return;
+    const L=92, W=w-L-12, X=pos=>L+pos*W;
+    x.font='12px system-ui,sans-serif'; x.textBaseline='middle';
+    PADS.forEach((p,i)=>{
+      const y=head+i*rowH;
+      if(i%2===0){ x.fillStyle='#1f2328'; x.fillRect(L,y,W,rowH); }
+      x.fillStyle=p.color; x.beginPath(); x.arc(8,y+rowH/2,5,0,7); x.fill();
+      x.fillStyle='#e8eaed'; x.textAlign='left'; x.fillText(p.name,18,y+rowH/2);
+    });
+    const steps = ms.bpb*ms.grid;
+    for(let s=0;s<=steps;s++){
+      const xx=X(s/steps), beat=s%ms.grid===0, edge=s===0||s===steps;
+      x.fillStyle = edge?'#8b929c' : beat?'#4f5661':'#30353d';
+      x.fillRect(Math.round(xx)-(beat?1:0.5), head-4, beat?2:1, h-head);
+      if(beat && s<steps){ x.fillStyle='#8b929c'; x.textAlign='center'; x.fillText(String(s/ms.grid+1), xx, 9); }
+    }
+    let curBar = hits.length ? hits[hits.length-1].bar : 0;
+    if(metro.on){
+      const g = metro.anchorBeat + (hitTime(performance.now())-metro.anchorTime)/beatDur();
+      if(g>=0){ curBar=Math.floor(g/ms.bpb); x.fillStyle='rgba(242,163,58,.9)'; x.fillRect(X((g-curBar*ms.bpb)/ms.bpb)-1, head-4, 2, h-head); }
+    }else{
+      x.fillStyle='rgba(18,20,23,.6)'; x.fillRect(L,head,W,h-head);
+      x.fillStyle='#e8eaed'; x.textAlign='center'; x.fillText(hits.length?'Metronome stopped':'Start the metronome and play along', L+W/2, head+(h-head)/2);
+    }
+    const barLen = ms.bpb*beatDur()*1000;
+    for(let i=hits.length-1;i>=0;i--){
+      const hh=hits[i], age=Math.max(0, curBar-hh.bar); if(age>1) break;
+      const lane=PADS.findIndex(p=>p.id===hh.pad), y=head+lane*rowH+rowH/2, xx=X(hh.pos+hh.off/barLen);
+      x.globalAlpha = age ? 0.3 : 1;
+      x.fillStyle=COLOR[hh.pad]; x.beginPath(); x.arc(xx,y,6,0,7); x.fill();
+      x.lineWidth=2.5; x.strokeStyle=GRADE[hh.grade]; x.stroke();
+    }
+    x.globalAlpha = 1;
+  }
+
+  function frame(){
+    if(ctx && metro.on){
+      const now = hitTime(performance.now());
+      while(metro.queue.length && metro.queue[0].t<=now){ const b=metro.queue.shift().b; if(b!==shownBeat){ shownBeat=b; showBeat(b); } }
+    }
+    if(!$('training').hidden){ drawMeter(); drawBar(); }
+    requestAnimationFrame(frame);
+  }
+  function setTab(t){
+    ms.tab=t; saveMetro();
+    $('pads').hidden = t!=='pads'; $('training').hidden = t!=='train';
+    $('tabPads').classList.toggle('active', t==='pads'); $('tabTrain').classList.toggle('active', t==='train');
+  }
+
+  // metronome + training controls
+  for(let i=2;i<=7;i++) $('bpb').appendChild(new Option(i+' / 4', i));
+  $('bpb').value=ms.bpb; $('clickVol').value=ms.click; $('grid').value=ms.grid; $('strict').value=ms.strict; $('comp').value=ms.comp;
+  setBpm(ms.bpm); buildBeats(); setTab(ms.tab==='train'?'train':'pads'); renderStats();
+  $('metroBtn').addEventListener('click', ()=>metro.on ? stopMetro() : startMetro());
+  $('bpm').addEventListener('change', e=>setBpm(e.target.value));
+  $('bpmSlider').addEventListener('input', e=>setBpm(e.target.value));
+  $('bpmDown').addEventListener('click', ()=>setBpm(ms.bpm-1));
+  $('bpmUp').addEventListener('click', ()=>setBpm(ms.bpm+1));
+  $('bpb').addEventListener('change', e=>{ ms.bpb=+e.target.value; saveMetro(); buildBeats(); if(metro.on){ stopMetro(); startMetro(); } });
+  $('clickVol').addEventListener('input', e=>{ ms.click=+e.target.value; if(clickGain) clickGain.gain.value=ms.click; saveMetro(); });
+  $('grid').addEventListener('change', e=>{ ms.grid=+e.target.value; saveMetro(); });
+  $('strict').addEventListener('change', e=>{ ms.strict=e.target.value; saveMetro(); hits.forEach(hh=>hh.grade=gradeOf(hh.off)); renderStats(); });
+  $('comp').addEventListener('change', e=>{ ms.comp=Math.round(+e.target.value||0); e.target.value=ms.comp; saveMetro(); });
+  $('calBtn').addEventListener('click', ()=>{
+    if(!ctx) return;
+    startMetro(); cal = {offs:[]};
+    $('lastHit').innerHTML = 'Calibrating… <small>hit any drum exactly with the click, 12 times</small>';
+  });
+  $('resetStats').addEventListener('click', ()=>{ stats={}; hits=[]; renderStats(); $('lastHit').textContent='Stats cleared.'; });
+  $('tabPads').addEventListener('click', ()=>setTab('pads'));
+  $('tabTrain').addEventListener('click', ()=>setTab('train'));
+  requestAnimationFrame(frame);
 
   // ---------- Wire up ----------
   document.getElementById('startBtn').addEventListener('click', ()=>{
