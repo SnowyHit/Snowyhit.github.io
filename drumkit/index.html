@@ -1,0 +1,297 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no">
+<title>MIDI Drum Kit</title>
+<style>
+  :root{
+    --bg:#121417; --panel:#1b1e23; --line:#2a2f37; --text:#e8eaed; --dim:#8b929c;
+    --accent:#f2a33a; --ok:#4cc38a; --bad:#ef5b5b; --learn:#5aa9ff;
+  }
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+  html,body{margin:0;height:100%;background:var(--bg);color:var(--text);
+    font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;user-select:none;-webkit-user-select:none}
+  body{display:flex;flex-direction:column;min-height:100vh}
+  header{display:flex;flex-wrap:wrap;align-items:center;gap:12px 18px;padding:12px 16px;border-bottom:1px solid var(--line);background:var(--panel)}
+  h1{font-size:18px;margin:0;font-weight:650;letter-spacing:.2px}
+  .status{display:flex;align-items:center;gap:8px;font-size:14px;color:var(--dim)}
+  .dot{width:10px;height:10px;border-radius:50%;background:var(--bad);flex:none}
+  .dot.on{background:var(--ok)}
+  .spacer{flex:1}
+  label.vol{display:flex;align-items:center;gap:8px;font-size:14px;color:var(--dim)}
+  input[type=range]{width:120px;accent-color:var(--accent)}
+  button{font:inherit;color:var(--text);background:#262a31;border:1px solid var(--line);border-radius:8px;padding:8px 12px;cursor:pointer}
+  button:active{background:#30353d}
+  main{flex:1;padding:14px;display:grid;gap:12px;
+    grid-template-columns:repeat(auto-fill,minmax(160px,1fr));align-content:start}
+  .pad{position:relative;background:var(--panel);border:1px solid var(--line);border-radius:14px;
+    min-height:150px;padding:12px;display:flex;flex-direction:column;justify-content:space-between;touch-action:manipulation;overflow:hidden}
+  .pad .name{font-size:17px;font-weight:650}
+  .pad .notes{font-size:13px;color:var(--dim);margin-top:4px;min-height:18px}
+  .pad .notes b{color:var(--text);font-weight:600}
+  .pad .row{display:flex;gap:6px}
+  .pad .row button{padding:6px 10px;font-size:13px}
+  .pad .hitzone{flex:1;margin:8px 0;border-radius:10px;background:#22262c;display:flex;align-items:center;justify-content:center;
+    color:var(--dim);font-size:12px;letter-spacing:.5px;text-transform:uppercase}
+  .pad.flash .hitzone{animation:flash .25s ease-out}
+  @keyframes flash{0%{background:var(--accent);color:#111}100%{background:#22262c}}
+  .pad.learning{border-color:var(--learn);box-shadow:0 0 0 2px var(--learn) inset}
+  .pad.learning .hitzone{background:#1d2b3d;color:var(--learn)}
+  .pad.empty .notes{color:var(--bad)}
+  section.monitor{border-top:1px solid var(--line);background:var(--panel);padding:10px 16px 14px}
+  .monitor h2{font-size:13px;color:var(--dim);font-weight:600;margin:0 0 8px;text-transform:uppercase;letter-spacing:.6px}
+  #log{display:flex;flex-wrap:wrap;gap:6px;min-height:30px}
+  .ev{font-size:13px;padding:5px 9px;border-radius:999px;background:#262a31;border:1px solid var(--line);white-space:nowrap}
+  .ev.unmapped{border-color:var(--bad);color:#ffb3b3}
+  .hint{font-size:13px;color:var(--dim);margin-top:8px}
+  #banner{display:none;padding:10px 16px;background:#3a2a12;color:#ffd79a;font-size:14px;border-bottom:1px solid #5a4018}
+  #banner.show{display:block}
+  #overlay{position:fixed;inset:0;background:rgba(10,11,13,.92);display:flex;align-items:center;justify-content:center;z-index:10}
+  #overlay.hide{display:none}
+  #overlay .box{text-align:center;max-width:420px;padding:24px}
+  #overlay button{font-size:20px;padding:16px 34px;background:var(--accent);color:#111;border:none;font-weight:700;border-radius:12px}
+  #overlay p{color:var(--dim);font-size:14px;line-height:1.5}
+  #confirm{position:fixed;inset:0;background:rgba(0,0,0,.6);display:none;align-items:center;justify-content:center;z-index:11}
+  #confirm.show{display:flex}
+  #confirm .box{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:20px;max-width:340px}
+  #confirm .row{display:flex;gap:8px;justify-content:flex-end;margin-top:14px}
+</style>
+</head>
+<body>
+<div id="overlay"><div class="box">
+  <button id="startBtn">Tap to start</button>
+  <p>Android needs one tap before a page can play sound.<br>Plug in your e-drum kit over USB (OTG) first, or after starting.</p>
+</div></div>
+
+<div id="confirm"><div class="box">
+  <div>Reset all pads to the default note mapping?</div>
+  <div class="row"><button id="cNo">Cancel</button><button id="cYes" style="background:var(--bad);border-color:var(--bad)">Reset</button></div>
+</div></div>
+
+<header>
+  <h1>MIDI Drum Kit</h1>
+  <div class="status"><span class="dot" id="dot"></span><span id="midiStatus">MIDI: not connected</span></div>
+  <div class="spacer"></div>
+  <label class="vol">Volume <input type="range" id="vol" min="0" max="1.5" step="0.01" value="1"></label>
+  <button id="resetBtn">Reset mapping</button>
+</header>
+<div id="banner"></div>
+
+<main id="pads"></main>
+
+<section class="monitor">
+  <h2>Incoming MIDI notes</h2>
+  <div id="log"><span class="hint">Hit a drum and its note number shows up here.</span></div>
+  <div class="hint">To fix a pad that doesn't sound: tap <b>Learn</b> on that pad, then hit the drum. A red note above means no pad is assigned to it.</div>
+</section>
+
+<script>
+(() => {
+  // ---------- Pads and default (General MIDI + common e-kit) notes ----------
+  const PADS = [
+    {id:'crash', name:'Crash',        notes:[49,57,55,52]},
+    {id:'hhc',   name:'Hi-Hat',       notes:[42,44,22]},
+    {id:'hho',   name:'Hi-Hat Open',  notes:[46,26]},
+    {id:'ride',  name:'Ride',         notes:[51,59,53]},
+    {id:'tom1',  name:'Tom 1',        notes:[48,50]},
+    {id:'tom2',  name:'Tom 2',        notes:[45,47]},
+    {id:'tom3',  name:'Floor Tom',    notes:[43,41,58]},
+    {id:'snare', name:'Snare',        notes:[38,40,37,39]},
+    {id:'kick',  name:'Kick',         notes:[36,35]},
+  ];
+  const STORE_KEY = 'midi-drumkit-map-v1';
+  let map = {}; // padId -> [notes]
+
+  function defaults(){ const m={}; PADS.forEach(p=>m[p.id]=p.notes.slice()); return m; }
+  function load(){
+    try{ const s = localStorage.getItem(STORE_KEY); if(s){ const m=JSON.parse(s); if(m && typeof m==='object'){ map = Object.assign(defaults(), m); return; } } }catch(e){}
+    map = defaults();
+  }
+  function save(){ try{ localStorage.setItem(STORE_KEY, JSON.stringify(map)); }catch(e){} }
+  function padForNote(n){ for(const id in map){ if(map[id].includes(n)) return id; } return null; }
+  function padName(id){ const p=PADS.find(p=>p.id===id); return p?p.name:id; }
+
+  // ---------- Audio ----------
+  let ctx=null, master=null, noiseBuf=null, openHat=null;
+  function initAudio(){
+    if(ctx) return;
+    ctx = new (window.AudioContext||window.webkitAudioContext)({latencyHint:'interactive'});
+    const comp = ctx.createDynamicsCompressor();
+    comp.threshold.value=-10; comp.ratio.value=4; comp.attack.value=0.002; comp.release.value=0.15;
+    master = ctx.createGain(); master.gain.value = +document.getElementById('vol').value;
+    master.connect(comp); comp.connect(ctx.destination);
+    noiseBuf = ctx.createBuffer(1, ctx.sampleRate*2, ctx.sampleRate);
+    const d = noiseBuf.getChannelData(0); for(let i=0;i<d.length;i++) d[i]=Math.random()*2-1;
+  }
+  function gainEnv(t, peak, decay, dest){
+    const g = ctx.createGain();
+    g.gain.setValueAtTime(Math.max(peak,0.0001), t);
+    g.gain.exponentialRampToValueAtTime(0.0001, t+decay);
+    g.connect(dest||master); return g;
+  }
+  function noise(t, dur){
+    const s = ctx.createBufferSource(); s.buffer = noiseBuf;
+    s.start(t, Math.random()*1.5); s.stop(t+dur+0.05); return s;
+  }
+  function filt(type, freq, q){ const f=ctx.createBiquadFilter(); f.type=type; f.frequency.value=freq; if(q) f.Q.value=q; return f; }
+  function metal(t, dur, dest){
+    // 808-style metallic: six detuned square waves
+    const ratios=[2,3,4.16,5.43,6.79,8.21], base=40;
+    ratios.forEach(r=>{ const o=ctx.createOscillator(); o.type='square'; o.frequency.value=base*r; o.connect(dest); o.start(t); o.stop(t+dur+0.05); });
+  }
+
+  const SYNTH = {
+    kick(v,t){
+      const o=ctx.createOscillator(); o.type='sine';
+      o.frequency.setValueAtTime(150,t); o.frequency.exponentialRampToValueAtTime(45,t+0.12);
+      o.connect(gainEnv(t,1.2*v,0.45)); o.start(t); o.stop(t+0.5);
+      const n=noise(t,0.02), f=filt('highpass',2500); n.connect(f); f.connect(gainEnv(t,0.25*v,0.02));
+    },
+    snare(v,t){
+      const n=noise(t,0.25), hp=filt('highpass',1200); n.connect(hp); hp.connect(gainEnv(t,0.8*v,0.22));
+      const o=ctx.createOscillator(); o.type='triangle';
+      o.frequency.setValueAtTime(200,t); o.frequency.exponentialRampToValueAtTime(160,t+0.1);
+      o.connect(gainEnv(t,0.6*v,0.12)); o.start(t); o.stop(t+0.2);
+    },
+    hat(v,t,open){
+      if(openHat){ // choke the open hat
+        try{ openHat.gain.cancelScheduledValues(t); openHat.gain.setValueAtTime(openHat.gain.value||0.0001,t); openHat.gain.exponentialRampToValueAtTime(0.0001,t+0.03);}catch(e){}
+        openHat=null;
+      }
+      const dur = open?0.6:0.07;
+      const g = gainEnv(t,(open?0.35:0.4)*v,dur);
+      const bp=filt('bandpass',10000,0.8), hp=filt('highpass',7000);
+      bp.connect(hp); hp.connect(g);
+      metal(t,dur,bp);
+      const n=noise(t,dur); n.connect(bp);
+      if(open) openHat=g;
+    },
+    tom(v,t,base,dec){
+      const o=ctx.createOscillator(); o.type='sine';
+      o.frequency.setValueAtTime(base*1.6,t); o.frequency.exponentialRampToValueAtTime(base,t+0.08);
+      o.connect(gainEnv(t,1.0*v,dec)); o.start(t); o.stop(t+dec+0.05);
+      const n=noise(t,0.05), lp=filt('lowpass',3000); n.connect(lp); lp.connect(gainEnv(t,0.2*v,0.05));
+    },
+    crash(v,t){
+      const g=gainEnv(t,0.45*v,1.8), hp=filt('highpass',4000); hp.connect(g);
+      noise(t,1.8).connect(hp);
+      const g2=gainEnv(t,0.12*v,1.2), bp=filt('bandpass',8000,0.6); bp.connect(g2); metal(t,1.2,bp);
+    },
+    ride(v,t){
+      const g=gainEnv(t,0.22*v,1.3), bp=filt('bandpass',6000,1.2); bp.connect(g); metal(t,1.3,bp);
+      const o=ctx.createOscillator(); o.type='triangle'; o.frequency.value=2600;
+      o.connect(gainEnv(t,0.12*v,0.5)); o.start(t); o.stop(t+0.55);
+      const hp=filt('highpass',7000); hp.connect(gainEnv(t,0.12*v,0.6)); noise(t,0.6).connect(hp);
+    }
+  };
+  function play(padId, vel){
+    if(!ctx) return;
+    const v = Math.max(0.04, Math.pow(vel/127, 1.5));
+    const t = ctx.currentTime + 0.001;
+    switch(padId){
+      case 'kick': SYNTH.kick(v,t); break;
+      case 'snare': SYNTH.snare(v,t); break;
+      case 'hhc': SYNTH.hat(v,t,false); break;
+      case 'hho': SYNTH.hat(v,t,true); break;
+      case 'tom1': SYNTH.tom(v,t,210,0.45); break;
+      case 'tom2': SYNTH.tom(v,t,155,0.5); break;
+      case 'tom3': SYNTH.tom(v,t,105,0.7); break;
+      case 'crash': SYNTH.crash(v,t); break;
+      case 'ride': SYNTH.ride(v,t); break;
+    }
+    flash(padId);
+  }
+
+  // ---------- UI ----------
+  const padsEl = document.getElementById('pads');
+  const els = {};
+  let learning = null;
+
+  function render(){
+    padsEl.innerHTML='';
+    PADS.forEach(p=>{
+      const el=document.createElement('div'); el.className='pad';
+      el.innerHTML = `<div><div class="name">${p.name}</div><div class="notes"></div></div>
+        <div class="hitzone">tap to play</div>
+        <div class="row"><button data-a="learn">Learn</button><button data-a="clear">Clear</button></div>`;
+      el.querySelector('.hitzone').addEventListener('pointerdown', e=>{ e.preventDefault(); play(p.id, 100); });
+      el.querySelector('[data-a=learn]').addEventListener('click', ()=>toggleLearn(p.id));
+      el.querySelector('[data-a=clear]').addEventListener('click', ()=>{ map[p.id]=[]; save(); refresh(); });
+      padsEl.appendChild(el); els[p.id]=el;
+    });
+    refresh();
+  }
+  function refresh(){
+    PADS.forEach(p=>{
+      const el=els[p.id], n=map[p.id]||[];
+      el.querySelector('.notes').innerHTML = n.length ? 'Notes: '+n.map(x=>`<b>${x}</b>`).join(', ') : 'No notes assigned';
+      el.classList.toggle('empty', !n.length);
+      el.classList.toggle('learning', learning===p.id);
+      el.querySelector('.hitzone').textContent = learning===p.id ? 'hit the drum now…' : 'tap to play';
+      el.querySelector('[data-a=learn]').textContent = learning===p.id ? 'Cancel' : 'Learn';
+    });
+  }
+  function toggleLearn(id){ learning = (learning===id)?null:id; refresh(); }
+  function flash(id){ const el=els[id]; if(!el) return; el.classList.remove('flash'); void el.offsetWidth; el.classList.add('flash'); }
+
+  const logEl=document.getElementById('log'); let logStarted=false;
+  function log(note, vel, padId){
+    if(!logStarted){ logEl.innerHTML=''; logStarted=true; }
+    const s=document.createElement('span');
+    s.className='ev'+(padId?'':' unmapped');
+    s.textContent = `Note ${note} · vel ${vel} → ${padId?padName(padId):'not assigned'}`;
+    logEl.prepend(s);
+    while(logEl.children.length>10) logEl.lastChild.remove();
+  }
+
+  // ---------- MIDI ----------
+  function onMidi(e){
+    const [st, d1, d2] = e.data; const cmd = st & 0xF0;
+    if(cmd===0x90 && d2>0){
+      if(learning){
+        for(const id in map) map[id]=map[id].filter(n=>n!==d1);
+        map[learning].push(d1); const id=learning; learning=null; save(); refresh();
+        log(d1,d2,id); play(id,d2); return;
+      }
+      const id=padForNote(d1); log(d1,d2,id); if(id) play(id,d2);
+    }
+  }
+  const dot=document.getElementById('dot'), statusEl=document.getElementById('midiStatus'), banner=document.getElementById('banner');
+  function showBanner(msg){ banner.textContent=msg; banner.classList.add('show'); }
+  function bindInputs(access){
+    const names=[];
+    access.inputs.forEach(inp=>{ inp.onmidimessage=onMidi; names.push(inp.name||'MIDI device'); });
+    dot.classList.toggle('on', names.length>0);
+    statusEl.textContent = names.length ? 'MIDI: '+names.join(', ') : 'MIDI: no device found — plug in your kit';
+  }
+  function initMidi(){
+    if(!navigator.requestMIDIAccess){
+      showBanner('This browser has no Web MIDI. Open this page in Chrome on Android. You can still tap the pads.'); statusEl.textContent='MIDI: not supported'; return;
+    }
+    navigator.requestMIDIAccess({sysex:false}).then(access=>{
+      bindInputs(access); access.onstatechange=()=>bindInputs(access);
+    }).catch(err=>{
+      statusEl.textContent='MIDI: blocked';
+      showBanner('MIDI access was blocked ('+(err&&err.name||'error')+'). If this page is shown inside another app or page, open it directly in Chrome, or host the file on an https site (e.g. GitHub Pages).');
+    });
+  }
+
+  // ---------- Wire up ----------
+  document.getElementById('startBtn').addEventListener('click', ()=>{
+    initAudio(); try{ ctx.resume(); }catch(e){}
+    document.getElementById('overlay').classList.add('hide');
+    initMidi();
+  });
+  document.getElementById('vol').addEventListener('input', e=>{ if(master) master.gain.value=+e.target.value; });
+  const confirmEl=document.getElementById('confirm');
+  document.getElementById('resetBtn').addEventListener('click', ()=>confirmEl.classList.add('show'));
+  document.getElementById('cNo').addEventListener('click', ()=>confirmEl.classList.remove('show'));
+  document.getElementById('cYes').addEventListener('click', ()=>{ map=defaults(); learning=null; save(); refresh(); confirmEl.classList.remove('show'); });
+  document.addEventListener('visibilitychange', ()=>{ if(!document.hidden && ctx) try{ ctx.resume(); }catch(e){} });
+
+  load(); render();
+})();
+</script>
+</body>
+</html>
