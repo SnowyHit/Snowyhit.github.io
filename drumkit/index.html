@@ -121,6 +121,7 @@
   <div class="status"><span class="dot" id="dot"></span><span id="midiStatus">MIDI: not connected</span></div>
   <span id="loadStatus"></span>
   <div class="spacer"></div>
+  <label class="vol">Kit <select id="kitSel"></select></label>
   <label class="vol">Volume <input type="range" id="vol" min="0" max="1.5" step="0.01" value="1"></label>
   <button id="resetBtn">Reset mapping</button>
 </header>
@@ -163,36 +164,40 @@
   <h2>Incoming MIDI notes</h2>
   <div id="log"><span class="hint">Hit a drum and its note number shows up here.</span></div>
   <div class="hint">To fix a pad that doesn't sound: tap <b>Learn</b> on that pad, then hit the drum. A red note above means no pad is assigned to it. Tap <b>Sound</b> to change a pad's sample, pitch or volume.</div>
-  <div class="hint">Acoustic samples: <a href="https://github.com/sfzinstruments/virtuosity_drums" target="_blank" rel="noopener">Virtuosity Drums</a> by Versilian Studios &amp; Karoryfer Samples (CC0).</div>
+  <div class="hint" id="credits"></div>
 </section>
 
 <script>
 (() => {
   // ---------- Pads, default notes (General MIDI + common e-kit) and default sounds ----------
   const PADS = [
-    {id:'crash', name:'Crash',        notes:[49,57,55,52], sound:'crash',     color:'#ffd54f'},
-    {id:'hhc',   name:'Hi-Hat',       notes:[42,22],       sound:'hh_closed', color:'#4dd0e1'},
-    {id:'hho',   name:'Hi-Hat Open',  notes:[46,26],       sound:'hh_open',   color:'#0097a7'},
-    {id:'hhp',   name:'Hi-Hat Pedal', notes:[44],          sound:'hh_pedal',  color:'#80cbc4'},
-    {id:'ride',  name:'Ride',         notes:[51,59,53],    sound:'ride',      color:'#b39ddb'},
-    {id:'tom1',  name:'Tom 1',        notes:[48,50],       sound:'htom',      color:'#f48fb1'},
-    {id:'tom2',  name:'Tom 2',        notes:[45,47],       sound:'ltom', pitch:4, color:'#ce93d8'},
-    {id:'tom3',  name:'Floor Tom',    notes:[43,41,58],    sound:'ltom',      color:'#bcaaa4'},
-    {id:'snare', name:'Snare',        notes:[38,40,37,39], sound:'snare',     color:'#64b5f6'},
-    {id:'kick',  name:'Kick',         notes:[36,35],       sound:'kick',      color:'#ff8a65'},
+    {id:'crash', name:'Crash',        notes:[49,57,55,52], sound:'rock/crash',     color:'#ffd54f'},
+    {id:'hhc',   name:'Hi-Hat',       notes:[42,22],       sound:'rock/hh_closed', color:'#4dd0e1'},
+    {id:'hho',   name:'Hi-Hat Open',  notes:[46,26],       sound:'rock/hh_open',   color:'#0097a7'},
+    {id:'hhp',   name:'Hi-Hat Pedal', notes:[44],          sound:'rock/hh_pedal',  color:'#80cbc4'},
+    {id:'ride',  name:'Ride',         notes:[51,59,53],    sound:'rock/ride',      color:'#b39ddb'},
+    {id:'tom1',  name:'Tom 1',        notes:[48,50],       sound:'rock/tom14',      color:'#f48fb1'},
+    {id:'tom2',  name:'Tom 2',        notes:[45,47],       sound:'rock/tom18', color:'#ce93d8'},
+    {id:'tom3',  name:'Floor Tom',    notes:[43,41,58],    sound:'rock/tom22',      color:'#bcaaa4'},
+    {id:'snare', name:'Snare',        notes:[38,40,37,39], sound:'rock/snare',     color:'#64b5f6'},
+    {id:'kick',  name:'Kick',         notes:[36,35],       sound:'rock/kick',      color:'#ff8a65'},
   ];
   const COLOR = {}; PADS.forEach(p=>COLOR[p.id]=p.color);
   const HATS = ['hhc','hho','hhp'];          // one physical hi-hat: any hat hit chokes the open hat
   const MAX_VOICES = 4;                      // overlapping hits kept per pad
-  const MAP_KEY = 'midi-drumkit-map-v1', SND_KEY = 'midi-drumkit-sounds-v1';
+  const MAP_KEY = 'midi-drumkit-map-v1', SND_KEY = 'midi-drumkit-sounds-v2', KIT_KEY = 'midi-drumkit-kit-v1';
   let map = {};    // padId -> [notes]
-  let sounds = {}; // padId -> {sound, pitch, level}; sound = manifest id | 'synth'
+  let sounds = {}; // padId -> {sound, pitch, level}; sound = 'pack/sound' | 'synth'
+  let kitId = 'rock';
 
   function store(k, v){ try{ localStorage.setItem(k, JSON.stringify(v)); }catch(e){} }
   function restore(k){ try{ const s=localStorage.getItem(k); const v=s&&JSON.parse(s); return v&&typeof v==='object'?v:null; }catch(e){ return null; } }
 
   function defaultMap(){ const m={}; PADS.forEach(p=>m[p.id]=p.notes.slice()); return m; }
-  function defaultSound(p){ return {sound:p.sound, pitch:p.pitch||0, level:1}; }
+  function defaultSound(p){
+    const pk = manifest.packs.find(k=>k.id===kitId), k = pk && pk.kit[p.id];
+    return k ? {sound:kitId+'/'+k.sound, pitch:k.pitch, level:k.level} : {sound:p.sound, pitch:0, level:1};
+  }
   function load(){
     const m = restore(MAP_KEY);
     map = defaultMap();
@@ -201,8 +206,15 @@
       const added = PADS.filter(p=>!(p.id in m)).flatMap(p=>p.notes);
       for(const id in map) if(Array.isArray(m[id])) map[id] = m[id].filter(n=>!added.includes(n));
     }
+    const k = restore(KIT_KEY); if(k && k.id) kitId = k.id;
     const s = restore(SND_KEY) || {};
     PADS.forEach(p=>{ sounds[p.id] = Object.assign(defaultSound(p), s[p.id]||{}); });
+  }
+  // switch every pad to a kit's default sounds
+  function applyKit(id){
+    kitId = id; store(KIT_KEY, {id});
+    PADS.forEach(p=>{ sounds[p.id] = defaultSound(p); });
+    saveSounds(); refresh(); if(ctx) preload();
   }
   const saveMap = ()=>store(MAP_KEY, map), saveSounds = ()=>store(SND_KEY, sounds);
   function padForNote(n){ for(const id in map){ if(map[id].includes(n)) return id; } return null; }
@@ -223,11 +235,18 @@
   }
 
   // ---------- Samples ----------
-  let manifest = {sounds:[]}, byId = {};
+  let manifest = {packs:[]}, byId = {}; // byId: 'pack/sound' -> sound
   const loaded = {}, loading = {};
   const rr = {}; // round-robin counters
   const manifestReady = fetch('samples/manifest.json').then(r=>r.json()).then(m=>{
-    manifest=m; m.sounds.forEach(s=>byId[s.id]=s);
+    manifest=m; m.packs.forEach(pk=>pk.sounds.forEach(s=>byId[pk.id+'/'+s.id]=s));
+    const kitSel = document.getElementById('kitSel');
+    m.packs.forEach(pk=>kitSel.appendChild(new Option(pk.name, pk.id)));
+    if(!m.packs.some(pk=>pk.id===kitId)) kitId = m.packs[0].id;
+    kitSel.value = kitId;
+    if(!restore(SND_KEY)) PADS.forEach(p=>{ sounds[p.id] = defaultSound(p); });
+    document.getElementById('credits').innerHTML = 'Kits: ' + m.packs.map(pk=>
+      `<b>${pk.name}</b>: ${pk.url ? `<a href="${pk.url}" target="_blank" rel="noopener">${pk.credit}</a>` : pk.credit}`).join(' · ');
   }).catch(()=>showBanner('Could not load the sample list. The pads fall back to synth sounds.'));
 
   function decode(ab){ return new Promise((res,rej)=>ctx.decodeAudioData(ab, res, rej)); }
@@ -404,9 +423,11 @@
   let editing = null;
   function fillSelect(){
     sel.innerHTML='';
-    const grp=document.createElement('optgroup'); grp.label='Acoustic kit';
-    manifest.sounds.forEach(s=>grp.appendChild(new Option(s.name, s.id)));
-    sel.appendChild(grp);
+    manifest.packs.forEach(pk=>{
+      const grp=document.createElement('optgroup'); grp.label=pk.name;
+      pk.sounds.forEach(s=>grp.appendChild(new Option(s.name, pk.id+'/'+s.id)));
+      sel.appendChild(grp);
+    });
     const other=document.createElement('optgroup'); other.label='Other';
     other.appendChild(new Option('Synth (built-in)', 'synth'));
     sel.appendChild(other);
@@ -435,7 +456,7 @@
   level.addEventListener('input', ()=>{ sounds[editing].level=+level.value; changed(); });
   document.getElementById('sdPreview').addEventListener('click', ()=>play(editing, 100));
   document.getElementById('sdDefault').addEventListener('click', ()=>{
-    const p=PADS.find(p=>p.id===editing); sounds[editing]=defaultSound(p); loadSound(p.sound); changed();
+    const p=PADS.find(p=>p.id===editing); sounds[editing]=defaultSound(p); loadSound(sounds[editing].sound); changed();
   });
   document.getElementById('sdDone').addEventListener('click', ()=>{ dlg.classList.remove('show'); editing=null; });
 
@@ -700,6 +721,7 @@
     initMidi();
     preload().then(refresh);
   });
+  document.getElementById('kitSel').addEventListener('change', e=>applyKit(e.target.value));
   document.getElementById('vol').addEventListener('input', e=>{ if(master) master.gain.value=+e.target.value; });
   const confirmEl=document.getElementById('confirm');
   document.getElementById('resetBtn').addEventListener('click', ()=>confirmEl.classList.add('show'));
